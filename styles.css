@@ -644,6 +644,19 @@ body {
     min-height: 300px;
 }
 
+.venue-img {
+    max-width:100%;
+    margin:0 10px 10px 0;
+    border-radius:12px;
+    box-shadow:0 2px 12px #0006;
+    border:2px solid transparent;
+    transition:all 0.3s ease;
+    cursor:pointer;
+}
+.venue-img:last-child {
+    margin:0 0 10px 10px;
+}
+
 @media (max-width: 600px) {
   body {
     font-size: 15px;
@@ -730,19 +743,24 @@ body {
     margin-top: 12px !important;
   }
   .venue-img {
-    max-width: 48% !important;
+    max-width: 96% !important;
     margin: 0 2% 8px 0 !important;
   }
   .venue-img:last-child {
     margin: 0 0 8px 2% !important;
   }
-  .sidebar-modal {
-    width: 100vw;
-    min-width: 0;
-    padding: 10px;
+  .sidebar-modal,
+  .overlay {
+    display: none !important;
+  }
+  .sidebar-modal.active,
+  .overlay.active {
+    display: block !important;
   }
   .modal-content {
     margin-top: 30px;
+    width: 100%;
+    box-sizing: border-box;
   }
   .form-input {
     font-size: 14px;
