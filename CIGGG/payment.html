@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>支付页面</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: rgb(20, 58, 82);
+            font-family: Arial, sans-serif;
+        }
+
+        .payment-container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 90%;
+            width: 500px;
+        }
+
+        .payment-title {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .ticket-type {
+            color: #0066cc;
+            font-weight: bold;
+            font-size: 20px;
+            margin: 10px 0;
+        }
+
+        .price {
+            color: #ff6b6b;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+
+        .qr-code {
+            width: 400px;
+            height: auto;
+            margin: 25px 0;
+        }
+
+        .payment-info {
+            color: #666;
+            font-size: 16px;
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+
+        .notice {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .notice-title {
+            color: #e74c3c;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="payment-container">
+        <h1 class="payment-title">请扫码支付</h1>
+        <div id="ticketInfo" class="ticket-type"></div>
+        <div id="priceInfo" class="price"></div>
+        <img src="sp/png/收款码.png" alt="支付二维码" class="qr-code">
+        <div class="notice">
+            <div class="notice-title">重要提示：</div>
+            <ul style="margin: 0; padding-left: 20px;">
+                <li>支付时备注请输入你的手机号码</li>
+                <li>线下核验手机号</li>
+                <li>1个手机号限购买1张门票</li>
+            </ul>
+        </div>
+        <p class="payment-info">支付完成后请保存好支付凭证<br>(支付宝/微信付款水单现场出示领取登机牌)</p>
+        <button id="finishPayBtn" style="margin-top: 20px; padding: 10px 30px; font-size: 16px; background: #0066cc; color: #fff; border: none; border-radius: 6px; cursor: pointer;">
+            已完成支付
+        </button>
+    </div>
+
+    <script>
+        window.onload = function() {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+            const ticketInfo = document.getElementById('ticketInfo');
+            const priceInfo = document.getElementById('priceInfo');
+            
+            if (userInfo) {
+                if (userInfo.ticketType === 'uee') {
+                    ticketInfo.textContent = 'UEE海军门票';
+                    priceInfo.textContent = '￥169';
+                } else {
+                    ticketInfo.textContent = '巴奴门票';
+                    priceInfo.textContent = '￥199';
+                }
+            }
+        };
+
+        document.getElementById('finishPayBtn').onclick = function() {
+            alert('购买成功！');
+            window.location.href = 'index.html'; // 跳转到主页
+        };
+    </script>
+</body>
+</html> 

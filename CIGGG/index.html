@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIGGG Space</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <img src="sp/png/LOGO.png" alt="CIGGG LOGO">
+        </div>
+        <div class="nav-right">
+            <button class="play-now-btn" onclick="window.open('https://robertsspaceindustries.com/en/', '_blank')">PLAY NOW</button>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <div class="video-container">
+            <video id="myVideo1" class="video-player">
+                <source src="sp/a1.mp4" type="video/mp4">
+            </video>
+            <video id="myVideo2" class="video-player">
+                <source src="sp/a2.mp4" type="video/mp4">
+            </video>
+        </div>
+        
+        <!-- 添加左下角信息 -->
+        <div class="ship-info">
+            <div class="ship-details">
+                <div class="ship-number">2955</div>
+                <div class="ship-name">U.S.S HANG ZHOU</div>
+                <div class="ship-type">BARCITIZEN</div>
+            </div>
+            <button class="ticket-btn" onclick="scrollToTickets()">立即登舰</button>
+        </div>
+        
+        <!-- 添加进度条 -->
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+            <div class="video-controls">
+                <span class="current-video">登舰成功</span>
+                <button class="next-video">欢迎登舰</button>
+            </div>
+        </div>
+    </div>
+
+    <section class="games-section" id="tickets-section">
+        <h1 class="section-title">Welcome aboard</h1>
+        <div class="games-container">
+            <!-- 左边游戏卡片 -->
+            <div class="game-card">
+                <img class="age-rating" src="sp/png/18.png" alt="Age Rating">
+                <button class="refund-btn card-refund-btn" onclick="verifyRefund()">退票</button>
+                <img src="sp/png/巴奴.png" alt="巴奴门票">
+                <div class="game-info">
+                    <h2>巴奴门票</h2>
+                    <p>Banu ticket</p>
+                    <div class="game-buttons">
+                        <button class="primary-btn" onclick="showModal('banu')">购买</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右边游戏卡片 -->
+            <div class="game-card">
+                <button class="refund-btn card-refund-btn" onclick="verifyRefund()">退票</button>
+                <img src="sp/png/UEE海军.png" alt="UEE海军门票">
+                <div class="game-info">
+                    <h2>UEE海军门票</h2>
+                    <p>UEE Navy ticket</p>
+                    <div class="game-buttons">
+                        <button class="primary-btn" onclick="showModal('uee')">购买</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 活动礼品区域 -->
+    <section class="gifts-section">
+        <h1 class="section-title">活动礼品  Event gifts</h1>
+        <div class="gifts-container">
+            <div class="gift-item">
+                <div class="gift-icon">
+                    <span class="material-icons-outlined">shopping_bag</span>
+                </div>
+                <div class="gift-name">帆布袋</div>
+            </div>
+            <div class="gift-item">
+                <div class="gift-icon">
+                    <span class="material-icons-outlined">confirmation_number</span>
+                </div>
+                <div class="gift-name">亚克力门票</div>
+            </div>
+            <div class="gift-item">
+                <div class="gift-icon">
+                    <span class="material-icons-outlined">mouse</span>
+                </div>
+                <div class="gift-name">鼠标垫（CIG认证社区限定）</div>
+            </div>
+            <div class="gift-item">
+                <div class="gift-icon">
+                    <span class="material-icons-outlined">pets</span>
+                </div>
+                <div class="gift-name">神秘"鲸"玩偶</div>
+            </div>
+            <div class="gift-item">
+                <div class="gift-icon">
+                    <span class="material-icons-outlined">architecture</span>
+                </div>
+                <div class="gift-name">亚克力飞船蓝图（蓝图随机发放）</div>
+            </div>
+            <div class="gift-item">
+                <div class="gift-icon">
+                    <span class="material-icons-outlined">local_drink</span>
+                </div>
+                <div class="gift-name">同款游戏内快乐水</div>
+            </div>
+            <div class="gift-item special">
+                <div class="gift-icon">
+                    <span class="material-icons-outlined">rocket_launch</span>
+                </div>
+                <div class="gift-name">CIG-G佬赞助飞船CDK（抽奖名额）</div>
+            </div>
+            <div class="gift-item special">
+                <div class="gift-icon">
+                    <span class="material-icons-outlined">card_giftcard</span>
+                </div>
+                <div class="gift-name">社区大佬赞助礼品（抽奖）</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 活动信息和地图区域 -->
+    <section class="event-info-section">
+        <h1 class="section-title">活动信息   Activity information</h1>
+        <div class="event-info-text">
+            <div>时间：2955.6.7</div>
+            <div>U.S.S 杭州 BARCITIZEN</div>
+            <div>地址：杭州市滨江区西兴街道莲荷里C18号漆轰趴</div>
+        </div>
+        <div class="event-map">
+            
+            
+        </div>
+        <!-- 新增图片展示 -->
+        <div class="event-venue-images" style="text-align:center;margin-top:24px;">
+            <img class="venue-img" src="sp/png/B1.jpg" alt="轰趴馆1">
+            <img class="venue-img" src="sp/png/B2.jpg" alt="轰趴馆2">
+        </div>
+    </section>
+
+    <!-- 遮罩层 -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- 提示框 -->
+    <div class="alert-modal" id="alertModal" style="display: none;">
+        <div class="message" id="alertMessage"></div>
+        <button class="confirm-btn" onclick="closeAlert()">确定</button>
+    </div>
+
+    <!-- 侧边弹出框 -->
+    <div class="sidebar-modal" id="sidebarModal">
+        <button class="modal-close" onclick="closeModal()">×</button>
+        <div class="modal-content">
+            <h2 class="modal-title">填写你的信息</h2>
+            <p class="modal-subtitle" id="modalTicketType">18禁门票</p>
+            
+            <input type="text" class="form-input" placeholder="QQ号" id="qqNumber">
+            <input type="text" class="form-input" placeholder="游戏ID" id="gameId">
+            <input type="text" class="form-input" placeholder="公民身份证信息" id="idNumber">
+            
+            <button class="sign-in-btn" onclick="verifyAndProceed()">SIGN IN</button>
+        </div>
+    </div>
+
+    <style>
+    .venue-img {
+        max-width:22%;
+        margin:0 10px 10px 0;
+        border-radius:12px;
+        box-shadow:0 2px 12px #0006;
+        border:2px solid transparent;
+        transition:all 0.3s ease;
+        cursor:pointer;
+    }
+    .venue-img:last-child {
+        margin:0 0 10px 10px;
+    }
+    .venue-img:hover {
+        border-color:rgb(84, 173, 247);
+        box-shadow:0 0 15px rgba(84, 173, 247, 0.5);
+        transform:translateY(-5px);
+    }
+    </style>
+
+    <script src="script.js"></script>
+    <script>
+        function showModal(type) {
+            document.getElementById('sidebarModal').classList.add('active');
+            document.getElementById('overlay').classList.add('active');
+            document.getElementById('modalTicketType').textContent = type === 'banu' ? '巴奴门票' : 'UEE海军门票';
+        }
+
+        function closeModal() {
+            document.getElementById('sidebarModal').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
+        }
+
+        // QQ号白名单列表
+        const whitelistedQQNumbers = [
+            '330094043',  // 示例QQ号
+            '1063469812',  // 示例QQ号
+            '525310959',   // 示例QQ号
+            // 后续可以继续添加更多QQ号
+        ];
+
+        function isQQInWhitelist(qqNumber) {
+            return whitelistedQQNumbers.includes(qqNumber);
+        }
+
+        function showAlert(message) {
+            document.getElementById('alertMessage').textContent = message;
+            document.getElementById('alertModal').style.display = 'block';
+            document.getElementById('overlay').classList.add('active');
+        }
+
+        function closeAlert() {
+            document.getElementById('alertModal').style.display = 'none';
+            document.getElementById('overlay').classList.remove('active');
+        }
+
+        function verifyAndProceed() {
+            const idNumber = document.getElementById('idNumber').value;
+            const qqNumber = document.getElementById('qqNumber').value;
+            const gameId = document.getElementById('gameId').value;
+            const ticketType = document.getElementById('modalTicketType').textContent;
+
+            if (!idNumber || !qqNumber || !gameId) {
+                showAlert('请填写所有信息！');
+                return;
+            }
+
+            // 首先验证QQ号是否在白名单中
+            if (!isQQInWhitelist(qqNumber)) {
+                showAlert(' 未查询到你的预约！ 请联系主办方 ');
+                return;
+            }
+
+            // 验证年龄
+            const age = calculateAge(idNumber);
+            
+            if (ticketType === 'UEE海军门票') {
+                // UEE海军门票需要小于18岁
+                if (age < 18) {
+                    // 存储信息
+                    localStorage.setItem('userInfo', JSON.stringify({
+                        qq: qqNumber,
+                        gameId: gameId,
+                        idNumber: idNumber,
+                        ticketType: 'uee'
+                    }));
+                    showAlert('验证成功！即将跳转到支付页面...');
+                    setTimeout(() => {
+                        window.location.href = 'payment.html';
+                    }, 1500);
+                } else {
+                    showAlert('UEE海军门票仅限18岁以下购买！');
+                }
+            } else {
+                // 巴奴门票需要大于等于18岁
+                if (age >= 18) {
+                    // 存储信息
+                    localStorage.setItem('userInfo', JSON.stringify({
+                        qq: qqNumber,
+                        gameId: gameId,
+                        idNumber: idNumber,
+                        ticketType: 'banu'
+                    }));
+                    showAlert('验证成功！即将跳转到支付页面...');
+                    setTimeout(() => {
+                        window.location.href = 'payment.html';
+                    }, 1500);
+                } else {
+                    showAlert('巴奴门票需要年满18岁才能购买！');
+                }
+            }
+        }
+
+        function calculateAge(idNumber) {
+            // 简单的示例验证，实际应该有更严格的验证
+            if (idNumber.length === 18) {
+                const year = parseInt(idNumber.substring(6, 10));
+                const month = parseInt(idNumber.substring(10, 12));
+                const day = parseInt(idNumber.substring(12, 14));
+                
+                const today = new Date();
+                const birthDate = new Date(year, month - 1, day);
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                
+                return age;
+            }
+            return 0;
+        }
+
+        function verifyRefund() {
+            const qqNumber = prompt('请输入你的QQ号进行验证：');
+            if (!qqNumber) return;
+
+            if (isQQInWhitelist(qqNumber)) {
+                showAlert('请联系主办方发送你的支付信息和备注的手机号\nQQ：330094043');
+            } else {
+                showAlert('未查询到你的预约！请联系主办方');
+            }
+        }
+
+        // 点击遮罩层关闭弹窗
+        document.getElementById('overlay').addEventListener('click', closeModal);
+
+        function scrollToTickets() {
+            document.getElementById('tickets-section').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    </script>
+</body>
+</html> 
