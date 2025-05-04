@@ -676,13 +676,18 @@ body {
     min-height: 400px;
   }
   .video-container {
-    height: 50vw;
-    min-height: 200px;
-    max-height: 60vw;
+    height: 60vw;
+    min-height: 220px;
+    max-height: none;
+    position: relative;
   }
   .video-player {
+    position: static !important;
+    width: 100% !important;
+    height: 100% !important;
     object-fit: contain !important;
     background: #000;
+    display: block;
   }
   .ship-info {
     position: static;
