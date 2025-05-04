@@ -676,7 +676,13 @@ body {
     min-height: 400px;
   }
   .video-container {
-    height: 220px;
+    height: 50vw;
+    min-height: 200px;
+    max-height: 60vw;
+  }
+  .video-player {
+    object-fit: contain !important;
+    background: #000;
   }
   .ship-info {
     position: static;
