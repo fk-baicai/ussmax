@@ -643,3 +643,124 @@ body {
     width: 100%;
     min-height: 300px;
 }
+
+@media (max-width: 600px) {
+  body {
+    font-size: 15px;
+  }
+  .navbar {
+    flex-direction: column;
+    padding: 0.5rem 1rem;
+  }
+  .logo img {
+    height: 36px;
+  }
+  .nav-right {
+    margin-top: 8px;
+  }
+  .hero {
+    height: auto;
+    min-height: 400px;
+  }
+  .video-container {
+    height: 220px;
+  }
+  .ship-info {
+    position: static;
+    margin: 20px 0 0 0;
+    left: 0;
+    bottom: 0;
+    align-items: flex-start;
+  }
+  .ship-number {
+    font-size: 28px;
+  }
+  .ship-name {
+    font-size: 20px;
+  }
+  .ship-type {
+    font-size: 16px;
+  }
+  .progress-container {
+    position: static;
+    width: 100%;
+    margin: 10px 0;
+  }
+  .games-section {
+    padding: 30px 5px;
+  }
+  .section-title {
+    font-size: 28px;
+    margin-bottom: 20px;
+  }
+  .games-container {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .game-card {
+    min-width: 0;
+    border-radius: 8px;
+  }
+  .game-card img {
+    height: 180px;
+  }
+  .game-info {
+    padding: 15px;
+  }
+  .gifts-section {
+    padding: 30px 5px;
+  }
+  .gifts-container {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    padding: 5px;
+  }
+  .event-info-section {
+    padding: 30px 5px 20px 5px;
+  }
+  .event-info-text {
+    font-size: 15px;
+    margin-bottom: 15px;
+  }
+  .event-map iframe {
+    min-height: 180px;
+    max-width: 100%;
+  }
+  .event-venue-images {
+    margin-top: 12px !important;
+  }
+  .venue-img {
+    max-width: 48% !important;
+    margin: 0 2% 8px 0 !important;
+  }
+  .venue-img:last-child {
+    margin: 0 0 8px 2% !important;
+  }
+  .sidebar-modal {
+    width: 100vw;
+    min-width: 0;
+    padding: 10px;
+  }
+  .modal-content {
+    margin-top: 30px;
+  }
+  .form-input {
+    font-size: 14px;
+    padding: 8px;
+  }
+  .sign-in-btn {
+    font-size: 14px;
+    padding: 10px;
+  }
+  .alert-modal {
+    min-width: 180px;
+    padding: 10px;
+  }
+  .alert-modal .message {
+    font-size: 13px;
+  }
+  .alert-modal .confirm-btn {
+    font-size: 13px;
+    padding: 6px 12px;
+  }
+}

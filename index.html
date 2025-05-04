@@ -148,6 +148,11 @@
             
             
         </div>
+        <!-- 新增图片展示 -->
+        <div class="event-venue-images" style="text-align:center;margin-top:24px;">
+            <img class="venue-img" src="sp/png/B1.jpg" alt="轰趴馆1">
+            <img class="venue-img" src="sp/png/B2.jpg" alt="轰趴馆2">
+        </div>
     </section>
 
     <!-- 遮罩层 -->
@@ -173,6 +178,26 @@
             <button class="sign-in-btn" onclick="verifyAndProceed()">SIGN IN</button>
         </div>
     </div>
+
+    <style>
+    .venue-img {
+        max-width:22%;
+        margin:0 10px 10px 0;
+        border-radius:12px;
+        box-shadow:0 2px 12px #0006;
+        border:2px solid transparent;
+        transition:all 0.3s ease;
+        cursor:pointer;
+    }
+    .venue-img:last-child {
+        margin:0 0 10px 10px;
+    }
+    .venue-img:hover {
+        border-color:rgb(84, 173, 247);
+        box-shadow:0 0 15px rgba(84, 173, 247, 0.5);
+        transform:translateY(-5px);
+    }
+    </style>
 
     <script src="script.js"></script>
     <script>
