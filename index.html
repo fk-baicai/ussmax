@@ -213,6 +213,27 @@
             document.getElementById('overlay').classList.remove('active');
         }
 
+        // QQ号白名单列表
+        const whitelistedQQNumbers = [
+            '33009004043',          
+            '52640099364'
+        ];
+
+        function isQQInWhitelist(qqNumber) {
+            return whitelistedQQNumbers.includes(qqNumber);
+        }
+
+        function showAlert(message) {
+            document.getElementById('alertMessage').textContent = message;
+            document.getElementById('alertModal').style.display = 'block';
+            document.getElementById('overlay').classList.add('active');
+        }
+
+        function closeAlert() {
+            document.getElementById('alertModal').style.display = 'none';
+            document.getElementById('overlay').classList.remove('active');
+        }
+
         function verifyAndProceed() {
             const idNumber = document.getElementById('idNumber').value;
             const qqNumber = document.getElementById('qqNumber').value;
@@ -221,6 +242,12 @@
 
             if (!idNumber || !qqNumber || !gameId) {
                 showAlert('请填写所有信息！');
+                return;
+            }
+
+            // 首先验证QQ号是否在白名单中
+            if (!isQQInWhitelist(qqNumber)) {
+                showAlert(' 未查询到你的预约！ 请联系主办方 ');
                 return;
             }
 
@@ -264,12 +291,6 @@
             }
         }
 
-        function verifyRefund() {
-            const qqNumber = prompt('请输入你的QQ号进行验证：');
-            if (!qqNumber) return;
-            showAlert('请联系主办方发送你的支付信息和备注的手机号\nQQ：330094043');
-        }
-
         function calculateAge(idNumber) {
             // 简单的示例验证，实际应该有更严格的验证
             if (idNumber.length === 18) {
@@ -291,15 +312,15 @@
             return 0;
         }
 
-        function showAlert(message) {
-            document.getElementById('alertMessage').textContent = message;
-            document.getElementById('alertModal').style.display = 'block';
-            document.getElementById('overlay').classList.add('active');
-        }
+        function verifyRefund() {
+            const qqNumber = prompt('请输入你的QQ号进行验证：');
+            if (!qqNumber) return;
 
-        function closeAlert() {
-            document.getElementById('alertModal').style.display = 'none';
-            document.getElementById('overlay').classList.remove('active');
+            if (isQQInWhitelist(qqNumber)) {
+                showAlert('请联系主办方发送你的支付信息和备注的手机号\nQQ：330094043');
+            } else {
+                showAlert('未查询到你的预约！请联系主办方');
+            }
         }
 
         // 点击遮罩层关闭弹窗
