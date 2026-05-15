@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分部 — USS</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="checkin-page.css">
+    <link rel="icon" type="image/jpeg" href="fleet-logo.jpg">
+    <link rel="apple-touch-icon" href="fleet-logo.jpg">
+    <script src="auth-config.js"></script>
+</head>
+<body class="checkin-page-body checkin-page-body--unit">
+    <header class="checkin-page-nav checkin-page-nav--spread">
+        <a class="checkin-nav-back" href="checkin.html">返回签到中心</a>
+        <a class="checkin-nav-home" href="index.html">返回首页</a>
+    </header>
+
+    <main class="checkin-page-main checkin-page-main--unit">
+        <div id="checkinGateHint" class="checkin-gate-hint" hidden>
+            <p>请先登录再使用签到。</p>
+            <p><a href="index.html">去首页登录</a></p>
+        </div>
+
+        <div id="checkinUnitMissingParam" class="checkin-gate-hint checkin-unit-missing" hidden>
+            <p>未指定分部，请从下面选一项进入：</p>
+            <p class="checkin-unit-missing-links">
+                <a class="checkin-nav-back" href="checkin-unit.html#unit=hq">总部</a>
+                <span class="checkin-nav-inline-sep" aria-hidden="true">·</span>
+                <a class="checkin-nav-back" href="checkin-unit.html#unit=squad1">一中队</a>
+                <span class="checkin-nav-inline-sep" aria-hidden="true">·</span>
+                <a class="checkin-nav-back" href="checkin-unit.html#unit=uss">USS创伤舰队</a>
+                <span class="checkin-nav-inline-sep" aria-hidden="true">·</span>
+                <a class="checkin-nav-back" href="checkin-unit.html#unit=ussprod">USS生产队</a>
+            </p>
+            <p><a class="checkin-nav-back" href="checkin.html">返回签到中心</a></p>
+        </div>
+
+        <div id="checkinUnitMain" class="checkin-unit-main" hidden>
+            <header class="checkin-unit-hero">
+                <p class="checkin-unit-hero-label">分部签到</p>
+                <h1 id="checkinUnitTitle" class="checkin-unit-hero-title">分部</h1>
+            </header>
+
+            <div class="checkin-unit-layout">
+                <section class="checkin-unit-calendar-section checkin-panel" aria-labelledby="checkinCalSectionTitle">
+                    <h2 id="checkinCalSectionTitle" class="checkin-panel-title checkin-cal-block-title">本月日历</h2>
+                    <p class="checkin-calendar-scope-hint">本分部本月：绿已签，红未签，灰未到。</p>
+                    <div id="checkinCalWeekRow" class="checkin-cal-week-row" aria-hidden="true"></div>
+                    <div id="checkinCalGrid" class="checkin-cal-grid"></div>
+                </section>
+
+                <aside class="checkin-unit-side">
+                    <div class="checkin-unit-stats checkin-panel" id="checkinUnitStats">
+                        <div class="checkin-unit-stat-block">
+                            <span class="checkin-unit-stat-label">总积分</span>
+                            <strong class="checkin-unit-stat-value" id="unitPoints">0</strong>
+                        </div>
+                        <div class="checkin-unit-stat-divider" aria-hidden="true"></div>
+                        <div class="checkin-unit-stat-block">
+                            <span class="checkin-unit-stat-label">连续天数</span>
+                            <strong class="checkin-unit-stat-value" id="unitStreak">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="checkin-toolbar checkin-panel checkin-panel--action">
+                        <button type="button" id="checkinPrimaryBtn" class="checkin-primary-btn">今日签到</button>
+                    </div>
+
+                    <details class="checkin-my-history-box checkin-panel">
+                        <summary class="checkin-my-history-summary">签到历史</summary>
+                        <div id="checkinMyHistoryNav" class="checkin-my-history-nav" aria-label="签到月份">
+                            <div class="checkin-history-month-wrap">
+                                <div
+                                    id="checkinHistoryMonthStrip"
+                                    class="checkin-history-month-swipe"
+                                    tabindex="0"
+                                    title="点击展开月份列表，左右滑动切换"
+                                    aria-haspopup="listbox"
+                                    aria-expanded="false"
+                                    aria-controls="checkinHistoryMonthDropdown"
+                                >
+                                    <span id="checkinHistoryMonthLabel" class="checkin-history-month-label"></span>
+                                    <span class="checkin-history-month-chevron" aria-hidden="true">▾</span>
+                                </div>
+                                <div
+                                    id="checkinHistoryMonthDropdown"
+                                    class="checkin-history-month-dropdown"
+                                    role="listbox"
+                                    aria-label="选择月份"
+                                    hidden
+                                ></div>
+                            </div>
+                        </div>
+                        <ul id="checkinMyHistoryList" class="checkin-my-history-list"></ul>
+                    </details>
+                </aside>
+            </div>
+
+            <section class="checkin-unit-rank-section checkin-panel" aria-labelledby="checkinRankSectionTitle">
+                <h2 id="checkinRankSectionTitle" class="checkin-panel-title checkin-rank-block-title">分部成员总积分排行</h2>
+                <p class="checkin-stats-hint">凡在本分部有过签到的成员均在下表；按总积分从高到低。各分部数据独立。</p>
+                <p class="checkin-stats-title">共 <span id="checkinTodayCount">0</span> 人</p>
+                <ul id="checkinTodayList" class="checkin-today-list"></ul>
+            </section>
+        </div>
+    </main>
+
+    <div class="checkin-alert-modal" id="checkinAlertModal" style="display: none;" role="alertdialog" aria-labelledby="checkinAlertMsg">
+        <p class="checkin-alert-msg" id="checkinAlertMsg"></p>
+        <button type="button" class="checkin-alert-ok" onclick="CheckinUnitPage.closeAlert()">确定</button>
+    </div>
+
+    <script src="auth-api.js"></script>
+    <script src="checkin-unit.js"></script>
+</body>
+</html>

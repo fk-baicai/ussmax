@@ -1,0 +1,2890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USS</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <link rel="icon" type="image/jpeg" href="fleet-logo.jpg">
+    <link rel="apple-touch-icon" href="fleet-logo.jpg">
+    <script src="auth-config.js"></script>
+    <script>
+        (function () {
+            try {
+                var KEY = 'ussHangzhouAuthSession';
+                var raw = sessionStorage.getItem(KEY) || localStorage.getItem(KEY);
+                if (!raw) return;
+                var sess = JSON.parse(raw);
+                if (!sess || !sess.token) return;
+                document.documentElement.classList.add('auth-session-cached');
+            } catch (e) {
+                /* ignore */
+            }
+        })();
+    </script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <img src="sp/png/LOGO.png" alt="舰队 LOGO">
+        </div>
+        <div class="nav-right">
+            <button type="button" class="nav-login-trigger" id="navLoginBtn" onclick="openLoginDrawer()" aria-label="登录或注册">
+                <span id="navLoginGuestWrap" class="nav-login-guest-inner">
+                    <span class="nav-login-label">登录/注册</span>
+                </span>
+                <span id="navLoginAvatarWrap" class="nav-login-avatar-inner is-hidden">
+                    <img id="navUserAvatarImg" class="nav-user-avatar" src="" alt="">
+                </span>
+            </button>
+        </div>
+    </nav>
+    <script>
+        (function () {
+            if (!document.documentElement.classList.contains('auth-session-cached')) return;
+            var btn = document.getElementById('navLoginBtn');
+            var guestWrap = document.getElementById('navLoginGuestWrap');
+            var avatarWrap = document.getElementById('navLoginAvatarWrap');
+            var img = document.getElementById('navUserAvatarImg');
+            if (!btn || !guestWrap || !avatarWrap || !img) return;
+            guestWrap.classList.add('is-hidden');
+            avatarWrap.classList.remove('is-hidden');
+            btn.classList.add('is-logged-in');
+            btn.setAttribute('aria-label', '账户');
+            try {
+                var KEY = 'ussHangzhouAuthSession';
+                var raw = sessionStorage.getItem(KEY) || localStorage.getItem(KEY);
+                var sess = raw ? JSON.parse(raw) : null;
+                var rel = sess && sess.avatarUrl;
+                var src = '';
+                var base = (typeof window !== 'undefined' && window.USS_AUTH_API_BASE) || 'http://127.0.0.1:3789';
+                base = String(base).replace(/\/$/, '');
+                if (rel && typeof rel === 'string') {
+                    if (/^https?:\/\//i.test(rel)) src = rel;
+                    else {
+                        var p = rel.charAt(0) === '/' ? rel : '/' + rel;
+                        src = base + p;
+                    }
+                }
+                if (!src) {
+                    img.src =
+                        'data:image/svg+xml,' +
+                        encodeURIComponent(
+                            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+                                '<circle cx="32" cy="32" r="32" fill="#1e4d6b"/>' +
+                                '<circle cx="32" cy="26" r="14" fill="#a8d8e8"/>' +
+                                '<ellipse cx="32" cy="56" rx="22" ry="18" fill="#a8d8e8"/>' +
+                                '</svg>'
+                        );
+                } else {
+                    img.src = src;
+                }
+                img.alt = '用户头像';
+            } catch (e) {
+                /* ignore */
+            }
+        })();
+    </script>
+
+    <div class="hero">
+        <div class="video-container">
+            <video id="myVideo1" class="video-player" autoplay muted playsinline>
+                <source src="sp/a1.mp4" type="video/mp4">
+            </video>
+            <video id="myVideo2" class="video-player" autoplay muted playsinline>
+                <source src="sp/a2.mp4" type="video/mp4">
+            </video>
+        </div>
+        
+        <!-- 添加左下角信息 -->
+        <div class="ship-info">
+            <div class="ship-details">
+                <p class="ship-hero-copy">
+                    <strong class="ship-hero-name">USS-保护伞舰队　</strong>
+                    <span class="ship-hero-tagline">欢迎每一位星际公民成员的加入，平等尊重每一位公民。</span>
+                </p>
+            </div>
+            <button
+                type="button"
+                class="ticket-btn"
+                onclick="window.open('https://robertsspaceindustries.com/orgs/5000', '_blank', 'noopener,noreferrer')"
+            >
+                立即登舰
+            </button>
+        </div>
+        
+        <!-- 添加进度条 -->
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+            <div class="video-controls">
+                <span class="current-video">登舰成功</span>
+                <button class="next-video">欢迎登舰</button>
+            </div>
+        </div>
+    </div>
+
+    <section class="community-section" id="community-section" aria-labelledby="community-section-title">
+        <div class="community-wrap">
+            <header class="community-head">
+                <div class="community-head-text">
+                    <h2 id="community-section-title" class="community-title">舰员交流区</h2>
+                </div>
+            </header>
+
+            <div class="community-stack">
+                <div class="community-panel community-panel-chat">
+                    <div class="community-panel-head community-panel-head-chat">
+                        <span class="community-panel-title">聊天</span>
+                    </div>
+                    <div class="community-chat-split">
+                        <aside class="community-chat-roster" id="communityChatRoster" aria-label="聊天对象">
+                            <div id="communityChatRosterGuest" class="community-chat-roster-guest" hidden>
+                                <p>登录后查看成员列表</p>
+                            </div>
+                            <div id="communityChatRosterInner" class="community-chat-roster-inner" hidden></div>
+                        </aside>
+                        <div class="community-chat-main">
+                            <div id="communityChatMainTitle" class="community-chat-main-title">舰队聊天</div>
+                            <div class="community-chat-view">
+                                <div id="communityChatScroll" class="community-chat-scroll community-scroller community-scroller-chat">
+                                    <div id="communityChatLog" class="community-chat-log"></div>
+                                </div>
+                                <div id="communityChatGuestLock" class="community-chat-guest-lock" hidden>
+                                    <div class="community-chat-guest-lock-inner">
+                                        <p class="community-chat-guest-lock-title">登录后查看聊天</p>
+                                        <p class="community-chat-guest-lock-desc">舰员频道内容仅对已登录成员可见，请使用右上角登录或注册。</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="community-chat-compose community-dropzone">
+                                <div class="community-chat-compose-row">
+                                    <input
+                                        type="text"
+                                        id="communityChatInput"
+                                        class="community-chat-input"
+                                        maxlength="400"
+                                        placeholder="登录后发送短消息…"
+                                        disabled
+                                        autocomplete="off"
+                                    />
+                                    <div class="community-send-split">
+                                        <button type="button" class="primary-btn community-chat-send" id="communityChatSendBtn" disabled>发送</button>
+                                        <button
+                                            type="button"
+                                            class="community-send-split__more"
+                                            id="communityChatSendMenuBtn"
+                                            disabled
+                                            aria-label="更多操作"
+                                            aria-expanded="false"
+                                            aria-haspopup="menu"
+                                            aria-controls="communityChatSendMenu"
+                                        >
+                                            <span class="community-send-split__caret" aria-hidden="true"></span>
+                                        </button>
+                                        <div id="communityChatSendMenu" class="community-send-menu" role="menu" hidden>
+                                            <button type="button" class="community-send-menu__item" id="communityChatAddImageBtn" role="menuitem">
+                                                <span class="material-icons-outlined" aria-hidden="true">add_photo_alternate</span>
+                                                添加图片
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="file" id="communityChatFileInput" accept="image/*" multiple hidden disabled />
+                                <div id="communityChatPreviewRow" class="community-preview-row community-chat-preview-row" aria-live="polite"></div>
+                            </div>
+                            <p id="communityChatHint" class="community-chat-hint" role="status"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="community-panel community-panel-forum">
+                    <div class="community-panel-head">
+                        <span class="community-panel-title">论坛帖子</span>
+                    </div>
+                    <div class="community-composer community-composer-inline community-dropzone">
+                        <div id="communityAuthHint" class="community-auth-hint">请先登录后再发帖与回复（右上角登录/注册）。</div>
+                        <textarea
+                            id="communityText"
+                            class="community-textarea"
+                            rows="3"
+                            maxlength="4000"
+                            placeholder="分享见闻、截图或动图…"
+                            disabled
+                        ></textarea>
+                        <div class="community-toolbar">
+                            <div class="community-send-split community-send-split--forum">
+                                <button type="button" class="primary-btn community-post-btn community-post-btn--main" id="communitySubmitBtn" disabled>
+                                    发布帖子
+                                </button>
+                                <button
+                                    type="button"
+                                    class="community-send-split__more"
+                                    id="communityPostMenuBtn"
+                                    disabled
+                                    aria-label="更多操作"
+                                    aria-expanded="false"
+                                    aria-haspopup="menu"
+                                    aria-controls="communityPostSendMenu"
+                                >
+                                    <span class="community-send-split__caret" aria-hidden="true"></span>
+                                </button>
+                                <div id="communityPostSendMenu" class="community-send-menu" role="menu" hidden>
+                                    <button type="button" class="community-send-menu__item" id="communityPostAddImageBtn" role="menuitem">
+                                        <span class="material-icons-outlined" aria-hidden="true">add_photo_alternate</span>
+                                        添加图片
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="file" id="communityFileInput" accept="image/*" multiple hidden disabled />
+                        <div id="communityPreviewRow" class="community-preview-row" aria-live="polite"></div>
+                        <p id="communityFormHint" class="community-form-hint" role="status"></p>
+                    </div>
+                    <div class="community-feed community-scroller community-scroller-feed" id="communityFeed">
+                        <div class="community-feed-loading" id="communityFeedLoading">正在加载帖子…</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="games-section" id="tickets-section">
+        <h1 class="section-title">Welcome aboard</h1>
+        <div class="games-container">
+            <!-- 左边游戏卡片 -->
+            <div class="game-card">
+                <img class="age-rating" src="sp/png/18.png" alt="Age Rating">
+                <button class="refund-btn card-refund-btn" onclick="verifyRefund()">退票</button>
+                <img src="sp/png/巴奴.png" alt="巴奴门票">
+                <div class="game-info">
+                    <h2>巴奴门票</h2>
+                    <p>Banu ticket</p>
+                    <div class="game-buttons">
+                        <button class="primary-btn" onclick="showTicketPurchaseClosedNotice()">购买</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右边游戏卡片 -->
+            <div class="game-card">
+                <button class="refund-btn card-refund-btn" onclick="verifyRefund()">退票</button>
+                <img src="sp/png/UEE海军.png" alt="UEE海军门票">
+                <div class="game-info">
+                    <h2>UEE海军门票</h2>
+                    <p>UEE Navy ticket</p>
+                    <div class="game-buttons">
+                        <button class="primary-btn" onclick="showTicketPurchaseClosedNotice()">购买</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 活动礼品区域 -->
+    <section class="gifts-section">
+        <h1 class="section-title">活动礼品  Event gifts</h1>
+        <div class="gifts-container">
+            <div class="gift-item">
+                <div class="gift-icon">
+                    <span class="material-icons-outlined">shopping_bag</span>
+                </div>
+                <div class="gift-name">帆布袋</div>
+            </div>
+            <div class="gift-item">
+                <div class="gift-icon">
+                    <span class="material-icons-outlined">confirmation_number</span>
+                </div>
+                <div class="gift-name">亚克力门票</div>
+            </div>
+            <div class="gift-item">
+                <div class="gift-icon">
+                    <span class="material-icons-outlined">mouse</span>
+                </div>
+                <div class="gift-name">鼠标垫（CIG认证社区限定）</div>
+            </div>
+            <div class="gift-item">
+                <div class="gift-icon">
+                    <span class="material-icons-outlined">pets</span>
+                </div>
+                <div class="gift-name">神秘"鲸"玩偶</div>
+            </div>
+            <div class="gift-item">
+                <div class="gift-icon">
+                    <span class="material-icons-outlined">architecture</span>
+                </div>
+                <div class="gift-name">亚克力飞船蓝图（蓝图随机发放）</div>
+            </div>
+            <div class="gift-item">
+                <div class="gift-icon">
+                    <span class="material-icons-outlined">local_drink</span>
+                </div>
+                <div class="gift-name">同款游戏内快乐水</div>
+            </div>
+            <div class="gift-item special">
+                <div class="gift-icon">
+                    <span class="material-icons-outlined">rocket_launch</span>
+                </div>
+                <div class="gift-name">CIG-G佬赞助飞船CDK（抽奖名额）</div>
+            </div>
+            <div class="gift-item special">
+                <div class="gift-icon">
+                    <span class="material-icons-outlined">card_giftcard</span>
+                </div>
+                <div class="gift-name">社区大佬赞助礼品（抽奖）</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 活动信息和地图区域 -->
+    <section class="event-info-section">
+        <h1 class="section-title">活动信息   Activity information</h1>
+        <div class="event-info-text">
+            <div>时间：2955.6.7</div>
+            <div>U.S.S 杭州 BARCITIZEN</div>
+            <div>地址：杭州市滨江区西兴街道莲荷里C18号漆轰趴</div>
+        </div>
+        <div class="event-map">
+            
+            
+        </div>
+        <div class="event-venue-images">
+            <img class="venue-img" src="sp/png/B1.jpg" alt="轰趴馆1">
+            <img class="venue-img" src="sp/png/B2.jpg" alt="轰趴馆2">
+        </div>
+    </section>
+
+    <!-- 遮罩层 -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- 提示框 -->
+    <div class="alert-modal" id="alertModal" style="display: none;">
+        <div class="message" id="alertMessage"></div>
+        <button class="confirm-btn" onclick="closeAlert()">确定</button>
+    </div>
+
+    <!-- 侧边弹出框 -->
+    <div class="sidebar-modal" id="sidebarModal">
+        <button class="modal-close" onclick="closeModal()">×</button>
+        <div class="modal-content">
+            <h2 class="modal-title">填写你的信息</h2>
+            <p class="modal-subtitle" id="modalTicketType">18禁门票</p>
+            
+            <input type="text" class="form-input" placeholder="QQ号" id="qqNumber">
+            <input type="text" class="form-input" placeholder="游戏ID" id="gameId">
+            <input type="text" class="form-input" placeholder="公民身份证信息" id="idNumber">
+            
+            <button class="sign-in-btn" onclick="verifyAndProceed()">SIGN IN</button>
+        </div>
+    </div>
+
+    <!-- 登录 / 注册 右侧抽屉（UI 参考 RSI 深色登录面板） -->
+    <div class="sidebar-modal login-drawer" id="loginDrawer">
+        <button type="button" class="modal-close login-drawer-close" onclick="closeLoginDrawer()" aria-label="关闭">×</button>
+        <div class="modal-content login-drawer-content">
+            <div id="loginDrawerGuest">
+                <div class="rsi-auth-card">
+                    <p class="login-drawer-kicker">Account</p>
+                    <h2 class="modal-title login-drawer-title">账户</h2>
+                    <div id="rsiAuthHeadLogin" class="rsi-auth-head">
+                        <h3 class="rsi-auth-title">登录你的账户</h3>
+                        <p class="rsi-auth-sub">没有账号？<button type="button" class="rsi-auth-link" onclick="switchAuthTab('register')">立即注册</button></p>
+                    </div>
+                    <div id="rsiAuthHeadRegister" class="rsi-auth-head" style="display: none;">
+                        <h3 class="rsi-auth-title">创建账户</h3>
+                        <p class="rsi-auth-sub">已有账号？<button type="button" class="rsi-auth-link" onclick="switchAuthTab('login')">去登录</button></p>
+                    </div>
+
+                    <div id="authPanelLogin" class="rsi-auth-panels">
+                        <div class="rsi-field">
+                            <label for="loginEmail">邮箱</label>
+                            <input type="email" class="rsi-input" id="loginEmail" autocomplete="username" oninput="clearLoginFormHint()">
+                        </div>
+                        <div class="rsi-field rsi-field--password">
+                            <label for="loginPassword">密码</label>
+                            <input type="password" class="rsi-input" id="loginPassword" autocomplete="current-password" oninput="clearLoginFormHint()">
+                            <button type="button" class="rsi-pw-toggle" id="loginPwToggle" onclick="togglePasswordField('loginPassword', 'loginPwToggle')" aria-label="显示或隐藏密码">
+                                <span class="material-icons-outlined rsi-pw-toggle-icon">visibility</span>
+                            </button>
+                        </div>
+                        <p id="loginFormHint" class="rsi-form-hint rsi-form-hint--error" hidden></p>
+                        <div class="rsi-auth-row">
+                            <label class="rsi-check">
+                                <input type="checkbox" id="rememberMe" checked>
+                                <span>记住我</span>
+                            </label>
+                            <button type="button" class="rsi-auth-link rsi-auth-link--small" onclick="showForgotPasswordHint()">忘记密码？</button>
+                        </div>
+                        <button type="button" id="loginSubmitBtn" class="rsi-submit-btn" onclick="submitLogin()">登录</button>
+                    </div>
+
+                    <div id="authPanelRegister" class="rsi-auth-panels" style="display: none;">
+                        <div class="rsi-field">
+                            <label for="regBindingId">绑定 ID</label>
+                            <input type="text" class="rsi-input" id="regBindingId" autocomplete="off" oninput="clearRegisterFormHint()">
+                        </div>
+                        <div class="rsi-field">
+                            <label for="regEmail">邮箱</label>
+                            <input type="email" class="rsi-input" id="regEmail" autocomplete="email" oninput="clearRegisterFormHint()">
+                        </div>
+                        <div class="rsi-field rsi-field--password">
+                            <label for="regPassword">密码</label>
+                            <input type="password" class="rsi-input" id="regPassword" autocomplete="new-password" oninput="clearRegisterFormHint()">
+                            <button type="button" class="rsi-pw-toggle" id="regPwToggle" onclick="togglePasswordField('regPassword', 'regPwToggle')" aria-label="显示或隐藏密码">
+                                <span class="material-icons-outlined rsi-pw-toggle-icon">visibility</span>
+                            </button>
+                        </div>
+                        <p id="registerFormHint" class="rsi-form-hint rsi-form-hint--error" hidden></p>
+                        <button type="button" id="registerSubmitBtn" class="rsi-submit-btn" onclick="submitRegister()">注册</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="loginDrawerAuthed" class="login-drawer-authed" style="display: none;">
+                <div class="rsi-auth-card rsi-auth-card--profile">
+                    <div class="drawer-profile-row">
+                        <img id="drawerUserAvatarImg" class="drawer-user-avatar" src="" alt="" width="48" height="48" decoding="async">
+                        <div class="drawer-profile-name-stack">
+                            <p class="entry" title="与注册时「绑定 ID」为同一 RSI Handle，用于服务端身份校验与账号绑定。">
+                                <strong class="value" id="loggedInBindingId"></strong>
+                            </p>
+                            <p class="drawer-rsi-handle-line" id="loggedInRsiHandleWrap" hidden>
+                                <span id="loggedInRsiHandle"></span>
+                            </p>
+                        </div>
+                        <div class="drawer-profile-body">
+                            <div class="drawer-rsi-rank-row" id="loggedInRsiRankRow" hidden>
+                                <img id="loggedInRsiRankIcon" class="drawer-rsi-rank-icon" src="" alt="" width="28" height="28" referrerpolicy="no-referrer" decoding="async" />
+                                <span id="loggedInRsiRankLabel" class="drawer-rsi-rank-label"></span>
+                            </div>
+                            <div class="drawer-rsi-meta" id="loggedInRsiMeta" hidden>
+                                <div class="drawer-rsi-meta-row" id="loggedInRsiMetaRowEnlisted" hidden>
+                                    <span class="drawer-rsi-meta-label">时间</span>
+                                    <span class="drawer-rsi-meta-value" id="loggedInRsiEnlisted"></span>
+                                </div>
+                                <div class="drawer-rsi-meta-row" id="loggedInRsiMetaRowLocation" hidden>
+                                    <span class="drawer-rsi-meta-label">地址</span>
+                                    <span class="drawer-rsi-meta-value" id="loggedInRsiLocation"></span>
+                                </div>
+                                <div class="drawer-rsi-meta-row" id="loggedInRsiMetaRowFluency" hidden>
+                                    <span class="drawer-rsi-meta-label">语言</span>
+                                    <span class="drawer-rsi-meta-value" id="loggedInRsiFluency"></span>
+                                </div>
+                            </div>
+                            <div id="loggedInOrgFleet" class="drawer-org-fleet" hidden>
+                                <img id="loggedInOrgLogo" class="drawer-org-logo" src="" alt="" width="56" height="56" decoding="async" hidden referrerpolicy="no-referrer" />
+                                <a id="loggedInOrgName" class="drawer-org-name value data6" href="#" target="_blank" rel="noopener noreferrer"></a>
+                                <p class="drawer-org-sid-row">
+                                    <span class="drawer-org-sid-label">Spectrum Identification (SID)</span>
+                                    <strong id="loggedInOrgSid" class="value data11 drawer-org-sid-num"></strong>
+                                </p>
+                                <p class="drawer-org-role-row" id="loggedInOrgRoleRow" hidden>
+                                    <span class="drawer-org-role-label">Organization rank</span>
+                                    <strong id="loggedInOrgRole" class="value data11 drawer-org-role-value"></strong>
+                                </p>
+                                <div id="loggedInOrgRanking" class="ranking data1 drawer-org-ranking" aria-hidden="true"></div>
+                            </div>
+                            <a href="checkin.html" id="drawerCheckinLink" class="drawer-checkin-textlink">签到</a>
+                            <a href="admin.html" id="drawerAdminLink" class="drawer-checkin-textlink" style="display: none;">管理系统</a>
+                        </div>
+                    </div>
+                    <button type="button" id="logoutSubmitBtn" class="rsi-btn-ghost" onclick="logoutUser()">退出登录</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="auth-api.js"></script>
+    <script>
+        const DEFAULT_AVATAR_DATA_URI = 'data:image/svg+xml,' + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+            '<circle cx="32" cy="32" r="32" fill="#1e4d6b"/>' +
+            '<circle cx="32" cy="26" r="14" fill="#a8d8e8"/>' +
+            '<ellipse cx="32" cy="56" rx="22" ry="18" fill="#a8d8e8"/>' +
+            '</svg>'
+        );
+
+        function sessionAvatarSrc() {
+            if (!isLoggedIn()) return DEFAULT_AVATAR_DATA_URI;
+            const sess = loadAuthSession();
+            const rel = sess && sess.avatarUrl;
+            if (rel && window.UssAuthApi && typeof window.UssAuthApi.resolveAssetUrl === 'function') {
+                const url = window.UssAuthApi.resolveAssetUrl(rel);
+                if (url) return url;
+            }
+            return DEFAULT_AVATAR_DATA_URI;
+        }
+
+        function sessionRankIconSrc(sess) {
+            const u = sess && sess.rsiRankIconUrl;
+            if (!u) return '';
+            if (/^https?:\/\//i.test(u)) return u;
+            if (window.UssAuthApi && typeof window.UssAuthApi.resolveAssetUrl === 'function') {
+                return window.UssAuthApi.resolveAssetUrl(u);
+            }
+            return u;
+        }
+
+        function syncOverlay() {
+            const overlay = document.getElementById('overlay');
+            const ticketOpen = document.getElementById('sidebarModal').classList.contains('active');
+            const loginOpen = document.getElementById('loginDrawer').classList.contains('active');
+            const alertOpen = document.getElementById('alertModal').style.display === 'block';
+            if (ticketOpen || loginOpen || alertOpen) {
+                overlay.classList.add('active');
+            } else {
+                overlay.classList.remove('active');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('sidebarModal').classList.remove('active');
+            syncOverlay();
+        }
+
+        function openLoginDrawer() {
+            document.getElementById('sidebarModal').classList.remove('active');
+            document.getElementById('loginDrawer').classList.add('active');
+            clearLoginFormHint();
+            clearRegisterFormHint();
+            refreshLoginDrawerView();
+            syncOverlay();
+        }
+
+        function closeLoginDrawer() {
+            document.getElementById('loginDrawer').classList.remove('active');
+            clearLoginFormHint();
+            clearRegisterFormHint();
+            syncOverlay();
+        }
+
+        function onOverlayClick() {
+            closeModal();
+            closeLoginDrawer();
+        }
+
+        // QQ号白名单列表
+        const whitelistedQQNumbers = [
+            '33009004043', 
+            '2418299632',           
+            '52640099364'
+        ];
+
+        function isQQInWhitelist(qqNumber) {
+            return whitelistedQQNumbers.includes(qqNumber);
+        }
+
+        function showAlert(message) {
+            document.getElementById('alertMessage').textContent = message;
+            document.getElementById('alertModal').style.display = 'block';
+            syncOverlay();
+        }
+
+        function closeAlert() {
+            document.getElementById('alertModal').style.display = 'none';
+            syncOverlay();
+        }
+
+        function showTicketPurchaseClosedNotice() {
+            showAlert('USS HANGZHOU BC 已完美闭幕');
+        }
+
+        function verifyAndProceed() {
+            const idNumber = document.getElementById('idNumber').value;
+            const qqNumber = document.getElementById('qqNumber').value;
+            const gameId = document.getElementById('gameId').value;
+            const ticketType = document.getElementById('modalTicketType').textContent;
+
+            if (!idNumber || !qqNumber || !gameId) {
+                showAlert('请填写所有信息！');
+                return;
+            }
+
+            // 首先验证QQ号是否在白名单中
+            if (!isQQInWhitelist(qqNumber)) {
+                showAlert(' 未查询到你的预约！ 请联系主办方 ');
+                return;
+            }
+
+            // 验证年龄
+            const age = calculateAge(idNumber);
+            
+            if (ticketType === 'UEE海军门票') {
+                // UEE海军门票需要小于18岁
+                if (age < 18) {
+                    // 存储信息
+                    localStorage.setItem('userInfo', JSON.stringify({
+                        qq: qqNumber,
+                        gameId: gameId,
+                        idNumber: idNumber,
+                        ticketType: 'uee'
+                    }));
+                    showAlert('验证成功！即将跳转到支付页面...');
+                    setTimeout(() => {
+                        window.location.href = 'payment.html';
+                    }, 1500);
+                } else {
+                    showAlert('UEE海军门票仅限18岁以下购买！');
+                }
+            } else {
+                // 巴奴门票需要大于等于18岁
+                if (age >= 18) {
+                    // 存储信息
+                    localStorage.setItem('userInfo', JSON.stringify({
+                        qq: qqNumber,
+                        gameId: gameId,
+                        idNumber: idNumber,
+                        ticketType: 'banu'
+                    }));
+                    showAlert('验证成功！即将跳转到支付页面...');
+                    setTimeout(() => {
+                        window.location.href = 'payment.html';
+                    }, 1500);
+                } else {
+                    showAlert('巴奴门票需要年满18岁才能购买！');
+                }
+            }
+        }
+
+        function calculateAge(idNumber) {
+            // 简单的示例验证，实际应该有更严格的验证
+            if (idNumber.length === 18) {
+                const year = parseInt(idNumber.substring(6, 10));
+                const month = parseInt(idNumber.substring(10, 12));
+                const day = parseInt(idNumber.substring(12, 14));
+                
+                const today = new Date();
+                const birthDate = new Date(year, month - 1, day);
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                
+                return age;
+            }
+            return 0;
+        }
+
+        function verifyRefund() {
+            const qqNumber = prompt('请输入你的QQ号进行验证：');
+            if (!qqNumber) return;
+
+            if (isQQInWhitelist(qqNumber)) {
+                showAlert('请联系主办方发送你的支付信息和备注的手机号\nQQ：330094043');
+            } else {
+                showAlert('未查询到你的预约！请联系主办方');
+            }
+        }
+
+        // 点击遮罩层关闭弹窗
+        document.getElementById('overlay').addEventListener('click', onOverlayClick);
+
+        /* 登录/注册：账号在自建 API（仓库 backend/），浏览器只存会话 token。本机先启动 backend；公网基址由 auth-config.js / USS_AUTH_API_BASE 决定。 */
+
+        function safeUserFacingMessage(msg) {
+            if (msg == null || typeof msg !== 'string') return '操作失败，请稍后再试。';
+            const t = msg.trim();
+            if (!t) return '操作失败，请稍后再试。';
+            if (/https?:\/\//i.test(t)) return '操作失败，请稍后再试或联系管理员。';
+            if (/\b\d{1,3}(?:\.\d{1,3}){3}\b/.test(t)) return '操作失败，请稍后再试或联系管理员。';
+            if (/:\d{2,5}\b/.test(t)) return '操作失败，请稍后再试或联系管理员。';
+            return t;
+        }
+
+        function isLikelyNetworkError(msg) {
+            if (!msg || typeof msg !== 'string') return false;
+            const s = msg.toLowerCase();
+            return s.indexOf('fetch') !== -1 || s.indexOf('failed') !== -1 || s.indexOf('networkerror') !== -1 || s.indexOf('load failed') !== -1;
+        }
+
+        const AUTH_SESSION_KEY = 'ussHangzhouAuthSession';
+
+        function authSessionLivesInSessionStorage() {
+            try {
+                return !!sessionStorage.getItem(AUTH_SESSION_KEY);
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function loadAuthSession() {
+            try {
+                let raw = sessionStorage.getItem(AUTH_SESSION_KEY);
+                if (raw) return JSON.parse(raw);
+                raw = localStorage.getItem(AUTH_SESSION_KEY);
+                if (raw) return JSON.parse(raw);
+            } catch (e) {
+                return null;
+            }
+            return null;
+        }
+
+        // remember: true → localStorage（长期）；false → sessionStorage（关标签页后需重登）。省略则保持当前存储位置（供 validateAuthSession 刷新 token 用）。
+        function saveAuthSession(data, remember) {
+            if (remember === undefined) {
+                remember = !authSessionLivesInSessionStorage();
+            }
+            const json = JSON.stringify(data);
+            if (remember) {
+                localStorage.setItem(AUTH_SESSION_KEY, json);
+                try {
+                    sessionStorage.removeItem(AUTH_SESSION_KEY);
+                } catch (e) { /* ignore */ }
+            } else {
+                sessionStorage.setItem(AUTH_SESSION_KEY, json);
+                try {
+                    localStorage.removeItem(AUTH_SESSION_KEY);
+                } catch (e) { /* ignore */ }
+            }
+        }
+
+        function clearAuthSession() {
+            try {
+                localStorage.removeItem(AUTH_SESSION_KEY);
+            } catch (e) { /* ignore */ }
+            try {
+                sessionStorage.removeItem(AUTH_SESSION_KEY);
+            } catch (e) { /* ignore */ }
+        }
+
+        const AUTH_BUTTON_FEEDBACK_MS = 1600;
+        /** 登录按钮至少显示「登录中」时长，避免接口太快用户以为没点上 */
+        const LOGIN_MIN_LOADING_MS = 600;
+
+        function resetLoginSubmitBtn() {
+            const b = document.getElementById('loginSubmitBtn');
+            if (b) {
+                b.classList.remove('rsi-submit-btn--loading');
+                b.removeAttribute('aria-busy');
+                b.innerHTML = '';
+                b.textContent = '登录';
+                b.disabled = false;
+            }
+        }
+
+        function setLoginSubmitLoading(isLoading) {
+            const b = document.getElementById('loginSubmitBtn');
+            if (!b) return;
+            if (isLoading) {
+                b.disabled = true;
+                b.classList.add('rsi-submit-btn--loading');
+                b.setAttribute('aria-busy', 'true');
+                b.innerHTML =
+                    '<span class="rsi-btn-spinner" aria-hidden="true"></span><span class="rsi-btn-spinner-text">登录中…</span>';
+            } else {
+                b.classList.remove('rsi-submit-btn--loading');
+                b.removeAttribute('aria-busy');
+            }
+        }
+
+        function resetRegisterSubmitBtn() {
+            const b = document.getElementById('registerSubmitBtn');
+            if (b) {
+                b.textContent = '注册';
+                b.disabled = false;
+            }
+        }
+
+        function resetLogoutSubmitBtn() {
+            const b = document.getElementById('logoutSubmitBtn');
+            if (b) {
+                b.textContent = '退出登录';
+                b.disabled = false;
+            }
+        }
+
+        function isLoggedIn() {
+            const session = loadAuthSession();
+            return !!(session && session.token);
+        }
+
+        async function validateAuthSession() {
+            const s = loadAuthSession();
+            if (!s || !s.token) return;
+            try {
+                const me = await window.UssAuthApi.me(s.token);
+                saveAuthSession({
+                    token: s.token,
+                    bindingId: me.bindingId,
+                    email: me.email,
+                    loginAt: s.loginAt || new Date().toISOString(),
+                    avatarUrl: me.avatarUrl != null ? me.avatarUrl : s.avatarUrl,
+                    rsiProfileHandle: me.rsiProfileHandle !== undefined ? me.rsiProfileHandle : s.rsiProfileHandle,
+                    rsiRankIconUrl: me.rsiRankIconUrl !== undefined ? me.rsiRankIconUrl : s.rsiRankIconUrl,
+                    rsiRankLabel: me.rsiRankLabel !== undefined ? me.rsiRankLabel : s.rsiRankLabel,
+                    rsiEnlisted: me.rsiEnlisted !== undefined ? me.rsiEnlisted : s.rsiEnlisted,
+                    rsiLocation: me.rsiLocation !== undefined ? me.rsiLocation : s.rsiLocation,
+                    rsiFluency: me.rsiFluency !== undefined ? me.rsiFluency : s.rsiFluency,
+                    rsiOrgName: me.rsiOrgName !== undefined ? me.rsiOrgName : s.rsiOrgName,
+                    rsiOrgSid: me.rsiOrgSid !== undefined ? me.rsiOrgSid : s.rsiOrgSid,
+                    rsiOrgHref: me.rsiOrgHref !== undefined ? me.rsiOrgHref : s.rsiOrgHref,
+                    rsiOrgPageUrl: me.rsiOrgPageUrl !== undefined ? me.rsiOrgPageUrl : s.rsiOrgPageUrl,
+                    rsiOrgLogoUrl: me.rsiOrgLogoUrl !== undefined ? me.rsiOrgLogoUrl : s.rsiOrgLogoUrl,
+                    rsiOrgRoleLabel: me.rsiOrgRoleLabel !== undefined ? me.rsiOrgRoleLabel : s.rsiOrgRoleLabel,
+                    rsiOrgRankSlots: me.rsiOrgRankSlots !== undefined ? me.rsiOrgRankSlots : s.rsiOrgRankSlots,
+                    isAdmin: !!me.isAdmin,
+                    isSuperAdmin: !!me.isSuperAdmin
+                });
+            } catch (e) {
+                clearAuthSession();
+            }
+        }
+
+        function refreshNavLoginState() {
+            try {
+                const root = document.documentElement;
+                if (isLoggedIn()) root.classList.add('auth-session-cached');
+                else root.classList.remove('auth-session-cached');
+            } catch (e) {
+                /* ignore */
+            }
+            const btn = document.getElementById('navLoginBtn');
+            const guestWrap = document.getElementById('navLoginGuestWrap');
+            const avatarWrap = document.getElementById('navLoginAvatarWrap');
+            const img = document.getElementById('navUserAvatarImg');
+            if (!btn || !guestWrap || !avatarWrap || !img) {
+                refreshCommunitySessionUi();
+                return;
+            }
+            if (isLoggedIn()) {
+                guestWrap.classList.add('is-hidden');
+                avatarWrap.classList.remove('is-hidden');
+                btn.classList.add('is-logged-in');
+                btn.setAttribute('aria-label', '账户');
+                img.src = sessionAvatarSrc();
+                img.alt = '用户头像';
+            } else {
+                guestWrap.classList.remove('is-hidden');
+                avatarWrap.classList.add('is-hidden');
+                btn.classList.remove('is-logged-in');
+                btn.setAttribute('aria-label', '登录或注册');
+                img.src = DEFAULT_AVATAR_DATA_URI;
+                img.alt = '默认头像';
+            }
+            refreshCommunitySessionUi();
+        }
+
+        /** 首页舰员交流区（论坛式发帖 + 图片/GIF） */
+        const COMMUNITY_MAX_IMAGES = 6;
+        const COMMUNITY_MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+        const COMMUNITY_CHAT_POLL_MS = 3500;
+        let communityPendingImages = [];
+        let communityChatPendingImages = [];
+        let communityChatMaxSeq = 0;
+        let communityChatPollTimer = null;
+        let communityChatPollBackoffMs = 0;
+        let communityChatNearBottom = true;
+        let communityChatKind = 'fleet';
+        let communityChatDmPeer = '';
+        let communityChatDmLabel = '';
+        let communityDmMaxSeq = 0;
+        /** 舰队成员列表搜索关键字（列表重绘时保留） */
+        let communityRosterSearchQuery = '';
+        let communityInboxSnapshot = { fleetMaxSeq: 0, dmMaxByPeer: {} };
+        let communityImageLightboxKeyHandler = null;
+
+        function ensureCommunityImageLightbox() {
+            let overlay = document.getElementById('communityImageLightbox');
+            if (overlay) return overlay;
+            overlay = document.createElement('div');
+            overlay.id = 'communityImageLightbox';
+            overlay.className = 'community-image-lightbox';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('aria-hidden', 'true');
+            const img = document.createElement('img');
+            img.className = 'community-image-lightbox-img';
+            img.alt = '';
+            img.decoding = 'async';
+            overlay.appendChild(img);
+            document.body.appendChild(overlay);
+            overlay.addEventListener('click', function (ev) {
+                if (ev.target === overlay) closeCommunityImageLightbox();
+            });
+            img.addEventListener('click', function () {
+                closeCommunityImageLightbox();
+            });
+            return overlay;
+        }
+
+        function openCommunityImageLightbox(src) {
+            if (!src) return;
+            const overlay = ensureCommunityImageLightbox();
+            const img = overlay.querySelector('.community-image-lightbox-img');
+            if (!img) return;
+            img.src = src;
+            img.alt = '放大预览';
+            overlay.classList.add('is-open');
+            overlay.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+            if (communityImageLightboxKeyHandler) {
+                document.removeEventListener('keydown', communityImageLightboxKeyHandler);
+            }
+            communityImageLightboxKeyHandler = function (ev) {
+                if (ev.key === 'Escape') closeCommunityImageLightbox();
+            };
+            document.addEventListener('keydown', communityImageLightboxKeyHandler);
+        }
+
+        function closeCommunityImageLightbox() {
+            const overlay = document.getElementById('communityImageLightbox');
+            if (!overlay) return;
+            const img = overlay.querySelector('.community-image-lightbox-img');
+            if (img) {
+                img.removeAttribute('src');
+                img.alt = '';
+            }
+            overlay.classList.remove('is-open');
+            overlay.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+            if (communityImageLightboxKeyHandler) {
+                document.removeEventListener('keydown', communityImageLightboxKeyHandler);
+                communityImageLightboxKeyHandler = null;
+            }
+        }
+
+        function communityReadStateStorageKey() {
+            const s = loadAuthSession();
+            const bid = s && s.bindingId ? String(s.bindingId).trim().toLowerCase() : '';
+            return bid ? 'UssCommunityRead_v1:' + bid : null;
+        }
+
+        function loadCommunityReadState() {
+            const key = communityReadStateStorageKey();
+            if (!key) return null;
+            try {
+                const raw = localStorage.getItem(key);
+                if (!raw) return null;
+                const o = JSON.parse(raw);
+                if (!o || typeof o !== 'object') return null;
+                return {
+                    fleet: Number.isFinite(Number(o.fleet)) ? Math.max(0, Math.floor(Number(o.fleet))) : 0,
+                    dm: o.dm && typeof o.dm === 'object' ? o.dm : {},
+                };
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function saveCommunityReadState(st) {
+            const key = communityReadStateStorageKey();
+            if (!key || !st) return;
+            try {
+                localStorage.setItem(
+                    key,
+                    JSON.stringify({
+                        fleet: Math.max(0, Math.floor(Number(st.fleet) || 0)),
+                        dm: st.dm && typeof st.dm === 'object' ? st.dm : {},
+                    })
+                );
+            } catch (e) {
+                /* ignore */
+            }
+        }
+
+        function ensureCommunityReadBaseline(fleetMax, dmMap) {
+            if (loadCommunityReadState()) return;
+            const dmCopy = {};
+            if (dmMap && typeof dmMap === 'object') {
+                Object.keys(dmMap).forEach(function (k) {
+                    const kk = String(k).trim().toLowerCase();
+                    const n = Number(dmMap[k]);
+                    if (kk && Number.isFinite(n) && n >= 0) dmCopy[kk] = Math.floor(n);
+                });
+            }
+            const fm = Number.isFinite(Number(fleetMax)) ? Math.max(0, Math.floor(fleetMax)) : 0;
+            saveCommunityReadState({ fleet: fm, dm: dmCopy });
+        }
+
+        function markCommunityFleetRead(seq) {
+            if (!communityReadStateStorageKey()) return;
+            const n = Number(seq);
+            const nn = Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+            const read = loadCommunityReadState() || { fleet: 0, dm: {} };
+            if (!read.dm || typeof read.dm !== 'object') read.dm = {};
+            if (nn > (read.fleet || 0)) read.fleet = nn;
+            saveCommunityReadState(read);
+            updateCommunityUnreadBadges();
+        }
+
+        function markCommunityDmPeerRead(peerBindingId, seq) {
+            if (!communityReadStateStorageKey()) return;
+            const k = String(peerBindingId || '').trim().toLowerCase();
+            if (!k) return;
+            const n = Number(seq);
+            const nn = Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+            const read = loadCommunityReadState() || { fleet: 0, dm: {} };
+            if (!read.dm || typeof read.dm !== 'object') read.dm = {};
+            if (nn > (read.dm[k] || 0)) read.dm[k] = nn;
+            saveCommunityReadState(read);
+            updateCommunityUnreadBadges();
+        }
+
+        async function refreshCommunityInboxSnapshot() {
+            if (!window.UssAuthApi || !isLoggedIn()) return;
+            const sess = loadAuthSession();
+            if (!sess || !sess.token) return;
+            try {
+                const data = await window.UssAuthApi.communityInbox(sess.token);
+                const fleetMax =
+                    typeof data.fleetMaxSeq === 'number' && data.fleetMaxSeq > 0
+                        ? Math.floor(data.fleetMaxSeq)
+                        : 0;
+                const dmRaw = data.dmMaxByPeer && typeof data.dmMaxByPeer === 'object' ? data.dmMaxByPeer : {};
+                const dmNorm = {};
+                Object.keys(dmRaw).forEach(function (k) {
+                    const kk = String(k).trim().toLowerCase();
+                    const n = Number(dmRaw[k]);
+                    if (kk && Number.isFinite(n) && n >= 0) dmNorm[kk] = Math.floor(n);
+                });
+                ensureCommunityReadBaseline(fleetMax, dmNorm);
+                communityInboxSnapshot.fleetMaxSeq = fleetMax;
+                communityInboxSnapshot.dmMaxByPeer = dmNorm;
+                updateCommunityUnreadBadges();
+            } catch (e) {
+                /* 静默 */
+            }
+        }
+
+        function updateCommunityUnreadBadges() {
+            const read = loadCommunityReadState();
+            const fleetBtn = document.querySelector('.community-chat-roster-fleet');
+            if (fleetBtn) {
+                const b = fleetBtn.querySelector('.community-chat-unread-badge');
+                if (b) {
+                    let unread = !!(read && communityInboxSnapshot.fleetMaxSeq > (read.fleet || 0));
+                    if (communityChatKind === 'fleet') unread = false;
+                    b.hidden = !unread;
+                }
+            }
+            document.querySelectorAll('.community-chat-roster-peer').forEach(function (row) {
+                const peer = row.getAttribute('data-peer');
+                const badge = row.querySelector('.community-chat-unread-badge');
+                if (!peer || !badge) return;
+                const pl = peer.toLowerCase();
+                const max = communityInboxSnapshot.dmMaxByPeer[pl];
+                let unread = !!(read && max != null && max > (read.dm && read.dm[pl] != null ? read.dm[pl] : 0));
+                if (
+                    communityChatKind === 'dm' &&
+                    communityChatDmPeer &&
+                    communityChatDmPeer.toLowerCase() === pl
+                ) {
+                    unread = false;
+                }
+                badge.hidden = !unread;
+            });
+        }
+
+        function sessionIsCommunityStaff() {
+            const s = loadAuthSession();
+            return !!(s && s.token && (s.isSuperAdmin || s.isAdmin));
+        }
+
+        function communityPostIsMine(p) {
+            const s = loadAuthSession();
+            if (!s || !s.token || !s.bindingId || !p) return false;
+            return (
+                String(s.bindingId)
+                    .trim()
+                    .toLowerCase() ===
+                String(p.bindingId || '')
+                    .trim()
+                    .toLowerCase()
+            );
+        }
+
+        function communityReplyIsMine(r) {
+            return communityPostIsMine(r);
+        }
+
+        function clearCommunityChatHint() {
+            const el = document.getElementById('communityChatHint');
+            if (el) el.textContent = '';
+        }
+
+        function setCommunityChatHint(msg) {
+            const el = document.getElementById('communityChatHint');
+            if (el) el.textContent = msg || '';
+        }
+
+        function clearCommunityFormHint() {
+            const el = document.getElementById('communityFormHint');
+            if (el) el.textContent = '';
+        }
+
+        function setCommunityFormHint(msg) {
+            const el = document.getElementById('communityFormHint');
+            if (el) el.textContent = msg || '';
+        }
+
+        function renderCommunityPreviews() {
+            const row = document.getElementById('communityPreviewRow');
+            if (!row) return;
+            row.innerHTML = '';
+            communityPendingImages.forEach(function (item, idx) {
+                const wrap = document.createElement('div');
+                wrap.className = 'community-preview-tile';
+                const img = document.createElement('img');
+                img.src = item.previewUrl;
+                img.alt = item.name || '预览';
+                img.style.cursor = 'pointer';
+                img.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    openCommunityImageLightbox(img.src);
+                });
+                const rm = document.createElement('button');
+                rm.type = 'button';
+                rm.className = 'community-preview-remove';
+                rm.setAttribute('aria-label', '移除图片');
+                rm.textContent = '×';
+                rm.addEventListener('click', function () {
+                    try {
+                        URL.revokeObjectURL(item.previewUrl);
+                    } catch (e) {
+                        /* ignore */
+                    }
+                    communityPendingImages.splice(idx, 1);
+                    renderCommunityPreviews();
+                });
+                wrap.appendChild(img);
+                wrap.appendChild(rm);
+                row.appendChild(wrap);
+            });
+        }
+
+        function clearCommunityChatPendingImages() {
+            communityChatPendingImages.forEach(function (x) {
+                try {
+                    URL.revokeObjectURL(x.previewUrl);
+                } catch (e) {
+                    /* ignore */
+                }
+            });
+            communityChatPendingImages = [];
+            renderCommunityChatPreviews();
+        }
+
+        function renderCommunityChatPreviews() {
+            const row = document.getElementById('communityChatPreviewRow');
+            if (!row) return;
+            row.innerHTML = '';
+            communityChatPendingImages.forEach(function (item, idx) {
+                const wrap = document.createElement('div');
+                wrap.className = 'community-preview-tile';
+                const img = document.createElement('img');
+                img.src = item.previewUrl;
+                img.alt = item.name || '预览';
+                img.style.cursor = 'pointer';
+                img.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    openCommunityImageLightbox(img.src);
+                });
+                const rm = document.createElement('button');
+                rm.type = 'button';
+                rm.className = 'community-preview-remove';
+                rm.setAttribute('aria-label', '移除图片');
+                rm.textContent = '×';
+                rm.addEventListener('click', function (ev) {
+                    ev.stopPropagation();
+                    try {
+                        URL.revokeObjectURL(item.previewUrl);
+                    } catch (e) {
+                        /* ignore */
+                    }
+                    communityChatPendingImages.splice(idx, 1);
+                    renderCommunityChatPreviews();
+                });
+                wrap.appendChild(img);
+                wrap.appendChild(rm);
+                row.appendChild(wrap);
+            });
+        }
+
+        async function ingestCommunityChatFiles(files) {
+            if (!isLoggedIn()) {
+                setCommunityChatHint('请先登录后再添加图片。');
+                return;
+            }
+            const list = files && files.length ? Array.from(files) : [];
+            if (!list.length) return;
+            clearCommunityChatHint();
+            for (let i = 0; i < list.length; i += 1) {
+                if (communityChatPendingImages.length >= COMMUNITY_MAX_IMAGES) {
+                    setCommunityChatHint('已达到 6 张上限。');
+                    break;
+                }
+                const f = list[i];
+                if (!f.type || f.type.indexOf('image/') !== 0) {
+                    setCommunityChatHint('仅支持图片文件。');
+                    continue;
+                }
+                if (f.size > COMMUNITY_MAX_IMAGE_BYTES) {
+                    setCommunityChatHint('单张图片须 ≤5MB，请压缩后重试。');
+                    continue;
+                }
+                try {
+                    const dataUrl = await readFileAsDataURL(f);
+                    const previewUrl = URL.createObjectURL(f);
+                    communityChatPendingImages.push({
+                        name: f.name,
+                        dataUrl: dataUrl,
+                        previewUrl: previewUrl,
+                    });
+                } catch (e) {
+                    setCommunityChatHint(e && e.message ? e.message : '读取失败');
+                }
+            }
+            renderCommunityChatPreviews();
+        }
+
+        async function onCommunityChatFilesSelected(ev) {
+            const input = ev.target;
+            const files = input && input.files ? Array.from(input.files) : [];
+            await ingestCommunityChatFiles(files);
+            if (input) input.value = '';
+        }
+
+        function readFileAsDataURL(file) {
+            return new Promise(function (resolve, reject) {
+                const fr = new FileReader();
+                fr.onload = function () {
+                    resolve(String(fr.result || ''));
+                };
+                fr.onerror = function () {
+                    reject(new Error('读取文件失败'));
+                };
+                fr.readAsDataURL(file);
+            });
+        }
+
+        async function ingestCommunityPostFiles(files) {
+            if (!isLoggedIn()) {
+                setCommunityFormHint('请先登录后再添加图片。');
+                return;
+            }
+            const list = files && files.length ? Array.from(files) : [];
+            if (!list.length) return;
+            clearCommunityFormHint();
+            for (let i = 0; i < list.length; i += 1) {
+                if (communityPendingImages.length >= COMMUNITY_MAX_IMAGES) {
+                    setCommunityFormHint('已达到 6 张上限。');
+                    break;
+                }
+                const f = list[i];
+                if (!f.type || f.type.indexOf('image/') !== 0) {
+                    setCommunityFormHint('仅支持图片文件。');
+                    continue;
+                }
+                if (f.size > COMMUNITY_MAX_IMAGE_BYTES) {
+                    setCommunityFormHint('单张图片须 ≤5MB，请压缩后重试。');
+                    continue;
+                }
+                try {
+                    const dataUrl = await readFileAsDataURL(f);
+                    const previewUrl = URL.createObjectURL(f);
+                    communityPendingImages.push({
+                        name: f.name,
+                        dataUrl: dataUrl,
+                        previewUrl: previewUrl,
+                    });
+                } catch (e) {
+                    setCommunityFormHint(e && e.message ? e.message : '读取失败');
+                }
+            }
+            renderCommunityPreviews();
+        }
+
+        async function onCommunityFilesSelected(ev) {
+            const input = ev.target;
+            const files = input && input.files ? Array.from(input.files) : [];
+            await ingestCommunityPostFiles(files);
+            if (input) input.value = '';
+        }
+
+        function formatCommunityTime(iso) {
+            try {
+                const d = new Date(iso);
+                if (Number.isNaN(d.getTime())) return '';
+                return new Intl.DateTimeFormat('zh-CN', {
+                    dateStyle: 'short',
+                    timeStyle: 'short',
+                }).format(d);
+            } catch (e) {
+                return '';
+            }
+        }
+
+        function communityAuthorInitial(bindingId) {
+            const s = String(bindingId || '').trim();
+            if (!s) return '?';
+            const ch = s.charAt(0);
+            return ch.toUpperCase();
+        }
+
+        function communityAvatarSrc(avatarUrl) {
+            if (avatarUrl && window.UssAuthApi && typeof window.UssAuthApi.resolveAssetUrl === 'function') {
+                const url = window.UssAuthApi.resolveAssetUrl(avatarUrl);
+                if (url) return url;
+            }
+            return '';
+        }
+
+        function communityAvatarFallbackDataUri(initial) {
+            const ch = String(initial || '?').charAt(0).toUpperCase();
+            return (
+                'data:image/svg+xml,' +
+                encodeURIComponent(
+                    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+                        '<circle cx="32" cy="32" r="32" fill="#1e4d6b"/>' +
+                        '<text x="32" y="40" text-anchor="middle" font-size="28" fill="#a8d8e8" font-family="sans-serif">' +
+                        ch +
+                        '</text>' +
+                        '</svg>'
+                )
+            );
+        }
+
+        function communityRsiCitizenProfileUrl(handle) {
+            const h = String(handle || '').trim();
+            if (!h) return '';
+            return 'https://robertsspaceindustries.com/en/citizens/' + encodeURIComponent(h);
+        }
+
+        function buildCommunityAuthorRow(bindingId, avatarUrl, createdAt, trailingEl, avatarRsiHref) {
+            const row = document.createElement('div');
+            row.className = 'community-author-row';
+            const avWrap = document.createElement('div');
+            avWrap.className = 'community-author-avatar';
+            const img = document.createElement('img');
+            img.className = 'community-author-avatar-img';
+            img.alt = String(bindingId || '用户头像');
+            const src = communityAvatarSrc(avatarUrl);
+            img.src = src || communityAvatarFallbackDataUri(communityAuthorInitial(bindingId));
+            const rsi = typeof avatarRsiHref === 'string' ? avatarRsiHref.trim() : '';
+            if (rsi) {
+                const a = document.createElement('a');
+                a.className = 'community-author-avatar-link';
+                a.href = rsi;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                a.setAttribute('aria-label', '在 RSI 打开 ' + String(bindingId || '玩家') + ' 的个人页');
+                a.addEventListener('click', function (ev) {
+                    ev.stopPropagation();
+                });
+                a.appendChild(img);
+                avWrap.appendChild(a);
+            } else {
+                avWrap.appendChild(img);
+            }
+            const idEl = document.createElement('span');
+            idEl.className = 'community-author-id';
+            idEl.textContent = String(bindingId || '—');
+            const timeEl = document.createElement('time');
+            timeEl.className = 'community-author-time';
+            timeEl.dateTime = createdAt || '';
+            timeEl.textContent = formatCommunityTime(createdAt);
+            row.appendChild(avWrap);
+            row.appendChild(idEl);
+            row.appendChild(timeEl);
+            if (trailingEl) row.appendChild(trailingEl);
+            return row;
+        }
+
+        const COMMUNITY_CHAT_RECALL_MS = 3 * 60 * 1000;
+
+        function communityChatCanRecall(m) {
+            const sess = loadAuthSession();
+            if (!sess || !sess.token || !m) return false;
+            const mine =
+                String(sess.bindingId || '')
+                    .trim()
+                    .toLowerCase() ===
+                String(m.bindingId || '')
+                    .trim()
+                    .toLowerCase();
+            if (!mine) return false;
+            const created = new Date(m.createdAt).getTime();
+            if (Number.isNaN(created)) return false;
+            return Date.now() - created <= COMMUNITY_CHAT_RECALL_MS;
+        }
+
+        function buildCommunityChatActions(m, chatKind) {
+            const wrap = document.createElement('span');
+            wrap.className = 'community-chat-actions';
+            const kind = chatKind || 'fleet';
+            let has = false;
+            if (sessionIsCommunityStaff()) {
+                has = true;
+                const del = document.createElement('button');
+                del.type = 'button';
+                del.className = 'community-chat-action community-chat-action-delete';
+                del.textContent = '删除';
+                del.addEventListener('click', function (ev) {
+                    ev.stopPropagation();
+                    handleCommunityChatDelete(m.id, '确定删除这条消息？', kind);
+                });
+                wrap.appendChild(del);
+            }
+            if (communityChatCanRecall(m)) {
+                has = true;
+                const recall = document.createElement('button');
+                recall.type = 'button';
+                recall.className = 'community-chat-action community-chat-action-recall';
+                recall.textContent = '撤回';
+                recall.addEventListener('click', function (ev) {
+                    ev.stopPropagation();
+                    handleCommunityChatDelete(m.id, '确定撤回这条消息？', kind);
+                });
+                wrap.appendChild(recall);
+            }
+            return has ? wrap : null;
+        }
+
+        async function handleCommunityChatDelete(messageId, confirmMsg, chatKind) {
+            if (!messageId || !window.UssAuthApi) return;
+            const sess = loadAuthSession();
+            if (!sess || !sess.token) {
+                setCommunityChatHint('请先登录。');
+                return;
+            }
+            let kind = chatKind;
+            if (!kind) {
+                const line0 = document.querySelector(
+                    '.community-chat-line[data-id="' + String(messageId) + '"]'
+                );
+                kind = line0 && line0.dataset.chatKind ? line0.dataset.chatKind : 'fleet';
+            }
+            if (!confirm(confirmMsg || '确定删除？')) return;
+            clearCommunityChatHint();
+            try {
+                const data =
+                    kind === 'dm'
+                        ? await window.UssAuthApi.communityDmDelete(sess.token, messageId)
+                        : await window.UssAuthApi.communityChatDelete(sess.token, messageId);
+                const line = document.querySelector(
+                    '.community-chat-line[data-id="' + String(messageId) + '"]'
+                );
+                if (line) line.remove();
+                const log = document.getElementById('communityChatLog');
+                if (log && !log.querySelector('.community-chat-line')) {
+                    const empty = document.createElement('div');
+                    empty.className = 'community-empty';
+                    empty.textContent =
+                        kind === 'dm'
+                            ? '暂无私信，可发文字或图片。'
+                            : '暂无消息，可发文字或图片。';
+                    log.appendChild(empty);
+                }
+                if (data && typeof data.maxSeq === 'number') {
+                    if (kind === 'dm') communityDmMaxSeq = data.maxSeq;
+                    else communityChatMaxSeq = data.maxSeq;
+                }
+            } catch (e) {
+                setCommunityChatHint(e && e.message ? e.message : '操作失败');
+            }
+        }
+
+        function communityChatMessageIsMine(m) {
+            const sess = loadAuthSession();
+            if (!sess || !sess.bindingId || !m) return false;
+            return (
+                String(sess.bindingId || '')
+                    .trim()
+                    .toLowerCase() ===
+                String(m.bindingId || '')
+                    .trim()
+                    .toLowerCase()
+            );
+        }
+
+        function buildCommunityChatLine(m, lineKind) {
+            const kind = lineKind != null ? lineKind : communityChatKind;
+            const line = document.createElement('div');
+            line.className = 'community-chat-line';
+            line.dataset.chatKind = kind;
+            if (communityChatMessageIsMine(m)) {
+                line.classList.add('community-chat-line--mine');
+            } else {
+                line.classList.add('community-chat-line--other');
+            }
+            line.setAttribute('data-seq', String(m.seq));
+            if (m.id) line.setAttribute('data-id', String(m.id));
+            const actions = buildCommunityChatActions(m, kind);
+            const avatarRsiHref = communityChatMessageIsMine(m)
+                ? ''
+                : communityRsiCitizenProfileUrl(m.bindingId);
+            line.appendChild(
+                buildCommunityAuthorRow(m.bindingId, m.avatarUrl, m.createdAt, actions, avatarRsiHref)
+            );
+            const bodyText = String(m.text != null ? m.text : '').trim();
+            if (bodyText) {
+                const txt = document.createElement('div');
+                txt.className = 'community-chat-text';
+                txt.textContent = bodyText;
+                line.appendChild(txt);
+            }
+            const imgs = Array.isArray(m.images) ? m.images : [];
+            if (imgs.length) {
+                const grid = document.createElement('div');
+                grid.className = 'community-chat-images';
+                imgs.forEach(function (rel) {
+                    if (typeof rel !== 'string' || rel.indexOf('/community-uploads/') !== 0) return;
+                    const im = document.createElement('img');
+                    im.className = 'community-chat-img';
+                    im.loading = 'lazy';
+                    im.alt = '聊天图片';
+                    im.style.cursor = 'pointer';
+                    im.src =
+                        window.UssAuthApi && typeof window.UssAuthApi.resolveAssetUrl === 'function'
+                            ? window.UssAuthApi.resolveAssetUrl(rel)
+                            : rel;
+                    im.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        openCommunityImageLightbox(im.src);
+                    });
+                    grid.appendChild(im);
+                });
+                if (grid.childNodes.length) line.appendChild(grid);
+            }
+            line.addEventListener('click', function (ev) {
+                if (ev.target.closest('.community-chat-actions')) return;
+                line.classList.toggle('community-chat-line--time-open');
+            });
+            return line;
+        }
+
+        function syncCommunityFeedLayout(hasPosts) {
+            const feed = document.getElementById('communityFeed');
+            if (!feed) return;
+            feed.classList.toggle('community-feed--has-posts', !!hasPosts);
+            feed.classList.toggle('community-feed--empty', !hasPosts);
+        }
+
+        function renderCommunityPosts(posts) {
+            const feed = document.getElementById('communityFeed');
+            const loading = document.getElementById('communityFeedLoading');
+            if (!feed) return;
+            if (loading) loading.remove();
+            feed.innerHTML = '';
+            const hasPosts = !!(posts && posts.length);
+            syncCommunityFeedLayout(hasPosts);
+            if (!hasPosts) {
+                const empty = document.createElement('div');
+                empty.className = 'community-empty';
+                empty.textContent = '还没有帖子，来做第一条吧。';
+                feed.appendChild(empty);
+                return;
+            }
+            posts.forEach(function (p) {
+                const card = document.createElement('article');
+                card.className = 'community-post-card';
+
+                const main = document.createElement('div');
+                main.className = 'community-post-main';
+
+                const head = document.createElement('header');
+                head.className = 'community-post-head';
+                head.appendChild(buildCommunityAuthorRow(p.bindingId, p.avatarUrl, p.createdAt));
+
+                if (sessionIsCommunityStaff() || communityPostIsMine(p)) {
+                    const del = document.createElement('button');
+                    del.type = 'button';
+                    del.className = 'community-post-delete';
+                    del.textContent = '删除';
+                    del.addEventListener('click', async function () {
+                        if (!sessionIsCommunityStaff() && !communityPostIsMine(p)) return;
+                        if (!confirm('确定删除该帖子？')) return;
+                        const sess = loadAuthSession();
+                        if (!sess || !sess.token) return;
+                        del.disabled = true;
+                        try {
+                            await window.UssAuthApi.communityDeletePost(sess.token, p.id);
+                            await loadCommunityPosts();
+                        } catch (err) {
+                            showAlert(err && err.message ? err.message : '删除失败');
+                        } finally {
+                            del.disabled = false;
+                        }
+                    });
+                    head.appendChild(del);
+                }
+
+                const body = document.createElement('div');
+                body.className = 'community-post-body';
+                if (p.content) {
+                    body.textContent = p.content;
+                }
+
+                main.appendChild(head);
+                if (p.content) main.appendChild(body);
+
+                const imgs = Array.isArray(p.images) ? p.images : [];
+                if (imgs.length) {
+                    const grid = document.createElement('div');
+                    grid.className = 'community-post-images';
+                    imgs.forEach(function (rel) {
+                        if (typeof rel !== 'string' || rel.indexOf('/community-uploads/') !== 0) return;
+                        const im = document.createElement('img');
+                        im.className = 'community-post-img';
+                        im.loading = 'lazy';
+                        im.alt = '帖子配图';
+                        im.style.cursor = 'pointer';
+                        im.src =
+                            window.UssAuthApi && typeof window.UssAuthApi.resolveAssetUrl === 'function'
+                                ? window.UssAuthApi.resolveAssetUrl(rel)
+                                : rel;
+                        im.addEventListener('click', function (e) {
+                            e.stopPropagation();
+                            openCommunityImageLightbox(im.src);
+                        });
+                        grid.appendChild(im);
+                    });
+                    if (grid.childNodes.length) main.appendChild(grid);
+                }
+
+                const replies = Array.isArray(p.replies) ? p.replies : [];
+                const repliesBlock = document.createElement('div');
+                repliesBlock.className = 'community-replies';
+
+                if (replies.length) {
+                    const repliesHead = document.createElement('div');
+                    repliesHead.className = 'community-replies-head';
+                    repliesHead.textContent = replies.length + ' 条回复';
+                    repliesBlock.appendChild(repliesHead);
+                    replies.forEach(function (r) {
+                        const item = document.createElement('div');
+                        item.className = 'community-reply-item';
+                        let replyDelBtn = null;
+                        if (sessionIsCommunityStaff() || communityReplyIsMine(r)) {
+                            replyDelBtn = document.createElement('button');
+                            replyDelBtn.type = 'button';
+                            replyDelBtn.className = 'community-reply-delete';
+                            replyDelBtn.textContent = '删除';
+                            replyDelBtn.addEventListener('click', async function () {
+                                if (!sessionIsCommunityStaff() && !communityReplyIsMine(r)) return;
+                                if (!confirm('确定删除该条回复？')) return;
+                                const sess = loadAuthSession();
+                                if (!sess || !sess.token || !r.id) return;
+                                replyDelBtn.disabled = true;
+                                try {
+                                    await window.UssAuthApi.communityDeleteReply(sess.token, p.id, r.id);
+                                    await loadCommunityPosts();
+                                } catch (err) {
+                                    showAlert(err && err.message ? err.message : '删除失败');
+                                } finally {
+                                    replyDelBtn.disabled = false;
+                                }
+                            });
+                        }
+                        item.appendChild(buildCommunityAuthorRow(r.bindingId, r.avatarUrl, r.createdAt, replyDelBtn));
+                        const replyBody = document.createElement('div');
+                        replyBody.className = 'community-reply-body';
+                        replyBody.textContent = String(r.content != null ? r.content : '');
+                        item.appendChild(replyBody);
+                        repliesBlock.appendChild(item);
+                    });
+                }
+
+                const replyForm = document.createElement('div');
+                replyForm.className = 'community-reply-form';
+                const replyTa = document.createElement('textarea');
+                replyTa.className = 'community-reply-input';
+                replyTa.rows = 2;
+                replyTa.maxLength = 2000;
+                replyTa.placeholder = isLoggedIn() ? '写下你的回复…' : '登录后可回复';
+                replyTa.disabled = !isLoggedIn();
+                const replyActions = document.createElement('div');
+                replyActions.className = 'community-reply-actions';
+                const replyHint = document.createElement('p');
+                replyHint.className = 'community-reply-hint';
+                const replyBtn = document.createElement('button');
+                replyBtn.type = 'button';
+                replyBtn.className = 'primary-btn community-reply-btn';
+                replyBtn.textContent = '回复';
+                replyBtn.disabled = !isLoggedIn();
+                replyBtn.addEventListener('click', async function () {
+                    const sess = loadAuthSession();
+                    if (!sess || !sess.token) {
+                        replyHint.textContent = '请先登录。';
+                        return;
+                    }
+                    const content = String(replyTa.value || '').trim();
+                    if (!content) {
+                        replyHint.textContent = '回复内容不能为空。';
+                        return;
+                    }
+                    replyHint.textContent = '';
+                    replyBtn.disabled = true;
+                    replyBtn.textContent = '发送中…';
+                    try {
+                        await window.UssAuthApi.communityReplyPost(sess.token, p.id, content);
+                        replyTa.value = '';
+                        await loadCommunityPosts();
+                    } catch (err) {
+                        replyHint.textContent = err && err.message ? err.message : '回复失败';
+                    } finally {
+                        replyBtn.disabled = !isLoggedIn();
+                        replyBtn.textContent = '回复';
+                    }
+                });
+                replyActions.appendChild(replyBtn);
+                replyForm.appendChild(replyTa);
+                replyForm.appendChild(replyActions);
+                replyForm.appendChild(replyHint);
+                repliesBlock.appendChild(replyForm);
+                main.appendChild(repliesBlock);
+
+                card.appendChild(main);
+                feed.appendChild(card);
+            });
+        }
+
+        async function loadCommunityPosts() {
+            const feed = document.getElementById('communityFeed');
+            if (!feed || !window.UssAuthApi) return;
+            try {
+                const data = await window.UssAuthApi.communityListPosts(50);
+                renderCommunityPosts(data.posts || []);
+            } catch (e) {
+                feed.innerHTML = '';
+                syncCommunityFeedLayout(false);
+                const err = document.createElement('div');
+                err.className = 'community-feed-error';
+                err.textContent = e && e.message ? e.message : '加载失败';
+                feed.appendChild(err);
+            }
+        }
+
+        function getCommunityChatScrollEl() {
+            return document.getElementById('communityChatScroll');
+        }
+
+        function appendCommunityChatLine(m, lineKind) {
+            const log = document.getElementById('communityChatLog');
+            if (!log || !m || m.seq == null) return;
+            if (!isLoggedIn()) return;
+            const lk = lineKind != null ? lineKind : communityChatKind;
+            const seqKey = String(m.seq);
+            if (log.querySelector('.community-chat-line[data-seq="' + seqKey + '"][data-chat-kind="' + lk + '"]')) return;
+            const empty = log.querySelector('.community-empty');
+            if (empty) empty.remove();
+            log.appendChild(buildCommunityChatLine(m, lk));
+        }
+
+        function scrollCommunityChatToBottom(force) {
+            const sc = getCommunityChatScrollEl();
+            if (!sc) return;
+            if (force || communityChatNearBottom) {
+                sc.scrollTop = sc.scrollHeight;
+            }
+        }
+
+        function installCommunityChatScrollGuard() {
+            const sc = getCommunityChatScrollEl();
+            if (!sc || sc.dataset.communityGuard === '1') return;
+            sc.dataset.communityGuard = '1';
+            sc.addEventListener('scroll', function () {
+                const rest = sc.scrollHeight - sc.clientHeight - sc.scrollTop;
+                communityChatNearBottom = rest < 48;
+            });
+        }
+
+        async function loadCommunityChatFull() {
+            const log = document.getElementById('communityChatLog');
+            if (!log || !window.UssAuthApi) return;
+            clearCommunityChatHint();
+            if (!isLoggedIn()) {
+                log.innerHTML = '';
+                communityChatMaxSeq = 0;
+                return;
+            }
+            try {
+                const data = await window.UssAuthApi.communityChatFetch(0);
+                log.innerHTML = '';
+                communityChatMaxSeq =
+                    typeof data.maxSeq === 'number' && data.maxSeq > 0 ? data.maxSeq : 0;
+                const list = data.messages || [];
+                if (!list.length) {
+                    const empty = document.createElement('div');
+                    empty.className = 'community-empty';
+                    empty.textContent = '暂无聊天消息，可发文字或图片。';
+                    log.appendChild(empty);
+                } else {
+                    list.forEach(function (m) {
+                        appendCommunityChatLine(m, 'fleet');
+                    });
+                }
+                scrollCommunityChatToBottom(true);
+                markCommunityFleetRead(communityChatMaxSeq);
+            } catch (e) {
+                log.innerHTML = '';
+                const err = document.createElement('div');
+                err.className = 'community-feed-error';
+                err.textContent = e && e.message ? e.message : '聊天加载失败';
+                log.appendChild(err);
+            }
+        }
+
+        async function loadCommunityDmFull() {
+            const log = document.getElementById('communityChatLog');
+            if (!log || !window.UssAuthApi) return;
+            clearCommunityChatHint();
+            if (!isLoggedIn() || communityChatKind !== 'dm' || !communityChatDmPeer) {
+                log.innerHTML = '';
+                communityDmMaxSeq = 0;
+                return;
+            }
+            const sess = loadAuthSession();
+            if (!sess || !sess.token) return;
+            try {
+                const data = await window.UssAuthApi.communityDmFetch(sess.token, communityChatDmPeer, 0);
+                log.innerHTML = '';
+                communityDmMaxSeq =
+                    typeof data.maxSeq === 'number' && data.maxSeq > 0 ? data.maxSeq : 0;
+                const list = data.messages || [];
+                if (!list.length) {
+                    const empty = document.createElement('div');
+                    empty.className = 'community-empty';
+                    empty.textContent = '暂无私信，可发文字或图片。';
+                    log.appendChild(empty);
+                } else {
+                    list.forEach(function (m) {
+                        appendCommunityChatLine(m, 'dm');
+                    });
+                }
+                scrollCommunityChatToBottom(true);
+                if (communityChatDmPeer) {
+                    markCommunityDmPeerRead(communityChatDmPeer, communityDmMaxSeq);
+                }
+            } catch (e) {
+                log.innerHTML = '';
+                const err = document.createElement('div');
+                err.className = 'community-feed-error';
+                err.textContent = e && e.message ? e.message : '私信加载失败';
+                log.appendChild(err);
+            }
+        }
+
+        function syncCommunityChatMainTitle() {
+            const title = document.getElementById('communityChatMainTitle');
+            if (!title) return;
+            if (communityChatKind === 'dm' && communityChatDmLabel) {
+                title.textContent = '与 ' + communityChatDmLabel + ' 私聊';
+            } else {
+                title.textContent = '舰队聊天';
+            }
+        }
+
+        function syncCommunityChatRosterActive() {
+            document.querySelectorAll('[data-chat-target]').forEach(function (el) {
+                el.classList.remove('is-active');
+            });
+            if (communityChatKind === 'fleet') {
+                const f = document.querySelector('[data-chat-target="fleet"]');
+                if (f) f.classList.add('is-active');
+            } else if (communityChatKind === 'dm' && communityChatDmPeer) {
+                document.querySelectorAll('[data-chat-target="dm"]').forEach(function (el) {
+                    if (el.getAttribute('data-peer') === communityChatDmPeer) {
+                        el.classList.add('is-active');
+                    }
+                });
+            }
+        }
+
+        function applyCommunityRosterSearchFilter(query) {
+            const inner = document.getElementById('communityChatRosterInner');
+            if (!inner) return;
+            const needle = String(query || '').trim().toLowerCase();
+            inner.querySelectorAll('.community-chat-roster-peer[data-peer]').forEach(function (row) {
+                const peer = String(row.getAttribute('data-peer') || '').toLowerCase();
+                const lab = String(row.getAttribute('data-peer-label') || '').toLowerCase();
+                const hit = !needle || peer.indexOf(needle) !== -1 || lab.indexOf(needle) !== -1;
+                row.hidden = !hit;
+            });
+        }
+
+        function renderCommunityChatRosterFromMembers(members) {
+            const inner = document.getElementById('communityChatRosterInner');
+            if (!inner) return;
+            const sess = loadAuthSession();
+            const me = sess && sess.bindingId ? String(sess.bindingId).trim().toLowerCase() : '';
+            inner.innerHTML = '';
+            const fleetBtn = document.createElement('button');
+            fleetBtn.type = 'button';
+            fleetBtn.className = 'community-chat-roster-item community-chat-roster-fleet';
+            fleetBtn.setAttribute('data-chat-target', 'fleet');
+            fleetBtn.textContent = '舰队聊天';
+            const fleetBadge = document.createElement('span');
+            fleetBadge.className = 'community-chat-unread-badge';
+            fleetBadge.setAttribute('aria-hidden', 'true');
+            fleetBadge.hidden = true;
+            fleetBtn.appendChild(fleetBadge);
+            inner.appendChild(fleetBtn);
+            const list = Array.isArray(members) ? members : [];
+            let totalInFleet = 0;
+            list.forEach(function (mem) {
+                const bid0 = mem && mem.bindingId != null ? String(mem.bindingId).trim() : '';
+                if (bid0) totalInFleet += 1;
+            });
+            const sub = document.createElement('div');
+            sub.className = 'community-chat-roster-sub';
+            sub.textContent = '舰队成员（' + totalInFleet + '）';
+            inner.appendChild(sub);
+            const search = document.createElement('input');
+            search.type = 'search';
+            search.id = 'communityChatRosterSearch';
+            search.className = 'community-chat-roster-search';
+            search.placeholder = '搜索成员…';
+            search.setAttribute('autocomplete', 'off');
+            search.setAttribute('aria-label', '搜索舰队成员');
+            search.value = communityRosterSearchQuery;
+            inner.appendChild(search);
+            function syncRosterSearchFromInput() {
+                communityRosterSearchQuery = search.value;
+                applyCommunityRosterSearchFilter(search.value);
+            }
+            search.addEventListener('input', syncRosterSearchFromInput);
+            search.addEventListener('search', syncRosterSearchFromInput);
+            list.forEach(function (mem) {
+                const bid = mem && mem.bindingId != null ? String(mem.bindingId).trim() : '';
+                if (!bid) return;
+                if (bid.toLowerCase() === me) return;
+                const row = document.createElement('button');
+                row.type = 'button';
+                row.className = 'community-chat-roster-item community-chat-roster-peer';
+                row.setAttribute('data-chat-target', 'dm');
+                row.setAttribute('data-peer', bid);
+                row.setAttribute('data-peer-label', bid);
+                const av = document.createElement('span');
+                av.className = 'community-chat-roster-avatar';
+                const img = document.createElement('img');
+                img.className = 'community-chat-roster-avatar-img';
+                img.alt = bid;
+                const src = communityAvatarSrc(mem.avatarUrl);
+                img.src = src || communityAvatarFallbackDataUri(communityAuthorInitial(bid));
+                av.appendChild(img);
+                const lab = document.createElement('span');
+                lab.className = 'community-chat-roster-label';
+                lab.textContent = bid;
+                row.appendChild(av);
+                row.appendChild(lab);
+                const dmBadge = document.createElement('span');
+                dmBadge.className = 'community-chat-unread-badge community-chat-unread-badge--peer';
+                dmBadge.setAttribute('aria-hidden', 'true');
+                dmBadge.hidden = true;
+                row.appendChild(dmBadge);
+                inner.appendChild(row);
+            });
+            applyCommunityRosterSearchFilter(communityRosterSearchQuery);
+            syncCommunityChatRosterActive();
+            updateCommunityUnreadBadges();
+        }
+
+        async function loadCommunityRoster() {
+            const inner = document.getElementById('communityChatRosterInner');
+            const guest = document.getElementById('communityChatRosterGuest');
+            if (!inner || !guest) return;
+            if (!isLoggedIn() || !window.UssAuthApi) {
+                inner.innerHTML = '';
+                inner.hidden = true;
+                guest.hidden = false;
+                communityRosterSearchQuery = '';
+                return;
+            }
+            guest.hidden = true;
+            inner.hidden = false;
+            try {
+                const sess = loadAuthSession();
+                if (!sess || !sess.token) throw new Error('未登录');
+                const data = await window.UssAuthApi.communityRoster(sess.token);
+                renderCommunityChatRosterFromMembers(data.members || []);
+            } catch (e) {
+                inner.innerHTML = '';
+                const err = document.createElement('div');
+                err.className = 'community-chat-roster-error';
+                err.textContent = e && e.message ? e.message : '成员列表加载失败';
+                inner.appendChild(err);
+                inner.hidden = false;
+            }
+        }
+
+        function selectCommunityFleet() {
+            communityChatKind = 'fleet';
+            communityChatDmPeer = '';
+            communityChatDmLabel = '';
+            communityDmMaxSeq = 0;
+            syncCommunityChatMainTitle();
+            syncCommunityChatRosterActive();
+            loadCommunityChatFull();
+            updateCommunityChatInputPlaceholder();
+        }
+
+        function selectCommunityDmPeer(peerBindingId, label) {
+            const sess = loadAuthSession();
+            const me = sess && sess.bindingId ? String(sess.bindingId).trim().toLowerCase() : '';
+            const peer = String(peerBindingId || '').trim();
+            if (!peer || peer.toLowerCase() === me) return;
+            communityChatKind = 'dm';
+            communityChatDmPeer = peer;
+            communityChatDmLabel = label || peer;
+            communityDmMaxSeq = 0;
+            syncCommunityChatMainTitle();
+            syncCommunityChatRosterActive();
+            loadCommunityDmFull();
+            updateCommunityChatInputPlaceholder();
+        }
+
+        function wireCommunityChatRoster() {
+            const host = document.getElementById('communityChatRoster');
+            if (!host || host.dataset.rosterWired === '1') return;
+            host.dataset.rosterWired = '1';
+            host.addEventListener('click', function (ev) {
+                const t = ev.target.closest('[data-chat-target]');
+                if (!t) return;
+                const target = t.getAttribute('data-chat-target');
+                if (target === 'fleet') {
+                    selectCommunityFleet();
+                } else if (target === 'dm') {
+                    const peer = t.getAttribute('data-peer');
+                    const label = t.getAttribute('data-peer-label') || peer;
+                    if (peer) selectCommunityDmPeer(peer, label);
+                }
+            });
+        }
+
+        async function pollCommunityChat() {
+            if (!window.UssAuthApi) return { ok: true, skipped: true };
+            if (!isLoggedIn()) return { ok: true, skipped: true };
+            if (document.visibilityState !== 'visible') return { ok: true, skipped: true };
+            try {
+                const sess = loadAuthSession();
+                if (!sess || !sess.token) return { ok: true, skipped: true };
+                if (communityChatKind === 'dm') {
+                    if (!communityChatDmPeer) return { ok: true, skipped: true };
+                    const cur = communityDmMaxSeq || 0;
+                    const data = await window.UssAuthApi.communityDmFetch(
+                        sess.token,
+                        communityChatDmPeer,
+                        cur
+                    );
+                    const list = data.messages || [];
+                    if (list.length) {
+                        list.forEach(function (m) {
+                            appendCommunityChatLine(m, 'dm');
+                        });
+                        scrollCommunityChatToBottom(false);
+                    }
+                    if (typeof data.maxSeq === 'number' && data.maxSeq > 0) {
+                        communityDmMaxSeq = data.maxSeq;
+                    }
+                    markCommunityDmPeerRead(communityChatDmPeer, communityDmMaxSeq);
+                } else {
+                    const cur = communityChatMaxSeq || 0;
+                    const data = await window.UssAuthApi.communityChatFetch(cur);
+                    const list = data.messages || [];
+                    if (list.length) {
+                        list.forEach(function (m) {
+                            appendCommunityChatLine(m, 'fleet');
+                        });
+                        scrollCommunityChatToBottom(false);
+                    }
+                    if (typeof data.maxSeq === 'number' && data.maxSeq > 0) {
+                        communityChatMaxSeq = data.maxSeq;
+                    }
+                    markCommunityFleetRead(communityChatMaxSeq);
+                }
+                return { ok: true };
+            } catch (e) {
+                if (e && e.status === 429) return { ok: false, rateLimited: true };
+                return { ok: true };
+            }
+        }
+
+        function scheduleNextCommunityChatPoll() {
+            if (communityChatPollTimer) clearTimeout(communityChatPollTimer);
+            if (!isLoggedIn()) return;
+            const sess = loadAuthSession();
+            if (!sess || !sess.token) return;
+            const delay = communityChatPollBackoffMs || COMMUNITY_CHAT_POLL_MS;
+            communityChatPollTimer = setTimeout(runCommunityChatPollTick, delay);
+        }
+
+        async function runCommunityChatPollTick() {
+            communityChatPollTimer = null;
+            if (!isLoggedIn()) return;
+            const sess = loadAuthSession();
+            if (!sess || !sess.token) return;
+            await refreshCommunityInboxSnapshot();
+            const result = await pollCommunityChat();
+            if (result && result.rateLimited) {
+                communityChatPollBackoffMs = Math.min((communityChatPollBackoffMs || 4000) * 2, 90000);
+            } else if (result && result.ok && !result.skipped) {
+                communityChatPollBackoffMs = 0;
+            }
+            scheduleNextCommunityChatPoll();
+        }
+
+        function stopCommunityChatPoll() {
+            if (communityChatPollTimer) {
+                clearTimeout(communityChatPollTimer);
+                communityChatPollTimer = null;
+            }
+            communityChatPollBackoffMs = 0;
+        }
+
+        function startCommunityChatPoll() {
+            stopCommunityChatPoll();
+            communityChatPollBackoffMs = 0;
+            scheduleNextCommunityChatPoll();
+        }
+
+        async function sendCommunityChat() {
+            if (!window.UssAuthApi) return;
+            clearCommunityChatHint();
+            const sess = loadAuthSession();
+            if (!sess || !sess.token) {
+                setCommunityChatHint('请先登录后再发言。');
+                return;
+            }
+            const input = document.getElementById('communityChatInput');
+            const text = input ? String(input.value || '').trim() : '';
+            const imgs = communityChatPendingImages.map(function (x) {
+                return x.dataUrl;
+            });
+            if (!text && !imgs.length) {
+                setCommunityChatHint('请输入文字或添加图片。');
+                return;
+            }
+            const btn = document.getElementById('communityChatSendBtn');
+            const chatMenuBtn = document.getElementById('communityChatSendMenuBtn');
+            if (btn) btn.disabled = true;
+            if (chatMenuBtn) chatMenuBtn.disabled = true;
+            try {
+                const payload =
+                    imgs.length > 0 ? { text: text, images: imgs } : text;
+                let data;
+                if (communityChatKind === 'dm' && communityChatDmPeer) {
+                    data = await window.UssAuthApi.communityDmSend(sess.token, communityChatDmPeer, payload);
+                } else {
+                    data = await window.UssAuthApi.communityChatSend(sess.token, payload);
+                }
+                if (input) input.value = '';
+                clearCommunityChatPendingImages();
+                if (data && data.entry) {
+                    appendCommunityChatLine(data.entry, communityChatKind);
+                    if (typeof data.maxSeq === 'number' && data.maxSeq > 0) {
+                        if (communityChatKind === 'dm') {
+                            communityDmMaxSeq = Math.max(communityDmMaxSeq || 0, data.maxSeq);
+                            markCommunityDmPeerRead(communityChatDmPeer, communityDmMaxSeq);
+                        } else {
+                            communityChatMaxSeq = Math.max(communityChatMaxSeq || 0, data.maxSeq);
+                            markCommunityFleetRead(communityChatMaxSeq);
+                        }
+                    }
+                }
+                scrollCommunityChatToBottom(true);
+            } catch (e) {
+                setCommunityChatHint(e && e.message ? e.message : '发送失败');
+            } finally {
+                refreshCommunitySessionUi();
+            }
+        }
+
+        async function refreshCommunityAll() {
+            await loadCommunityPosts();
+            await loadCommunityRoster();
+            if (communityChatKind === 'dm' && communityChatDmPeer) {
+                await loadCommunityDmFull();
+            } else {
+                await loadCommunityChatFull();
+            }
+        }
+
+        async function submitCommunityPost() {
+            if (!window.UssAuthApi) return;
+            const sess = loadAuthSession();
+            if (!sess || !sess.token) {
+                setCommunityFormHint('请先登录。');
+                return;
+            }
+            const ta = document.getElementById('communityText');
+            const content = ta ? String(ta.value || '').trim() : '';
+            const imgs = communityPendingImages.map(function (x) {
+                return x.dataUrl;
+            });
+            if (!content && !imgs.length) {
+                setCommunityFormHint('请填写正文或添加图片。');
+                return;
+            }
+            clearCommunityFormHint();
+            const btn = document.getElementById('communitySubmitBtn');
+            const postMenuBtn = document.getElementById('communityPostMenuBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = '发布中…';
+            }
+            if (postMenuBtn) postMenuBtn.disabled = true;
+            try {
+                await window.UssAuthApi.communityCreatePost(sess.token, { content: content, images: imgs });
+                if (ta) ta.value = '';
+                communityPendingImages.forEach(function (x) {
+                    try {
+                        URL.revokeObjectURL(x.previewUrl);
+                    } catch (e) {
+                        /* ignore */
+                    }
+                });
+                communityPendingImages = [];
+                renderCommunityPreviews();
+                await loadCommunityPosts();
+            } catch (e) {
+                setCommunityFormHint(e && e.message ? e.message : '发帖失败');
+            } finally {
+                refreshCommunitySessionUi();
+                if (btn) btn.textContent = '发布帖子';
+            }
+        }
+
+        function updateCommunityChatInputPlaceholder() {
+            const chatInput = document.getElementById('communityChatInput');
+            if (!chatInput) return;
+            if (!isLoggedIn()) {
+                chatInput.placeholder = '登录后发送短消息…';
+                return;
+            }
+            if (communityChatKind === 'dm' && communityChatDmLabel) {
+                chatInput.placeholder = '私信 ' + communityChatDmLabel + '，Enter 发送…';
+            } else {
+                chatInput.placeholder = '输入消息，Enter 发送…';
+            }
+        }
+
+        function refreshCommunitySessionUi() {
+            const logged = isLoggedIn();
+            const hint = document.getElementById('communityAuthHint');
+            const ta = document.getElementById('communityText');
+            const fileInput = document.getElementById('communityFileInput');
+            const postBtn = document.getElementById('communitySubmitBtn');
+            const postMenuBtn = document.getElementById('communityPostMenuBtn');
+            const chatInput = document.getElementById('communityChatInput');
+            const chatBtn = document.getElementById('communityChatSendBtn');
+            const chatMenuBtn = document.getElementById('communityChatSendMenuBtn');
+            const chatFileInput = document.getElementById('communityChatFileInput');
+            const guestLock = document.getElementById('communityChatGuestLock');
+            const chatLog = document.getElementById('communityChatLog');
+
+            if (guestLock) guestLock.hidden = !!logged;
+            if (!logged) {
+                closeCommunitySendMenus();
+                if (chatLog) chatLog.innerHTML = '';
+                communityChatMaxSeq = 0;
+                communityDmMaxSeq = 0;
+                communityChatKind = 'fleet';
+                communityChatDmPeer = '';
+                communityChatDmLabel = '';
+                clearCommunityChatPendingImages();
+                communityInboxSnapshot = { fleetMaxSeq: 0, dmMaxByPeer: {} };
+                stopCommunityChatPoll();
+                syncCommunityChatMainTitle();
+                loadCommunityRoster();
+            } else {
+                startCommunityChatPoll();
+                updateCommunityChatInputPlaceholder();
+                loadCommunityRoster();
+            }
+
+            if (hint) hint.hidden = logged;
+            if (ta) {
+                ta.disabled = !logged;
+                ta.placeholder = logged ? '分享见闻、截图或动图…' : '登录后可发帖…';
+            }
+            if (fileInput) fileInput.disabled = !logged;
+            if (postMenuBtn) postMenuBtn.disabled = !logged;
+            if (postBtn) postBtn.disabled = !logged;
+            if (chatInput) {
+                chatInput.disabled = !logged;
+                if (!logged) chatInput.placeholder = '登录后发送短消息…';
+                else updateCommunityChatInputPlaceholder();
+            }
+            if (chatBtn) chatBtn.disabled = !logged;
+            if (chatMenuBtn) chatMenuBtn.disabled = !logged;
+            if (chatFileInput) chatFileInput.disabled = !logged;
+        }
+
+        function closeCommunitySendMenus() {
+            var chatMenu = document.getElementById('communityChatSendMenu');
+            var postMenu = document.getElementById('communityPostSendMenu');
+            var cmb = document.getElementById('communityChatSendMenuBtn');
+            var pmb = document.getElementById('communityPostMenuBtn');
+            if (chatMenu) chatMenu.hidden = true;
+            if (postMenu) postMenu.hidden = true;
+            if (cmb) cmb.setAttribute('aria-expanded', 'false');
+            if (pmb) pmb.setAttribute('aria-expanded', 'false');
+        }
+
+        function installCommunitySendMenus() {
+            var chatMenuBtn = document.getElementById('communityChatSendMenuBtn');
+            var chatMenu = document.getElementById('communityChatSendMenu');
+            var chatAdd = document.getElementById('communityChatAddImageBtn');
+            var chatFile = document.getElementById('communityChatFileInput');
+            var postMenuBtn = document.getElementById('communityPostMenuBtn');
+            var postMenu = document.getElementById('communityPostSendMenu');
+            var postAdd = document.getElementById('communityPostAddImageBtn');
+            var postFile = document.getElementById('communityFileInput');
+            if (chatMenuBtn && chatMenu) {
+                chatMenuBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var opening = chatMenu.hidden;
+                    closeCommunitySendMenus();
+                    if (opening) {
+                        chatMenu.hidden = false;
+                        chatMenuBtn.setAttribute('aria-expanded', 'true');
+                    }
+                });
+            }
+            if (chatAdd && chatFile) {
+                chatAdd.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeCommunitySendMenus();
+                    if (chatFile && !chatFile.disabled) chatFile.click();
+                });
+            }
+            if (postMenuBtn && postMenu) {
+                postMenuBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var opening = postMenu.hidden;
+                    closeCommunitySendMenus();
+                    if (opening) {
+                        postMenu.hidden = false;
+                        postMenuBtn.setAttribute('aria-expanded', 'true');
+                    }
+                });
+            }
+            if (postAdd && postFile) {
+                postAdd.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeCommunitySendMenus();
+                    if (postFile && !postFile.disabled) postFile.click();
+                });
+            }
+            document.addEventListener('click', function (e) {
+                if (e.target.closest && e.target.closest('.community-send-menu')) return;
+                if (e.target.closest && e.target.closest('.community-send-split__more')) return;
+                closeCommunitySendMenus();
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') closeCommunitySendMenus();
+            });
+        }
+
+        function installCommunityDropzones() {
+            function bindDropzone(el, ingestFn, setHint) {
+                if (!el) return;
+                el.addEventListener('dragover', function (e) {
+                    if (!isLoggedIn()) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    try {
+                        e.dataTransfer.dropEffect = 'copy';
+                    } catch (ignore) {}
+                    el.classList.add('community-dropzone--active');
+                });
+                el.addEventListener('dragleave', function (e) {
+                    if (!el.contains(e.relatedTarget)) el.classList.remove('community-dropzone--active');
+                });
+                el.addEventListener('drop', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    el.classList.remove('community-dropzone--active');
+                    if (!isLoggedIn()) return;
+                    var dt = e.dataTransfer;
+                    if (!dt || !dt.files || !dt.files.length) return;
+                    var imageFiles = Array.from(dt.files).filter(function (f) {
+                        return f.type && f.type.indexOf('image/') === 0;
+                    });
+                    if (!imageFiles.length) {
+                        setHint('请拖入图片文件。');
+                        return;
+                    }
+                    ingestFn(imageFiles);
+                });
+            }
+            bindDropzone(
+                document.querySelector('.community-chat-compose'),
+                ingestCommunityChatFiles,
+                setCommunityChatHint
+            );
+            bindDropzone(
+                document.querySelector('.community-panel-forum .community-composer'),
+                ingestCommunityPostFiles,
+                setCommunityFormHint
+            );
+        }
+
+        function initCommunityBoard() {
+            const fileInput = document.getElementById('communityFileInput');
+            const submitBtn = document.getElementById('communitySubmitBtn');
+            const chatSendBtn = document.getElementById('communityChatSendBtn');
+            const chatInput = document.getElementById('communityChatInput');
+            const chatFileInput = document.getElementById('communityChatFileInput');
+
+            if (fileInput) fileInput.addEventListener('change', onCommunityFilesSelected);
+            if (chatFileInput) chatFileInput.addEventListener('change', onCommunityChatFilesSelected);
+            if (submitBtn) submitBtn.addEventListener('click', submitCommunityPost);
+            if (chatSendBtn) chatSendBtn.addEventListener('click', sendCommunityChat);
+            if (chatInput) {
+                chatInput.addEventListener('keydown', function (ev) {
+                    if (ev.key === 'Enter' && !ev.shiftKey) {
+                        ev.preventDefault();
+                        sendCommunityChat();
+                    }
+                });
+            }
+
+            installCommunityDropzones();
+            installCommunitySendMenus();
+
+            installCommunityChatScrollGuard();
+            wireCommunityChatRoster();
+            refreshCommunitySessionUi();
+            refreshCommunityAll();
+
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible') {
+                    communityChatPollBackoffMs = 0;
+                    pollCommunityChat();
+                    refreshCommunityInboxSnapshot();
+                    if (isLoggedIn()) startCommunityChatPoll();
+                }
+            });
+        }
+
+        /** 舰队职务等级：每级一颗 SVG 图标（与抽屉青色风格一致） */
+        var ORG_RANK_ICON_SVG =
+            '<svg class="drawer-org-rank-svg" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+            '<path d="M512 890.35c-51.06 0-100.62-10.01-147.28-29.75-45.06-19.06-85.52-46.33-120.25-81.07s-62.01-75.2-81.07-120.25c-19.74-46.67-29.75-96.22-29.75-147.28 0-71.37 19.98-140.89 57.79-201.05 36.76-58.5 88.74-105.84 150.32-136.92 15.37-7.76 34.13-1.58 41.89 13.79 7.76 15.37 1.58 34.13-13.79 41.89-51.46 25.97-94.89 65.53-125.62 114.42-31.55 50.21-48.23 108.26-48.23 167.87 0 84.4 32.87 163.76 92.55 223.44S427.6 827.99 512 827.99s163.76-32.87 223.44-92.55c59.68-59.68 92.55-139.04 92.55-223.44s-32.87-163.76-92.55-223.44C675.76 228.88 596.4 196.01 512 196.01c-17.22 0-31.18-13.96-31.18-31.18s13.96-31.18 31.18-31.18c51.06 0 100.62 10.01 147.28 29.75 45.06 19.06 85.52 46.33 120.25 81.07s62.01 75.2 81.07 120.25c19.74 46.67 29.75 96.22 29.75 147.28s-10.01 100.62-29.75 147.28c-19.06 45.06-46.33 85.52-81.07 120.25s-75.2 62.01-120.25 81.07c-46.66 19.74-96.22 29.75-147.28 29.75z"/>' +
+            '<path d="M163.25 925.49c-19.55 0-35.3-5.9-47.07-17.67-8.53-8.53-18.52-24.21-17.67-50.47 0.5-15.45 4.55-32.95 12.36-53.5 13.73-36.13 38.74-80.38 74.32-131.53 9.84-14.14 29.27-17.62 43.4-7.79 14.14 9.83 17.62 29.27 7.79 43.4-73.56 105.76-76.13 145.9-75.38 155.08 8.71 0.71 45.41-1.6 140.27-65.28 81.02-54.39 176.51-135.21 268.88-227.58s173.2-187.86 227.59-268.88c63.68-94.86 65.99-131.55 65.28-140.27-9.23-0.75-49.94 1.86-157.45 77.06-14.11 9.87-33.55 6.43-43.42-7.68-9.87-14.11-6.43-33.55 7.68-43.42 51.74-36.19 96.52-61.66 133.09-75.71 20.76-7.98 38.43-12.13 54.02-12.71 26.52-0.99 42.31 9.06 50.9 17.65 19.81 19.81 22.98 50.87 9.43 92.33-10.11 30.93-29.65 68.89-58.07 112.83-56.61 87.53-143.6 191.55-244.94 292.9-101.35 101.35-205.37 188.33-292.9 244.94-43.95 28.42-81.91 47.96-112.83 58.07-16.84 5.49-31.94 8.23-45.28 8.23z"/>' +
+            '</svg>';
+
+        function fillOrgFleetBlock(sess) {
+            const wrap = document.getElementById('loggedInOrgFleet');
+            const logo = document.getElementById('loggedInOrgLogo');
+            const nameA = document.getElementById('loggedInOrgName');
+            const sidEl = document.getElementById('loggedInOrgSid');
+            const roleRow = document.getElementById('loggedInOrgRoleRow');
+            const roleEl = document.getElementById('loggedInOrgRole');
+            const rankWrap = document.getElementById('loggedInOrgRanking');
+            if (!wrap || !logo || !nameA || !sidEl || !roleRow || !roleEl || !rankWrap) return;
+            const orgName = sess && sess.rsiOrgName != null ? String(sess.rsiOrgName).trim() : '';
+            const orgSid = sess && sess.rsiOrgSid != null ? String(sess.rsiOrgSid).trim() : '';
+            const orgLogo = sess && sess.rsiOrgLogoUrl;
+            const orgRole = sess && sess.rsiOrgRoleLabel != null ? String(sess.rsiOrgRoleLabel).trim() : '';
+            var slots = sess && sess.rsiOrgRankSlots != null ? Number(sess.rsiOrgRankSlots) : 0;
+            if (!Number.isFinite(slots)) slots = 0;
+            const showFleet = !!(orgName || orgSid || orgLogo || orgRole || slots > 0);
+            if (!showFleet) {
+                wrap.hidden = true;
+                logo.removeAttribute('src');
+                logo.hidden = true;
+                nameA.textContent = '';
+                nameA.setAttribute('href', '#');
+                sidEl.textContent = '';
+                roleEl.textContent = '';
+                roleRow.hidden = true;
+                rankWrap.innerHTML = '';
+                return;
+            }
+            wrap.hidden = false;
+            if (orgLogo) {
+                logo.src = window.UssAuthApi.resolveAssetUrl(orgLogo);
+                logo.hidden = false;
+            } else {
+                logo.removeAttribute('src');
+                logo.hidden = true;
+            }
+            nameA.textContent = orgName || orgSid || '—';
+            var pageUrl = sess && sess.rsiOrgPageUrl;
+            if (pageUrl) nameA.setAttribute('href', pageUrl);
+            else nameA.setAttribute('href', '#');
+            sidEl.textContent = orgSid;
+            if (orgRole) {
+                roleEl.textContent = orgRole;
+                roleRow.hidden = false;
+            } else {
+                roleEl.textContent = '';
+                roleRow.hidden = true;
+            }
+            var n = Math.max(0, Math.min(20, slots));
+            rankWrap.innerHTML = '';
+            for (var i = 0; i < n; i++) {
+                var sp = document.createElement('span');
+                sp.className = 'active drawer-org-rank-slot';
+                sp.setAttribute('aria-hidden', 'true');
+                sp.innerHTML = ORG_RANK_ICON_SVG;
+                rankWrap.appendChild(sp);
+            }
+        }
+
+        function refreshLoginDrawerView() {
+            const guest = document.getElementById('loginDrawerGuest');
+            const authed = document.getElementById('loginDrawerAuthed');
+            if (!guest || !authed) return;
+            if (isLoggedIn()) {
+                guest.style.display = 'none';
+                authed.style.display = 'block';
+                const sess = loadAuthSession();
+                /* 与注册表单 #regBindingId 同源字段（bindingId），服务端 normalize 后的账号 Handle */
+                document.getElementById('loggedInBindingId').textContent = sess && sess.bindingId ? sess.bindingId : '—';
+                const rsiHandleWrap = document.getElementById('loggedInRsiHandleWrap');
+                const rsiHandleEl = document.getElementById('loggedInRsiHandle');
+                const rankRow = document.getElementById('loggedInRsiRankRow');
+                const rankIcon = document.getElementById('loggedInRsiRankIcon');
+                const rankLbl = document.getElementById('loggedInRsiRankLabel');
+                const rsiHandle = sess && sess.rsiProfileHandle;
+                if (rsiHandleWrap && rsiHandleEl) {
+                    if (rsiHandle) {
+                        rsiHandleEl.textContent = rsiHandle;
+                        rsiHandleWrap.hidden = false;
+                    } else {
+                        rsiHandleEl.textContent = '';
+                        rsiHandleWrap.hidden = true;
+                    }
+                }
+                fillOrgFleetBlock(sess);
+                var admL = document.getElementById('drawerAdminLink');
+                if (admL) {
+                    admL.style.display = sess && sess.isAdmin ? 'block' : 'none';
+                }
+                if (rankRow && rankIcon && rankLbl) {
+                    const iconUrl = sess && sess.rsiRankIconUrl;
+                    const rankText = sess && sess.rsiRankLabel;
+                    if (iconUrl || rankText) {
+                        rankRow.hidden = false;
+                        const resolvedIcon = sessionRankIconSrc(sess);
+                        if (resolvedIcon) {
+                            rankIcon.src = resolvedIcon;
+                            rankIcon.hidden = false;
+                        } else {
+                            rankIcon.removeAttribute('src');
+                            rankIcon.hidden = true;
+                        }
+                        rankLbl.textContent = rankText || '';
+                    } else {
+                        rankRow.hidden = true;
+                        rankIcon.removeAttribute('src');
+                        rankLbl.textContent = '';
+                    }
+                }
+                const metaWrap = document.getElementById('loggedInRsiMeta');
+                const rowEn = document.getElementById('loggedInRsiMetaRowEnlisted');
+                const rowLoc = document.getElementById('loggedInRsiMetaRowLocation');
+                const rowFlu = document.getElementById('loggedInRsiMetaRowFluency');
+                const enEl = document.getElementById('loggedInRsiEnlisted');
+                const locEl = document.getElementById('loggedInRsiLocation');
+                const fluEl = document.getElementById('loggedInRsiFluency');
+                function fillRsiMetaRow(row, valEl, v) {
+                    const t = v != null && String(v).trim() !== '' ? String(v).trim() : '';
+                    if (row && valEl) {
+                        valEl.textContent = t;
+                        row.hidden = !t;
+                    }
+                }
+                /** 网站未抓取到内容时显示占位符，不隐藏整行 */
+                function fillRsiMetaRowPlaceholder(row, valEl, v, placeholder) {
+                    const ph = placeholder != null && String(placeholder).trim() !== '' ? String(placeholder).trim() : '------';
+                    const empty = v == null || String(v).trim() === '';
+                    const t = empty ? ph : String(v).trim();
+                    if (row && valEl) {
+                        valEl.textContent = t;
+                        row.hidden = false;
+                    }
+                }
+                fillRsiMetaRow(rowEn, enEl, sess && sess.rsiEnlisted);
+                fillRsiMetaRowPlaceholder(rowLoc, locEl, sess && sess.rsiLocation, '------');
+                fillRsiMetaRow(rowFlu, fluEl, sess && sess.rsiFluency);
+                if (metaWrap) {
+                    metaWrap.hidden = !(
+                        (rowEn && !rowEn.hidden) ||
+                        (rowLoc && !rowLoc.hidden) ||
+                        (rowFlu && !rowFlu.hidden)
+                    );
+                }
+                const dImg = document.getElementById('drawerUserAvatarImg');
+                if (dImg) {
+                    dImg.src = sessionAvatarSrc();
+                    dImg.alt = '用户头像';
+                }
+            } else {
+                guest.style.display = 'block';
+                authed.style.display = 'none';
+            }
+        }
+
+        function switchAuthTab(which) {
+            clearLoginFormHint();
+            clearRegisterFormHint();
+            const headLogin = document.getElementById('rsiAuthHeadLogin');
+            const headReg = document.getElementById('rsiAuthHeadRegister');
+            const loginPanel = document.getElementById('authPanelLogin');
+            const regPanel = document.getElementById('authPanelRegister');
+            if (!loginPanel || !regPanel) return;
+            if (which === 'register') {
+                if (headLogin) headLogin.style.display = 'none';
+                if (headReg) headReg.style.display = 'block';
+                loginPanel.style.display = 'none';
+                regPanel.style.display = 'block';
+            } else {
+                if (headReg) headReg.style.display = 'none';
+                if (headLogin) headLogin.style.display = 'block';
+                regPanel.style.display = 'none';
+                loginPanel.style.display = 'block';
+            }
+        }
+
+        function togglePasswordField(inputId, toggleBtnId) {
+            const input = document.getElementById(inputId);
+            const btn = document.getElementById(toggleBtnId);
+            if (!input || !btn) return;
+            const icon = btn.querySelector('.rsi-pw-toggle-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (icon) icon.textContent = 'visibility_off';
+            } else {
+                input.type = 'password';
+                if (icon) icon.textContent = 'visibility';
+            }
+        }
+
+        function validateEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+        }
+
+        function clearLoginFormHint() {
+            const el = document.getElementById('loginFormHint');
+            if (el) {
+                el.textContent = '';
+                el.hidden = true;
+                el.classList.remove('rsi-form-hint--info');
+                el.classList.add('rsi-form-hint--error');
+            }
+        }
+
+        function setLoginFormHint(text) {
+            const el = document.getElementById('loginFormHint');
+            if (!el) return;
+            if (text) {
+                el.textContent = text;
+                el.hidden = false;
+                el.classList.remove('rsi-form-hint--info');
+                el.classList.add('rsi-form-hint--error');
+            } else {
+                clearLoginFormHint();
+            }
+        }
+
+        function showForgotPasswordHint() {
+            const el = document.getElementById('loginFormHint');
+            if (!el) return;
+            el.textContent = '联系管理员';
+            el.hidden = false;
+            el.classList.remove('rsi-form-hint--error');
+            el.classList.add('rsi-form-hint--info');
+        }
+
+        function clearRegisterFormHint() {
+            const el = document.getElementById('registerFormHint');
+            if (el) {
+                el.textContent = '';
+                el.hidden = true;
+            }
+        }
+
+        function setRegisterFormHint(text) {
+            const el = document.getElementById('registerFormHint');
+            if (!el) return;
+            if (text) {
+                el.textContent = text;
+                el.hidden = false;
+            } else {
+                clearRegisterFormHint();
+            }
+        }
+
+        async function submitRegister() {
+            const bindingId = document.getElementById('regBindingId').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+
+            if (!bindingId) {
+                setRegisterFormHint('请填写绑定 ID。');
+                return;
+            }
+            if (!validateEmail(email)) {
+                setRegisterFormHint('请填写有效的邮箱地址。');
+                return;
+            }
+            if (!password || password.length < 6) {
+                setRegisterFormHint('密码至少需要 6 位。');
+                return;
+            }
+            if (isLoggedIn()) {
+                setRegisterFormHint('请先退出当前账号再注册新账号。');
+                return;
+            }
+
+            try {
+                clearRegisterFormHint();
+                const res = await window.UssAuthApi.register({ bindingId, email, password });
+                const loginAt = new Date().toISOString();
+                saveAuthSession({
+                    token: res.token,
+                    bindingId: res.user.bindingId,
+                    email: res.user.email,
+                    loginAt,
+                    avatarUrl: res.user.avatarUrl || null,
+                    rsiProfileHandle: res.user.rsiProfileHandle || null,
+                    rsiRankIconUrl: res.user.rsiRankIconUrl || null,
+                    rsiRankLabel: res.user.rsiRankLabel || null,
+                    rsiEnlisted: res.user.rsiEnlisted || null,
+                    rsiLocation: res.user.rsiLocation || null,
+                    rsiFluency: res.user.rsiFluency || null,
+                    rsiOrgName: res.user.rsiOrgName || null,
+                    rsiOrgSid: res.user.rsiOrgSid || null,
+                    rsiOrgHref: res.user.rsiOrgHref || null,
+                    rsiOrgPageUrl: res.user.rsiOrgPageUrl || null,
+                    rsiOrgLogoUrl: res.user.rsiOrgLogoUrl || null,
+                    rsiOrgRoleLabel: res.user.rsiOrgRoleLabel || null,
+                    rsiOrgRankSlots: res.user.rsiOrgRankSlots != null ? res.user.rsiOrgRankSlots : 0,
+                    isAdmin: !!res.user.isAdmin,
+                    isSuperAdmin: !!res.user.isSuperAdmin
+                }, true);
+                refreshNavLoginState();
+                loadCommunityChatFull();
+                const regBtn = document.getElementById('registerSubmitBtn');
+                if (regBtn) {
+                    regBtn.textContent = '已注册';
+                    regBtn.disabled = true;
+                }
+                setTimeout(function () {
+                    resetRegisterSubmitBtn();
+                    refreshLoginDrawerView();
+                }, AUTH_BUTTON_FEEDBACK_MS);
+            } catch (e) {
+                const msg = e && e.message ? e.message : '注册失败';
+                if (isLikelyNetworkError(msg)) {
+                    setRegisterFormHint('无法连接认证服务，请确认本机已启动服务或稍后再试。');
+                } else {
+                    setRegisterFormHint(safeUserFacingMessage(msg));
+                }
+            }
+        }
+
+        async function submitLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            clearLoginFormHint();
+            if (!email || !password) {
+                setLoginFormHint('请输入邮箱和密码。');
+                return;
+            }
+
+            const loginBtn = document.getElementById('loginSubmitBtn');
+            const t0 = Date.now();
+            setLoginSubmitLoading(true);
+
+            try {
+                clearLoginFormHint();
+                const res = await window.UssAuthApi.login({ email, password });
+                const elapsed = Date.now() - t0;
+                const waitMore = Math.max(0, LOGIN_MIN_LOADING_MS - elapsed);
+                if (waitMore > 0) {
+                    await new Promise(function (resolve) {
+                        setTimeout(resolve, waitMore);
+                    });
+                }
+
+                const rememberEl = document.getElementById('rememberMe');
+                const remember = rememberEl ? rememberEl.checked : true;
+                saveAuthSession({
+                    token: res.token,
+                    bindingId: res.user.bindingId,
+                    email: res.user.email,
+                    loginAt: new Date().toISOString(),
+                    avatarUrl: res.user.avatarUrl || null,
+                    rsiProfileHandle: res.user.rsiProfileHandle || null,
+                    rsiRankIconUrl: res.user.rsiRankIconUrl || null,
+                    rsiRankLabel: res.user.rsiRankLabel || null,
+                    rsiEnlisted: res.user.rsiEnlisted || null,
+                    rsiLocation: res.user.rsiLocation || null,
+                    rsiFluency: res.user.rsiFluency || null,
+                    rsiOrgName: res.user.rsiOrgName || null,
+                    rsiOrgSid: res.user.rsiOrgSid || null,
+                    rsiOrgHref: res.user.rsiOrgHref || null,
+                    rsiOrgPageUrl: res.user.rsiOrgPageUrl || null,
+                    rsiOrgLogoUrl: res.user.rsiOrgLogoUrl || null,
+                    rsiOrgRoleLabel: res.user.rsiOrgRoleLabel || null,
+                    rsiOrgRankSlots: res.user.rsiOrgRankSlots != null ? res.user.rsiOrgRankSlots : 0,
+                    isAdmin: !!res.user.isAdmin,
+                    isSuperAdmin: !!res.user.isSuperAdmin
+                }, remember);
+                refreshNavLoginState();
+                loadCommunityChatFull();
+                if (loginBtn) {
+                    loginBtn.classList.remove('rsi-submit-btn--loading');
+                    loginBtn.removeAttribute('aria-busy');
+                    loginBtn.innerHTML = '';
+                    loginBtn.textContent = '登录成功';
+                    loginBtn.disabled = true;
+                }
+                setTimeout(function () {
+                    resetLoginSubmitBtn();
+                    refreshLoginDrawerView();
+                }, AUTH_BUTTON_FEEDBACK_MS);
+            } catch (e) {
+                resetLoginSubmitBtn();
+                const msg = e && e.message ? e.message : '登录失败';
+                if (isLikelyNetworkError(msg)) {
+                    setLoginFormHint('无法连接服务器。');
+                } else if (msg.indexOf('不正确') !== -1 || msg.indexOf('401') !== -1) {
+                    setLoginFormHint('邮箱或密码不正确。');
+                } else {
+                    setLoginFormHint(safeUserFacingMessage(msg));
+                }
+            }
+        }
+
+        function logoutUser() {
+            const lo = document.getElementById('logoutSubmitBtn');
+            if (lo) {
+                lo.textContent = '已退出';
+                lo.disabled = true;
+            }
+            clearAuthSession();
+            refreshNavLoginState();
+            setTimeout(function () {
+                refreshLoginDrawerView();
+                resetLogoutSubmitBtn();
+            }, AUTH_BUTTON_FEEDBACK_MS);
+        }
+
+        refreshNavLoginState();
+        initCommunityBoard();
+        validateAuthSession().finally(function () {
+            refreshNavLoginState();
+            refreshLoginDrawerView();
+            loadCommunityPosts();
+            if (isLoggedIn()) loadCommunityChatFull();
+        });
+    </script>
+</body>
+</html> 
