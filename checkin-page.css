@@ -84,14 +84,6 @@
     padding: 1.5rem 1rem 0;
 }
 
-.checkin-hub-eyebrow {
-    margin: 0 0 0.65rem;
-    font-size: 0.82rem;
-    font-weight: 700;
-    letter-spacing: 0.28em;
-    color: rgba(140, 210, 255, 0.72);
-}
-
 .checkin-hub-page-title {
     margin: 0 0 0.85rem;
     font-size: clamp(1.85rem, 4vw, 2.6rem);
@@ -107,74 +99,6 @@
     font-size: 1rem;
     line-height: 1.65;
     color: rgba(180, 210, 230, 0.78);
-}
-
-.checkin-hub-schedule-banner {
-    width: 100%;
-    max-width: none;
-    box-sizing: border-box;
-    margin: 1.75rem 0 0;
-    padding: 1.1rem 1.25rem 1rem;
-    border-radius: 14px;
-    border: 1px solid rgba(95, 184, 255, 0.35);
-    background: linear-gradient(160deg, rgba(12, 36, 58, 0.92) 0%, rgba(8, 22, 42, 0.88) 100%);
-    box-shadow:
-        0 12px 36px rgba(0, 0, 0, 0.25),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    text-align: left;
-}
-
-.checkin-hub-schedule-heading {
-    margin: 0 0 0.55rem;
-    font-size: 0.95rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    color: rgba(122, 232, 255, 0.95);
-    text-transform: uppercase;
-}
-
-.checkin-hub-schedule-meta {
-    margin: 0 0 0.75rem;
-    font-size: 0.88rem;
-    line-height: 1.6;
-    color: rgba(185, 220, 245, 0.88);
-}
-
-.checkin-hub-schedule-list {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 0.45rem;
-}
-
-.checkin-hub-schedule-item {
-    margin: 0;
-    padding: 0.5rem 0.65rem;
-    border-radius: 8px;
-    font-size: 0.86rem;
-    line-height: 1.45;
-    color: rgba(210, 235, 255, 0.92);
-    background: rgba(0, 0, 0, 0.22);
-    border: 1px solid rgba(95, 184, 255, 0.12);
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.28rem;
-}
-
-.checkin-hub-schedule-item-name {
-    color: #fff;
-    font-weight: 700;
-    font-size: 0.9rem;
-    letter-spacing: 0.02em;
-}
-
-.checkin-hub-schedule-item-status {
-    font-size: 0.82rem;
-    line-height: 1.5;
-    color: rgba(185, 220, 245, 0.9);
 }
 
 .checkin-hub-cards {
@@ -260,6 +184,39 @@
     color: rgba(170, 200, 220, 0.68);
 }
 
+.checkin-hub-card-schedule {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    padding: 0.45rem 0.55rem;
+    border-radius: 8px;
+    border: 1px solid rgba(95, 184, 255, 0.14);
+    background: rgba(0, 0, 0, 0.2);
+    color: rgba(195, 225, 245, 0.88);
+}
+
+.checkin-hub-card-schedule--ok {
+    border-color: rgba(80, 200, 130, 0.35);
+    background: rgba(40, 110, 72, 0.22);
+    color: rgba(170, 255, 210, 0.95);
+}
+
+.checkin-hub-card-schedule--warn {
+    border-color: rgba(255, 200, 120, 0.35);
+    background: rgba(90, 60, 20, 0.25);
+    color: rgba(255, 220, 170, 0.95);
+}
+
+.checkin-hub-card-schedule--off {
+    border-color: rgba(220, 100, 120, 0.28);
+    background: rgba(60, 24, 32, 0.28);
+    color: rgba(255, 200, 205, 0.88);
+}
+
+.checkin-hub-card-schedule--muted {
+    border-color: rgba(95, 184, 255, 0.12);
+    color: rgba(170, 200, 220, 0.72);
+}
+
 .checkin-hub-card-metrics {
     display: flex;
     gap: 1.5rem;
@@ -288,10 +245,24 @@
 
 .checkin-hub-card-enter {
     margin-top: 0.35rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.42rem;
     font-size: 0.88rem;
     font-weight: 700;
     color: rgba(140, 220, 255, 0.88);
     letter-spacing: 0.04em;
+}
+
+.checkin-hub-card-enter-svg {
+    width: 0.85rem;
+    height: 0.85rem;
+    flex-shrink: 0;
+    display: block;
+}
+
+.checkin-hub-card-enter-lbl {
+    line-height: 1.2;
 }
 
 .checkin-hub-card:hover .checkin-hub-card-enter {
@@ -840,7 +811,7 @@
     padding: 0;
     padding-right: 6px;
     box-sizing: border-box;
-    max-height: min(56vh, 28rem);
+    max-height: min(78vh, 48rem);
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-gutter: stable;

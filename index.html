@@ -24,10 +24,10 @@
         })();
     </script>
 </head>
-<body>
+<body class="home-page-body">
     <nav class="navbar">
         <div class="logo">
-            <img src="sp/png/LOGO.png" alt="舰队 LOGO">
+            <img src="fleet-logo.jpg" alt="舰队 LOGO" decoding="async">
         </div>
         <div class="nav-right">
             <button type="button" class="nav-login-trigger" id="navLoginBtn" onclick="openLoginDrawer()" aria-label="登录或注册">
@@ -99,19 +99,21 @@
         
         <!-- 添加左下角信息 -->
         <div class="ship-info">
-            <div class="ship-details">
-                <p class="ship-hero-copy">
-                    <strong class="ship-hero-name">USS-保护伞舰队　</strong>
-                    <span class="ship-hero-tagline">欢迎每一位星际公民成员的加入，平等尊重每一位公民。</span>
-                </p>
+            <div class="ship-info-inner">
+                <div class="ship-details">
+                    <p class="ship-hero-copy">
+                        <strong class="ship-hero-name">USS-保护伞舰队　</strong>
+                        <span class="ship-hero-tagline">欢迎每一位星际公民成员的加入，平等尊重每一位公民。</span>
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    class="ticket-btn"
+                    onclick="window.open('https://robertsspaceindustries.com/orgs/5000', '_blank', 'noopener,noreferrer')"
+                >
+                    立即登舰
+                </button>
             </div>
-            <button
-                type="button"
-                class="ticket-btn"
-                onclick="window.open('https://robertsspaceindustries.com/orgs/5000', '_blank', 'noopener,noreferrer')"
-            >
-                立即登舰
-            </button>
         </div>
         
         <!-- 添加进度条 -->
@@ -161,15 +163,24 @@
                             </div>
                             <div class="community-chat-compose community-dropzone">
                                 <div class="community-chat-compose-row">
-                                    <input
-                                        type="text"
-                                        id="communityChatInput"
-                                        class="community-chat-input"
-                                        maxlength="400"
-                                        placeholder="登录后发送短消息…"
-                                        disabled
-                                        autocomplete="off"
-                                    />
+                                    <div class="community-chat-input-wrap">
+                                        <textarea
+                                            id="communityChatInput"
+                                            class="community-chat-input"
+                                            rows="1"
+                                            maxlength="400"
+                                            autocomplete="off"
+                                            aria-label="聊天消息输入"
+                                            disabled
+                                        ></textarea>
+                                        <div
+                                            id="communityChatMentionPop"
+                                            class="community-chat-mention-pop"
+                                            hidden
+                                            role="listbox"
+                                            aria-label="选择要艾特的成员"
+                                        ></div>
+                                    </div>
                                     <div class="community-send-split">
                                         <button type="button" class="primary-btn community-chat-send" id="communityChatSendBtn" disabled>发送</button>
                                         <button
@@ -196,28 +207,31 @@
                                 <div id="communityChatPreviewRow" class="community-preview-row community-chat-preview-row" aria-live="polite"></div>
                             </div>
                             <p id="communityChatHint" class="community-chat-hint" role="status"></p>
+                            <div id="communityMentionToast" class="community-mention-toast" hidden role="status"></div>
                         </div>
                     </div>
                 </div>
 
                 <div class="community-panel community-panel-forum">
                     <div class="community-panel-head">
-                        <span class="community-panel-title">论坛帖子</span>
+                        <span class="community-panel-title">舰队贴子</span>
                     </div>
                     <div class="community-composer community-composer-inline community-dropzone">
                         <div id="communityAuthHint" class="community-auth-hint">请先登录后再发帖与回复（右上角登录/注册）。</div>
-                        <textarea
-                            id="communityText"
-                            class="community-textarea"
-                            rows="3"
-                            maxlength="4000"
-                            placeholder="分享见闻、截图或动图…"
-                            disabled
-                        ></textarea>
-                        <div class="community-toolbar">
+                        <div class="community-post-compose-row">
+                            <div class="community-post-input-wrap">
+                                <textarea
+                                    id="communityText"
+                                    class="community-post-textarea"
+                                    rows="1"
+                                    maxlength="4000"
+                                    aria-label="舰队帖子正文"
+                                    disabled
+                                ></textarea>
+                            </div>
                             <div class="community-send-split community-send-split--forum">
                                 <button type="button" class="primary-btn community-post-btn community-post-btn--main" id="communitySubmitBtn" disabled>
-                                    发布帖子
+                                    发送帖子
                                 </button>
                                 <button
                                     type="button"
@@ -250,6 +264,27 @@
             </div>
         </div>
     </section>
+
+    <div
+        id="communityConfirmModal"
+        class="community-confirm-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="communityConfirmMsg"
+        aria-hidden="true"
+        hidden
+    >
+        <div class="community-confirm-dialog">
+            <p class="community-confirm-eyebrow" aria-hidden="true">U S S</p>
+            <p id="communityConfirmMsg" class="community-confirm-msg"></p>
+            <div class="community-confirm-actions">
+                <button type="button" class="community-confirm-btn community-confirm-btn-cancel" id="communityConfirmCancel">
+                    取消
+                </button>
+                <button type="button" class="community-confirm-btn community-confirm-btn-ok" id="communityConfirmOk">确定</button>
+            </div>
+        </div>
+    </div>
 
     <section class="games-section" id="tickets-section">
         <h1 class="section-title">Welcome aboard</h1>
@@ -887,6 +922,16 @@
         let communityRosterSearchQuery = '';
         let communityInboxSnapshot = { fleetMaxSeq: 0, dmMaxByPeer: {} };
         let communityImageLightboxKeyHandler = null;
+        /** 全量成员（含自己），用于 @ 补全 */
+        let communityChatRosterMembersList = [];
+        const communityMentionNotifiedKeys = new Set();
+        let communityMentionUI = {
+            open: false,
+            atStart: 0,
+            query: '',
+            activeIdx: 0,
+            filtered: [],
+        };
 
         function ensureCommunityImageLightbox() {
             let overlay = document.getElementById('communityImageLightbox');
@@ -1046,8 +1091,17 @@
                 communityInboxSnapshot.fleetMaxSeq = fleetMax;
                 communityInboxSnapshot.dmMaxByPeer = dmNorm;
                 updateCommunityUnreadBadges();
+                syncCommunityFleetPollCursorFromInbox();
             } catch (e) {
                 /* 静默 */
+            }
+        }
+
+        /** 从未打开过舰队聊天时，用收件箱 maxSeq 对齐轮询游标，避免用 afterSeq=0 拉整页历史并误触发 @ 提醒。 */
+        function syncCommunityFleetPollCursorFromInbox() {
+            const fm = communityInboxSnapshot.fleetMaxSeq || 0;
+            if (communityChatKind !== 'fleet' && fm > 0 && (communityChatMaxSeq || 0) === 0) {
+                communityChatMaxSeq = fm;
             }
         }
 
@@ -1105,6 +1159,244 @@
         function clearCommunityChatHint() {
             const el = document.getElementById('communityChatHint');
             if (el) el.textContent = '';
+        }
+
+        function closeCommunityChatMentionPicker() {
+            communityMentionUI.open = false;
+            communityMentionUI.filtered = [];
+            const pop = document.getElementById('communityChatMentionPop');
+            if (pop) {
+                pop.hidden = true;
+                pop.innerHTML = '';
+            }
+        }
+
+        function communityMentionShowEveryoneOption(q) {
+            const qq = String(q || '').trim().toLowerCase();
+            if (!qq) return true;
+            if (qq === '全') return true;
+            if ('全体成员'.indexOf(qq) === 0) return true;
+            return false;
+        }
+
+        function communityGetFilteredMentionList(query) {
+            const q = String(query || '').trim().toLowerCase();
+            const list = Array.isArray(communityChatRosterMembersList) ? communityChatRosterMembersList : [];
+            const members = list
+                .map(function (m) {
+                    const bindingId = String(m && m.bindingId != null ? m.bindingId : '').trim();
+                    return {
+                        bindingId,
+                        avatarUrl: m && m.avatarUrl != null ? m.avatarUrl : null,
+                    };
+                })
+                .filter(function (x) {
+                    return x.bindingId && (!q || x.bindingId.toLowerCase().indexOf(q) !== -1);
+                });
+            const showEveryone =
+                communityChatKind === 'fleet' &&
+                sessionIsCommunityStaff() &&
+                communityMentionShowEveryoneOption(q);
+            if (showEveryone) {
+                members.unshift({ bindingId: '__ALL_MEMBERS__', avatarUrl: null, isAll: true });
+            }
+            return members;
+        }
+
+        function renderCommunityChatMentionPicker(items) {
+            const pop = document.getElementById('communityChatMentionPop');
+            if (!pop) return;
+            pop.innerHTML = '';
+            if (!items.length) {
+                pop.hidden = true;
+                communityMentionUI.open = false;
+                return;
+            }
+            items.forEach(
+                function (it, idx) {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'community-chat-mention-pop__item';
+                    if (it.isAll) b.classList.add('community-chat-mention-pop__item--all');
+                    b.setAttribute('role', 'option');
+                    b.setAttribute('aria-selected', idx === communityMentionUI.activeIdx ? 'true' : 'false');
+                    if (idx === communityMentionUI.activeIdx) b.classList.add('is-active');
+                    const av = document.createElement('span');
+                    av.className = 'community-chat-mention-pop__avatar';
+                    av.setAttribute('aria-hidden', 'true');
+                    const img = document.createElement('img');
+                    img.className = 'community-chat-mention-pop__avatar-img';
+                    img.alt = '';
+                    if (it.isAll) {
+                        img.src = communityAvatarFallbackDataUri('全');
+                    } else {
+                        const src = communityAvatarSrc(it.avatarUrl);
+                        img.src = src || communityAvatarFallbackDataUri(communityAuthorInitial(it.bindingId));
+                    }
+                    av.appendChild(img);
+                    const lab = document.createElement('span');
+                    lab.className = 'community-chat-mention-pop__label';
+                    lab.textContent = it.isAll ? '@全体成员' : '@' + it.bindingId;
+                    b.appendChild(av);
+                    b.appendChild(lab);
+                    b.addEventListener('mousedown', function (e) {
+                        e.preventDefault();
+                    });
+                    b.addEventListener('click', function () {
+                        insertCommunityChatMention(it.isAll ? '__ALL_MEMBERS__' : it.bindingId);
+                    });
+                    pop.appendChild(b);
+                }
+            );
+            pop.hidden = false;
+            communityMentionUI.open = true;
+        }
+
+        function insertCommunityChatMention(bindingId) {
+            const input = document.getElementById('communityChatInput');
+            if (!input) return;
+            const bid = String(bindingId || '').trim();
+            if (!bid) return;
+            const v = input.value;
+            const pos = input.selectionStart != null ? input.selectionStart : v.length;
+            const start = communityMentionUI.atStart >= 0 ? communityMentionUI.atStart : v.lastIndexOf('@');
+            if (start < 0) return;
+            const before = v.slice(0, start);
+            const after = v.slice(pos);
+            const insert = bid === '__ALL_MEMBERS__' ? '@全体成员 ' : '@' + bid + ' ';
+            input.value = before + insert + after;
+            const np = before.length + insert.length;
+            try {
+                input.setSelectionRange(np, np);
+            } catch (ignore) {}
+            closeCommunityChatMentionPicker();
+            input.focus();
+        }
+
+        function syncCommunityChatMentionFromInput() {
+            const input = document.getElementById('communityChatInput');
+            if (!input || input.disabled) {
+                closeCommunityChatMentionPicker();
+                return;
+            }
+            const v = input.value;
+            const pos = input.selectionStart != null ? input.selectionStart : v.length;
+            let i = pos - 1;
+            while (i >= 0 && v.charAt(i) !== '\n' && v.charAt(i) !== ' ') {
+                i--;
+            }
+            const segStart = i + 1;
+            const seg = v.slice(segStart, pos);
+            if (seg.charAt(0) !== '@') {
+                closeCommunityChatMentionPicker();
+                return;
+            }
+            const q = seg.slice(1);
+            if (q.indexOf(' ') !== -1 || q.indexOf('@') !== -1) {
+                closeCommunityChatMentionPicker();
+                return;
+            }
+            communityMentionUI.atStart = segStart;
+            communityMentionUI.query = q;
+            const items = communityGetFilteredMentionList(q);
+            communityMentionUI.filtered = items;
+            if (!items.length) {
+                closeCommunityChatMentionPicker();
+                return;
+            }
+            if (communityMentionUI.activeIdx >= items.length) communityMentionUI.activeIdx = 0;
+            renderCommunityChatMentionPicker(items);
+        }
+
+        function applyCommunityChatTextWithMentions(el, text, mentionBindingIds, mentionEveryone) {
+            while (el.firstChild) el.removeChild(el.firstChild);
+            const raw = String(text != null ? text : '');
+            const mentionAll = !!mentionEveryone;
+            const set = new Set(
+                (Array.isArray(mentionBindingIds) ? mentionBindingIds : []).map(function (x) {
+                    return String(x || '')
+                        .trim()
+                        .toLowerCase();
+                }).filter(Boolean)
+            );
+            const parts = raw.split(/(@全体成员|@[^\s@]+)/g);
+            for (let pi = 0; pi < parts.length; pi++) {
+                const part = parts[pi];
+                if (part === '@全体成员' && mentionAll) {
+                    const span = document.createElement('span');
+                    span.className = 'community-chat-mention';
+                    span.textContent = part;
+                    el.appendChild(span);
+                } else if (
+                    part.length > 1 &&
+                    part.charAt(0) === '@' &&
+                    part !== '@全体成员' &&
+                    set.has(part.slice(1).toLowerCase())
+                ) {
+                    const span = document.createElement('span');
+                    span.className = 'community-chat-mention';
+                    span.textContent = part;
+                    el.appendChild(span);
+                } else {
+                    el.appendChild(document.createTextNode(part));
+                }
+            }
+        }
+
+        function showCommunityMentionToast(fromHandle, channelLabel, snippet) {
+            const el = document.getElementById('communityMentionToast');
+            if (!el) return;
+            const sn = String(snippet || '').trim().slice(0, 120);
+            el.textContent =
+                String(channelLabel || '聊天') +
+                '：' +
+                String(fromHandle || '成员') +
+                ' 提到了你' +
+                (sn ? '：' + sn : '');
+            el.hidden = false;
+            if (el._communityMentionT) clearTimeout(el._communityMentionT);
+            el._communityMentionT = setTimeout(function () {
+                el.hidden = true;
+            }, 7000);
+            try {
+                if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                    new Notification('舰员交流 · ' + String(channelLabel || '聊天'), {
+                        body: String(fromHandle || '成员') + ' @了你' + (sn ? '：' + sn : ''),
+                        tag: 'ussmax-mention-' + String(fromHandle || '') + '-' + String(snippet || '').slice(0, 20),
+                    });
+                } else if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+                    Notification.requestPermission().catch(function () {});
+                }
+            } catch (ignore) {}
+        }
+
+        function maybeNotifyCommunityChatMention(m, chatKind) {
+            if (!m || communityChatMessageIsMine(m)) return;
+            const sess = loadAuthSession();
+            if (!sess || !sess.bindingId) return;
+            const me = String(sess.bindingId)
+                .trim()
+                .toLowerCase();
+            const ids = Array.isArray(m.mentionBindingIds) ? m.mentionBindingIds : [];
+            if (!ids.length) return;
+            const hit = ids.some(function (id) {
+                return String(id || '')
+                    .trim()
+                    .toLowerCase() === me;
+            });
+            if (!hit) return;
+            const kind = chatKind || 'fleet';
+            const key = kind + ':' + String(m.seq) + ':' + String(m.id || '');
+            if (communityMentionNotifiedKeys.has(key)) return;
+            communityMentionNotifiedKeys.add(key);
+            if (communityMentionNotifiedKeys.size > 400) {
+                communityMentionNotifiedKeys.clear();
+                communityMentionNotifiedKeys.add(key);
+            }
+            const from = String(m.bindingId || '').trim() || '成员';
+            const label = kind === 'dm' ? '私信' : '舰队聊天';
+            const snippet = String(m.text != null ? m.text : '').trim();
+            showCommunityMentionToast(from, label, snippet);
         }
 
         function setCommunityChatHint(msg) {
@@ -1426,7 +1718,7 @@
                 del.textContent = '删除';
                 del.addEventListener('click', function (ev) {
                     ev.stopPropagation();
-                    handleCommunityChatDelete(m.id, '确定删除这条消息？', kind);
+                    handleCommunityChatDelete(m.id, '确定删除这条消息？', kind, { danger: true });
                 });
                 wrap.appendChild(del);
             }
@@ -1438,14 +1730,69 @@
                 recall.textContent = '撤回';
                 recall.addEventListener('click', function (ev) {
                     ev.stopPropagation();
-                    handleCommunityChatDelete(m.id, '确定撤回这条消息？', kind);
+                    handleCommunityChatDelete(m.id, '确定撤回这条消息？', kind, { danger: false });
                 });
                 wrap.appendChild(recall);
             }
             return has ? wrap : null;
         }
 
-        async function handleCommunityChatDelete(messageId, confirmMsg, chatKind) {
+        function showCommunityConfirm(message, options) {
+            const opts = options || {};
+            return new Promise(function (resolve) {
+                const root = document.getElementById('communityConfirmModal');
+                const msgEl = document.getElementById('communityConfirmMsg');
+                const okBtn = document.getElementById('communityConfirmOk');
+                const cancelBtn = document.getElementById('communityConfirmCancel');
+                if (!root || !msgEl || !okBtn || !cancelBtn) {
+                    resolve(window.confirm(message || '确定？'));
+                    return;
+                }
+                const danger = !!opts.danger;
+                msgEl.textContent = message || '确定？';
+                okBtn.textContent = danger ? '删除' : '确定';
+                cancelBtn.textContent = '取消';
+                if (danger) root.classList.add('community-confirm-modal--danger');
+                else root.classList.remove('community-confirm-modal--danger');
+
+                function cleanup(result) {
+                    root.classList.remove('is-open');
+                    root.hidden = true;
+                    root.setAttribute('aria-hidden', 'true');
+                    document.removeEventListener('keydown', onKey);
+                    root.removeEventListener('click', onBackdrop);
+                    okBtn.removeEventListener('click', onOk);
+                    cancelBtn.removeEventListener('click', onCancel);
+                    resolve(result);
+                }
+
+                function onOk() {
+                    cleanup(true);
+                }
+                function onCancel() {
+                    cleanup(false);
+                }
+                function onBackdrop(ev) {
+                    if (ev.target === root) cleanup(false);
+                }
+                function onKey(ev) {
+                    if (ev.key === 'Escape') cleanup(false);
+                }
+
+                root.hidden = false;
+                root.classList.add('is-open');
+                root.setAttribute('aria-hidden', 'false');
+                document.addEventListener('keydown', onKey);
+                root.addEventListener('click', onBackdrop);
+                okBtn.addEventListener('click', onOk);
+                cancelBtn.addEventListener('click', onCancel);
+                requestAnimationFrame(function () {
+                    okBtn.focus();
+                });
+            });
+        }
+
+        async function handleCommunityChatDelete(messageId, confirmMsg, chatKind, confirmOpts) {
             if (!messageId || !window.UssAuthApi) return;
             const sess = loadAuthSession();
             if (!sess || !sess.token) {
@@ -1459,7 +1806,8 @@
                 );
                 kind = line0 && line0.dataset.chatKind ? line0.dataset.chatKind : 'fleet';
             }
-            if (!confirm(confirmMsg || '确定删除？')) return;
+            const ok = await showCommunityConfirm(confirmMsg || '确定删除？', confirmOpts || {});
+            if (!ok) return;
             clearCommunityChatHint();
             try {
                 const data =
@@ -1502,34 +1850,52 @@
             );
         }
 
+        function buildCommunityChatAvatarCell(bindingId, avatarUrl, avatarRsiHref) {
+            const avWrap = document.createElement('div');
+            avWrap.className = 'community-author-avatar';
+            const img = document.createElement('img');
+            img.className = 'community-author-avatar-img';
+            img.alt = String(bindingId || '用户头像');
+            const src = communityAvatarSrc(avatarUrl);
+            img.src = src || communityAvatarFallbackDataUri(communityAuthorInitial(bindingId));
+            const rsi = typeof avatarRsiHref === 'string' ? avatarRsiHref.trim() : '';
+            if (rsi) {
+                const a = document.createElement('a');
+                a.className = 'community-author-avatar-link';
+                a.href = rsi;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                a.setAttribute('aria-label', '在 RSI 打开 ' + String(bindingId || '玩家') + ' 的个人页');
+                a.addEventListener('click', function (ev) {
+                    ev.stopPropagation();
+                });
+                a.appendChild(img);
+                avWrap.appendChild(a);
+            } else {
+                avWrap.appendChild(img);
+            }
+            return avWrap;
+        }
+
         function buildCommunityChatLine(m, lineKind) {
             const kind = lineKind != null ? lineKind : communityChatKind;
             const line = document.createElement('div');
             line.className = 'community-chat-line';
             line.dataset.chatKind = kind;
-            if (communityChatMessageIsMine(m)) {
+            const isMine = communityChatMessageIsMine(m);
+            if (isMine) {
                 line.classList.add('community-chat-line--mine');
             } else {
                 line.classList.add('community-chat-line--other');
             }
             line.setAttribute('data-seq', String(m.seq));
             if (m.id) line.setAttribute('data-id', String(m.id));
-            const actions = buildCommunityChatActions(m, kind);
-            const avatarRsiHref = communityChatMessageIsMine(m)
-                ? ''
-                : communityRsiCitizenProfileUrl(m.bindingId);
-            line.appendChild(
-                buildCommunityAuthorRow(m.bindingId, m.avatarUrl, m.createdAt, actions, avatarRsiHref)
-            );
+
             const bodyText = String(m.text != null ? m.text : '').trim();
-            if (bodyText) {
-                const txt = document.createElement('div');
-                txt.className = 'community-chat-text';
-                txt.textContent = bodyText;
-                line.appendChild(txt);
-            }
             const imgs = Array.isArray(m.images) ? m.images : [];
-            if (imgs.length) {
+
+            function appendChatImages(targetLine) {
+                if (!imgs.length) return;
                 const grid = document.createElement('div');
                 grid.className = 'community-chat-images';
                 imgs.forEach(function (rel) {
@@ -1549,10 +1915,62 @@
                     });
                     grid.appendChild(im);
                 });
-                if (grid.childNodes.length) line.appendChild(grid);
+                if (grid.childNodes.length) targetLine.appendChild(grid);
             }
+
+            if (isMine) {
+                const shell = document.createElement('div');
+                shell.className = 'community-chat-line-mine-shell';
+
+                const actions = buildCommunityChatActions(m, kind);
+                const metaRow = document.createElement('div');
+                metaRow.className = 'community-chat-mine-meta-row';
+                const timeEl = document.createElement('time');
+                timeEl.className = 'community-author-time';
+                timeEl.dateTime = m.createdAt || '';
+                timeEl.textContent = formatCommunityTime(m.createdAt);
+                metaRow.appendChild(timeEl);
+                if (actions) metaRow.appendChild(actions);
+                shell.appendChild(metaRow);
+
+                const mainRow = document.createElement('div');
+                mainRow.className = 'community-chat-line-mine-main';
+
+                if (bodyText) {
+                    const txt = document.createElement('div');
+                    txt.className = 'community-chat-text';
+                    applyCommunityChatTextWithMentions(txt, bodyText, m.mentionBindingIds, m.mentionEveryone);
+                    mainRow.appendChild(txt);
+                }
+                const avCell = buildCommunityChatAvatarCell(m.bindingId, m.avatarUrl, '');
+                mainRow.appendChild(avCell);
+
+                shell.appendChild(mainRow);
+                line.appendChild(shell);
+                appendChatImages(line);
+            } else {
+                const actions = buildCommunityChatActions(m, kind);
+                const avatarRsiHref = communityRsiCitizenProfileUrl(m.bindingId);
+                line.appendChild(
+                    buildCommunityAuthorRow(m.bindingId, m.avatarUrl, m.createdAt, actions, avatarRsiHref)
+                );
+                if (bodyText) {
+                    const txt = document.createElement('div');
+                    txt.className = 'community-chat-text';
+                    applyCommunityChatTextWithMentions(txt, bodyText, m.mentionBindingIds, m.mentionEveryone);
+                    line.appendChild(txt);
+                }
+                appendChatImages(line);
+            }
+
             line.addEventListener('click', function (ev) {
                 if (ev.target.closest('.community-chat-actions')) return;
+                const log = document.getElementById('communityChatLog');
+                if (log) {
+                    log.querySelectorAll('.community-chat-line.community-chat-line--time-open').forEach(function (ln) {
+                        if (ln !== line) ln.classList.remove('community-chat-line--time-open');
+                    });
+                }
                 line.classList.toggle('community-chat-line--time-open');
             });
             return line;
@@ -1592,13 +2010,35 @@
                 head.appendChild(buildCommunityAuthorRow(p.bindingId, p.avatarUrl, p.createdAt));
 
                 if (sessionIsCommunityStaff() || communityPostIsMine(p)) {
+                    card.addEventListener('click', function (ev) {
+                        if (ev.target.closest('.community-post-delete')) return;
+                        if (ev.target.closest('.community-reply-delete')) return;
+                        if (ev.target.closest('.community-reply-item')) return;
+                        if (ev.target.closest('.community-reply-form')) return;
+                        const feedEl = document.getElementById('communityFeed');
+                        if (feedEl) {
+                            feedEl
+                                .querySelectorAll('.community-reply-item.community-reply-item--actions-open')
+                                .forEach(function (it) {
+                                    it.classList.remove('community-reply-item--actions-open');
+                                });
+                            feedEl
+                                .querySelectorAll('.community-post-card.community-post-card--actions-open')
+                                .forEach(function (c) {
+                                    if (c !== card) c.classList.remove('community-post-card--actions-open');
+                                });
+                        }
+                        card.classList.toggle('community-post-card--actions-open');
+                    });
                     const del = document.createElement('button');
                     del.type = 'button';
                     del.className = 'community-post-delete';
                     del.textContent = '删除';
-                    del.addEventListener('click', async function () {
+                    del.addEventListener('click', async function (ev) {
+                        ev.stopPropagation();
                         if (!sessionIsCommunityStaff() && !communityPostIsMine(p)) return;
-                        if (!confirm('确定删除该帖子？')) return;
+                        const sure = await showCommunityConfirm('确定删除该帖子？', { danger: true });
+                        if (!sure) return;
                         const sess = loadAuthSession();
                         if (!sess || !sess.token) return;
                         del.disabled = true;
@@ -1661,13 +2101,34 @@
                         item.className = 'community-reply-item';
                         let replyDelBtn = null;
                         if (sessionIsCommunityStaff() || communityReplyIsMine(r)) {
+                            item.addEventListener('click', function (ev) {
+                                if (ev.target.closest('.community-reply-delete')) return;
+                                if (ev.target.closest('a.community-author-avatar-link')) return;
+                                const feedEl = document.getElementById('communityFeed');
+                                if (feedEl) {
+                                    feedEl
+                                        .querySelectorAll('.community-post-card.community-post-card--actions-open')
+                                        .forEach(function (c) {
+                                            c.classList.remove('community-post-card--actions-open');
+                                        });
+                                    feedEl
+                                        .querySelectorAll('.community-reply-item.community-reply-item--actions-open')
+                                        .forEach(function (it) {
+                                            if (it !== item) it.classList.remove('community-reply-item--actions-open');
+                                        });
+                                }
+                                item.classList.toggle('community-reply-item--actions-open');
+                                ev.stopPropagation();
+                            });
                             replyDelBtn = document.createElement('button');
                             replyDelBtn.type = 'button';
                             replyDelBtn.className = 'community-reply-delete';
                             replyDelBtn.textContent = '删除';
-                            replyDelBtn.addEventListener('click', async function () {
+                            replyDelBtn.addEventListener('click', async function (ev) {
+                                ev.stopPropagation();
                                 if (!sessionIsCommunityStaff() && !communityReplyIsMine(r)) return;
-                                if (!confirm('确定删除该条回复？')) return;
+                                const sure = await showCommunityConfirm('确定删除该条回复？', { danger: true });
+                                if (!sure) return;
                                 const sess = loadAuthSession();
                                 if (!sess || !sess.token || !r.id) return;
                                 replyDelBtn.disabled = true;
@@ -1911,6 +2372,8 @@
         function renderCommunityChatRosterFromMembers(members) {
             const inner = document.getElementById('communityChatRosterInner');
             if (!inner) return;
+            const list = Array.isArray(members) ? members : [];
+            communityChatRosterMembersList = list.slice();
             const sess = loadAuthSession();
             const me = sess && sess.bindingId ? String(sess.bindingId).trim().toLowerCase() : '';
             inner.innerHTML = '';
@@ -1925,7 +2388,6 @@
             fleetBadge.hidden = true;
             fleetBtn.appendChild(fleetBadge);
             inner.appendChild(fleetBtn);
-            const list = Array.isArray(members) ? members : [];
             let totalInFleet = 0;
             list.forEach(function (mem) {
                 const bid0 = mem && mem.bindingId != null ? String(mem.bindingId).trim() : '';
@@ -1994,6 +2456,7 @@
                 inner.hidden = true;
                 guest.hidden = false;
                 communityRosterSearchQuery = '';
+                communityChatRosterMembersList = [];
                 return;
             }
             guest.hidden = true;
@@ -2004,6 +2467,7 @@
                 const data = await window.UssAuthApi.communityRoster(sess.token);
                 renderCommunityChatRosterFromMembers(data.members || []);
             } catch (e) {
+                communityChatRosterMembersList = [];
                 inner.innerHTML = '';
                 const err = document.createElement('div');
                 err.className = 'community-chat-roster-error';
@@ -2060,21 +2524,47 @@
         async function pollCommunityChat() {
             if (!window.UssAuthApi) return { ok: true, skipped: true };
             if (!isLoggedIn()) return { ok: true, skipped: true };
-            if (document.visibilityState !== 'visible') return { ok: true, skipped: true };
             try {
                 const sess = loadAuthSession();
                 if (!sess || !sess.token) return { ok: true, skipped: true };
-                if (communityChatKind === 'dm') {
-                    if (!communityChatDmPeer) return { ok: true, skipped: true };
-                    const cur = communityDmMaxSeq || 0;
+
+                let curFleet = communityChatMaxSeq || 0;
+                if (curFleet === 0 && (communityInboxSnapshot.fleetMaxSeq || 0) > 0) {
+                    communityChatMaxSeq = communityInboxSnapshot.fleetMaxSeq;
+                    curFleet = communityChatMaxSeq;
+                }
+
+                const fleetData = await window.UssAuthApi.communityChatFetch(curFleet);
+                const fleetList = fleetData.messages || [];
+                if (fleetList.length) {
+                    fleetList.forEach(function (m) {
+                        maybeNotifyCommunityChatMention(m, 'fleet');
+                        if (communityChatKind === 'fleet') {
+                            appendCommunityChatLine(m, 'fleet');
+                        }
+                    });
+                    if (communityChatKind === 'fleet') {
+                        scrollCommunityChatToBottom(false);
+                    }
+                }
+                if (typeof fleetData.maxSeq === 'number' && fleetData.maxSeq > 0) {
+                    communityChatMaxSeq = fleetData.maxSeq;
+                }
+                if (communityChatKind === 'fleet') {
+                    markCommunityFleetRead(communityChatMaxSeq);
+                }
+
+                if (communityChatKind === 'dm' && communityChatDmPeer) {
+                    const curDm = communityDmMaxSeq || 0;
                     const data = await window.UssAuthApi.communityDmFetch(
                         sess.token,
                         communityChatDmPeer,
-                        cur
+                        curDm
                     );
                     const list = data.messages || [];
                     if (list.length) {
                         list.forEach(function (m) {
+                            maybeNotifyCommunityChatMention(m, 'dm');
                             appendCommunityChatLine(m, 'dm');
                         });
                         scrollCommunityChatToBottom(false);
@@ -2083,21 +2573,8 @@
                         communityDmMaxSeq = data.maxSeq;
                     }
                     markCommunityDmPeerRead(communityChatDmPeer, communityDmMaxSeq);
-                } else {
-                    const cur = communityChatMaxSeq || 0;
-                    const data = await window.UssAuthApi.communityChatFetch(cur);
-                    const list = data.messages || [];
-                    if (list.length) {
-                        list.forEach(function (m) {
-                            appendCommunityChatLine(m, 'fleet');
-                        });
-                        scrollCommunityChatToBottom(false);
-                    }
-                    if (typeof data.maxSeq === 'number' && data.maxSeq > 0) {
-                        communityChatMaxSeq = data.maxSeq;
-                    }
-                    markCommunityFleetRead(communityChatMaxSeq);
                 }
+
                 return { ok: true };
             } catch (e) {
                 if (e && e.status === 429) return { ok: false, rateLimited: true };
@@ -2146,6 +2623,7 @@
         async function sendCommunityChat() {
             if (!window.UssAuthApi) return;
             clearCommunityChatHint();
+            closeCommunityChatMentionPicker();
             const sess = loadAuthSession();
             if (!sess || !sess.token) {
                 setCommunityChatHint('请先登录后再发言。');
@@ -2226,7 +2704,7 @@
             const postMenuBtn = document.getElementById('communityPostMenuBtn');
             if (btn) {
                 btn.disabled = true;
-                btn.textContent = '发布中…';
+                btn.textContent = '发送中…';
             }
             if (postMenuBtn) postMenuBtn.disabled = true;
             try {
@@ -2246,22 +2724,14 @@
                 setCommunityFormHint(e && e.message ? e.message : '发帖失败');
             } finally {
                 refreshCommunitySessionUi();
-                if (btn) btn.textContent = '发布帖子';
+                if (btn) btn.textContent = '发送帖子';
             }
         }
 
         function updateCommunityChatInputPlaceholder() {
             const chatInput = document.getElementById('communityChatInput');
             if (!chatInput) return;
-            if (!isLoggedIn()) {
-                chatInput.placeholder = '登录后发送短消息…';
-                return;
-            }
-            if (communityChatKind === 'dm' && communityChatDmLabel) {
-                chatInput.placeholder = '私信 ' + communityChatDmLabel + '，Enter 发送…';
-            } else {
-                chatInput.placeholder = '输入消息，Enter 发送…';
-            }
+            chatInput.placeholder = '';
         }
 
         function refreshCommunitySessionUi() {
@@ -2301,15 +2771,14 @@
             if (hint) hint.hidden = logged;
             if (ta) {
                 ta.disabled = !logged;
-                ta.placeholder = logged ? '分享见闻、截图或动图…' : '登录后可发帖…';
+                ta.placeholder = '';
             }
             if (fileInput) fileInput.disabled = !logged;
             if (postMenuBtn) postMenuBtn.disabled = !logged;
             if (postBtn) postBtn.disabled = !logged;
             if (chatInput) {
                 chatInput.disabled = !logged;
-                if (!logged) chatInput.placeholder = '登录后发送短消息…';
-                else updateCommunityChatInputPlaceholder();
+                updateCommunityChatInputPlaceholder();
             }
             if (chatBtn) chatBtn.disabled = !logged;
             if (chatMenuBtn) chatMenuBtn.disabled = !logged;
@@ -2443,10 +2912,66 @@
             if (chatSendBtn) chatSendBtn.addEventListener('click', sendCommunityChat);
             if (chatInput) {
                 chatInput.addEventListener('keydown', function (ev) {
-                    if (ev.key === 'Enter' && !ev.shiftKey) {
+                    if (ev.isComposing) return;
+                    const isEnter = ev.key === 'Enter' || ev.key === 'NumpadEnter';
+                    if (isEnter && (ev.ctrlKey || ev.metaKey)) {
+                        ev.preventDefault();
+                        const ta = chatInput;
+                        const v = String(ta.value || '');
+                        const start = ta.selectionStart != null ? ta.selectionStart : v.length;
+                        const end = ta.selectionEnd != null ? ta.selectionEnd : start;
+                        ta.value = v.slice(0, start) + '\n' + v.slice(end);
+                        const np = start + 1;
+                        try {
+                            ta.setSelectionRange(np, np);
+                        } catch (ignore) {}
+                        syncCommunityChatMentionFromInput();
+                        return;
+                    }
+                    if (communityMentionUI.open && communityMentionUI.filtered.length) {
+                        if (ev.key === 'ArrowDown') {
+                            ev.preventDefault();
+                            communityMentionUI.activeIdx = Math.min(
+                                communityMentionUI.filtered.length - 1,
+                                communityMentionUI.activeIdx + 1
+                            );
+                            renderCommunityChatMentionPicker(communityMentionUI.filtered);
+                            return;
+                        }
+                        if (ev.key === 'ArrowUp') {
+                            ev.preventDefault();
+                            communityMentionUI.activeIdx = Math.max(0, communityMentionUI.activeIdx - 1);
+                            renderCommunityChatMentionPicker(communityMentionUI.filtered);
+                            return;
+                        }
+                        if (ev.key === 'Escape') {
+                            ev.preventDefault();
+                            closeCommunityChatMentionPicker();
+                            return;
+                        }
+                        if (ev.key === 'Tab') {
+                            ev.preventDefault();
+                            const pick = communityMentionUI.filtered[communityMentionUI.activeIdx];
+                            if (pick) insertCommunityChatMention(pick.bindingId);
+                            return;
+                        }
+                        if (isEnter && !ev.ctrlKey && !ev.metaKey) {
+                            ev.preventDefault();
+                            const pick = communityMentionUI.filtered[communityMentionUI.activeIdx];
+                            if (pick) insertCommunityChatMention(pick.bindingId);
+                            return;
+                        }
+                    }
+                    if (isEnter && !ev.ctrlKey && !ev.metaKey) {
                         ev.preventDefault();
                         sendCommunityChat();
                     }
+                });
+                chatInput.addEventListener('input', syncCommunityChatMentionFromInput);
+                chatInput.addEventListener('keyup', syncCommunityChatMentionFromInput);
+                chatInput.addEventListener('click', syncCommunityChatMentionFromInput);
+                chatInput.addEventListener('blur', function () {
+                    window.setTimeout(closeCommunityChatMentionPicker, 200);
                 });
             }
 

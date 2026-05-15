@@ -13,6 +13,12 @@
         { branch: 'ussprod', branchLabel: 'USS生产队', points: 0, streak: 0, todaySigned: false },
     ];
 
+    /** 卡片底部「进入」右侧图标（viewBox 与用户提供的 SVG 一致，fill 用 currentColor 以适配深色主题与悬停） */
+    var CHECKIN_HUB_ENTER_ICON_SVG =
+        '<svg class="checkin-hub-card-enter-svg" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+        '<path fill="currentColor" d="M285.816972 1024L225.757072 963.9401l451.940099-451.9401L225.757072 60.0599 285.816972 0l512.425956 512L285.816972 1024z"/>' +
+        '</svg>';
+
     function loadAuthSession() {
         try {
             var raw = sessionStorage.getItem(AUTH_SESSION_KEY);
@@ -73,69 +79,62 @@
         }
     }
 
-    function renderScheduleBanner(summary) {
-        var box = document.getElementById('checkinHubScheduleBanner');
-        var meta = document.getElementById('checkinHubScheduleMeta');
-        var list = document.getElementById('checkinHubScheduleList');
-        if (!box || !meta || !list) return;
-        if (!summary || !Array.isArray(summary.branches)) {
-            meta.textContent =
-                '签到须在管理员配置的开放时段内进行（上海时间）。默认单次开放时长一般为 3 分钟，具体以保存后的整站配置为准。下方列出各分部今日概况；详情以进入分部后的提示为准。';
-            list.innerHTML = '';
-            box.removeAttribute('hidden');
-            return;
-        }
-        var defDur = Number(summary.defaultDurationMinutes);
+    function defaultScheduleDefMinutes(summary) {
+        var defDur = summary && summary.defaultDurationMinutes != null ? Number(summary.defaultDurationMinutes) : NaN;
         if (!Number.isFinite(defDur) || defDur < 1) defDur = 3;
-        var dateStr = summary.date != null ? String(summary.date).trim() : '';
-        meta.textContent =
-            '上海时间' +
-            (dateStr ? ' · ' + dateStr : '') +
-            ' · 默认单次开放 ' +
-            defDur +
-            ' 分钟（各分部开始时刻与是否全天以管理后台为准；某日未配置的分部当日不可签）。';
-        list.innerHTML = summary.branches
-            .map(function (b) {
-                var label = esc(b.branchLabel || b.branch || '');
-                var status = '';
-                if (b.mode === 'always') {
-                    status = '今日开放 · 全天可签';
-                } else if (b.mode === 'closed') {
-                    status = '未开放签到';
-                } else if (b.mode === 'window') {
-                    var st = b.startTime ? String(b.startTime) : '';
-                    var du = b.durationMinutes != null ? Number(b.durationMinutes) : defDur;
-                    if (!Number.isFinite(du) || du < 1) du = defDur;
-                    var win = st ? '自 ' + esc(st) + ' 起 ' + du + ' 分钟' : '';
-                    if (b.allowed) {
-                        status = '今日开放 · 当前在签到时段 · ' + win;
-                    } else {
-                        status = '今日开放 · 当前不在签到时段 · ' + win;
-                    }
-                } else {
-                    status = b.message ? esc(String(b.message)) : '';
-                }
-                return (
-                    '<li class="checkin-hub-schedule-item"><strong class="checkin-hub-schedule-item-name">' +
-                    label +
-                    '</strong><span class="checkin-hub-schedule-item-status">' +
-                    status +
-                    '</span></li>'
-                );
-            })
-            .join('');
-        box.removeAttribute('hidden');
+        return defDur;
     }
 
-    function renderHubCards(units) {
+    function findScheduleBranch(summary, branch) {
+        if (!summary || !Array.isArray(summary.branches)) return null;
+        var br = String(branch || '').trim();
+        for (var i = 0; i < summary.branches.length; i++) {
+            var b = summary.branches[i];
+            if (b && String(b.branch || '').trim() === br) return b;
+        }
+        return null;
+    }
+
+    /** @returns {{ text: string, mod: string }} mod: ok | warn | off | muted */
+    function branchScheduleStatusForCard(b, defDur) {
+        if (!b) {
+            return {
+                text: '开放状态以上海时间为准，进入分部可查看详情。',
+                mod: 'muted',
+            };
+        }
+        if (b.mode === 'always') {
+            return { text: '今日开放 · 全天可签', mod: 'ok' };
+        }
+        if (b.mode === 'closed') {
+            return { text: '未开放签到', mod: 'off' };
+        }
+        if (b.mode === 'window') {
+            var st = b.startTime ? String(b.startTime) : '';
+            var du = b.durationMinutes != null ? Number(b.durationMinutes) : defDur;
+            if (!Number.isFinite(du) || du < 1) du = defDur;
+            var win = st ? '自 ' + esc(st) + ' 起 ' + du + ' 分钟' : '';
+            if (b.allowed) {
+                return { text: '今日开放 · 当前在签到时段 · ' + win, mod: 'ok' };
+            }
+            return { text: '今日开放 · 当前不在签到时段 · ' + win, mod: 'warn' };
+        }
+        var msg = b.message ? esc(String(b.message)) : '未开放签到';
+        return { text: msg, mod: 'off' };
+    }
+
+    function renderHubCards(units, summary) {
         var host = document.getElementById('checkinHubCards');
         if (!host) return;
         var list = Array.isArray(units) && units.length ? units : FALLBACK_UNITS;
+        var defDur = defaultScheduleDefMinutes(summary);
         host.innerHTML = list
             .map(function (u) {
                 var signed = u.todaySigned ? '今日已签' : '今日未签';
                 var br = u.branch != null ? String(u.branch) : '';
                 if (!br) return '';
+                var sb = findScheduleBranch(summary, br);
+                var sched = branchScheduleStatusForCard(sb, defDur);
                 return (
                     '<a class="checkin-hub-card" data-branch="' +
                     esc(br) +
@@ -153,6 +152,11 @@
                     '</span>' +
                     '</div>' +
                     '<span class="checkin-hub-card-desc">月历 · 今日签 · 成员排行</span>' +
+                    '<div class="checkin-hub-card-schedule checkin-hub-card-schedule--' +
+                    sched.mod +
+                    '" role="status">' +
+                    sched.text +
+                    '</div>' +
                     '<div class="checkin-hub-card-metrics">' +
                     '<div class="checkin-hub-card-metric">' +
                     '<span class="checkin-hub-card-metric-val">' +
@@ -167,7 +171,10 @@
                     '<span class="checkin-hub-card-metric-lbl">连续天数</span>' +
                     '</div>' +
                     '</div>' +
-                    '<span class="checkin-hub-card-enter">进入分部 →</span>' +
+                    '<span class="checkin-hub-card-enter">' +
+                    '<span class="checkin-hub-card-enter-lbl">进入</span>' +
+                    CHECKIN_HUB_ENTER_ICON_SVG +
+                    '</span>' +
                     '</a>'
                 );
             })
@@ -195,22 +202,21 @@
         if (!sess || !sess.token) return;
         if (!window.UssAuthApi) {
             showHubError('未加载登录模块，请刷新。');
-            renderScheduleBanner(null);
+            renderHubCards(FALLBACK_UNITS, null);
             return;
         }
         try {
             var data = await window.UssAuthApi.checkinHub(sess.token);
             var units = data && Array.isArray(data.units) ? data.units : [];
-            renderScheduleBanner(data && data.checkinScheduleSummary ? data.checkinScheduleSummary : null);
+            var summary = data && data.checkinScheduleSummary ? data.checkinScheduleSummary : null;
             if (units.length) {
-                renderHubCards(units);
+                renderHubCards(units, summary);
             } else {
-                renderHubCards(FALLBACK_UNITS);
+                renderHubCards(FALLBACK_UNITS, summary);
                 showHubError('服务端未返回分部列表，当前为默认入口（总积分可能不准）。');
             }
         } catch (e) {
-            renderScheduleBanner(null);
-            renderHubCards(FALLBACK_UNITS);
+            renderHubCards(FALLBACK_UNITS, null);
             var msg = isLikelyNetworkError(e && e.message)
                 ? '连不上签到服务（请确认服务已开、API 地址正确）。已显示默认分部入口。'
                 : (e && e.message) || '加载失败，已显示默认分部入口。';
@@ -231,8 +237,7 @@
         setPanelHidden(gate, true);
         setPanelHidden(main, false);
 
-        renderScheduleBanner(null);
-        renderHubCards(FALLBACK_UNITS);
+        renderHubCards(FALLBACK_UNITS, null);
 
         try {
             var s = loadAuthSession();
