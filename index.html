@@ -131,7 +131,7 @@
                 <div class="community-head-text">
                     <h2 id="community-section-title" class="community-title">舰员交流区</h2>
                     <p class="community-desc">
-                        左侧可选「舰队聊天」或成员私聊（支持图片，规则同论坛 ≤512KB/张，最多 6 张）；下方论坛发帖与回复。登录后可发言。
+                        左侧可选「舰队聊天」或成员私聊（支持图片，规则同论坛 ≤5MB/张，最多 6 张）；下方论坛发帖与回复。登录后可发言。
                     </p>
                 </div>
             </header>
@@ -161,7 +161,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="community-chat-compose">
+                            <div class="community-chat-compose community-dropzone">
                                 <div class="community-chat-compose-row">
                                     <input
                                         type="text"
@@ -193,7 +193,7 @@
                     <div class="community-panel-head">
                         <span class="community-panel-title">论坛帖子</span>
                     </div>
-                    <div class="community-composer community-composer-inline">
+                    <div class="community-composer community-composer-inline community-dropzone">
                         <div id="communityAuthHint" class="community-auth-hint">请先登录后再发帖与回复（右上角登录/注册）。</div>
                         <textarea
                             id="communityText"
@@ -846,7 +846,7 @@
 
         /** 首页舰员交流区（论坛式发帖 + 图片/GIF） */
         const COMMUNITY_MAX_IMAGES = 6;
-        const COMMUNITY_MAX_IMAGE_BYTES = 512 * 1024;
+        const COMMUNITY_MAX_IMAGE_BYTES = 5 * 1024 * 1024;
         const COMMUNITY_CHAT_POLL_MS = 3500;
         let communityPendingImages = [];
         let communityChatPendingImages = [];
@@ -859,6 +859,67 @@
         let communityChatDmLabel = '';
         let communityDmMaxSeq = 0;
         let communityInboxSnapshot = { fleetMaxSeq: 0, dmMaxByPeer: {} };
+        let communityImageLightboxKeyHandler = null;
+
+        function ensureCommunityImageLightbox() {
+            let overlay = document.getElementById('communityImageLightbox');
+            if (overlay) return overlay;
+            overlay = document.createElement('div');
+            overlay.id = 'communityImageLightbox';
+            overlay.className = 'community-image-lightbox';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('aria-hidden', 'true');
+            const img = document.createElement('img');
+            img.className = 'community-image-lightbox-img';
+            img.alt = '';
+            img.decoding = 'async';
+            overlay.appendChild(img);
+            document.body.appendChild(overlay);
+            overlay.addEventListener('click', function (ev) {
+                if (ev.target === overlay) closeCommunityImageLightbox();
+            });
+            img.addEventListener('click', function () {
+                closeCommunityImageLightbox();
+            });
+            return overlay;
+        }
+
+        function openCommunityImageLightbox(src) {
+            if (!src) return;
+            const overlay = ensureCommunityImageLightbox();
+            const img = overlay.querySelector('.community-image-lightbox-img');
+            if (!img) return;
+            img.src = src;
+            img.alt = '放大预览';
+            overlay.classList.add('is-open');
+            overlay.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+            if (communityImageLightboxKeyHandler) {
+                document.removeEventListener('keydown', communityImageLightboxKeyHandler);
+            }
+            communityImageLightboxKeyHandler = function (ev) {
+                if (ev.key === 'Escape') closeCommunityImageLightbox();
+            };
+            document.addEventListener('keydown', communityImageLightboxKeyHandler);
+        }
+
+        function closeCommunityImageLightbox() {
+            const overlay = document.getElementById('communityImageLightbox');
+            if (!overlay) return;
+            const img = overlay.querySelector('.community-image-lightbox-img');
+            if (img) {
+                img.removeAttribute('src');
+                img.alt = '';
+            }
+            overlay.classList.remove('is-open');
+            overlay.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+            if (communityImageLightboxKeyHandler) {
+                document.removeEventListener('keydown', communityImageLightboxKeyHandler);
+                communityImageLightboxKeyHandler = null;
+            }
+        }
 
         function communityReadStateStorageKey() {
             const s = loadAuthSession();
@@ -1049,6 +1110,11 @@
                 const img = document.createElement('img');
                 img.src = item.previewUrl;
                 img.alt = item.name || '预览';
+                img.style.cursor = 'pointer';
+                img.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    openCommunityImageLightbox(img.src);
+                });
                 const rm = document.createElement('button');
                 rm.type = 'button';
                 rm.className = 'community-preview-remove';
@@ -1098,6 +1164,11 @@
                 const img = document.createElement('img');
                 img.src = item.previewUrl;
                 img.alt = item.name || '预览';
+                img.style.cursor = 'pointer';
+                img.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    openCommunityImageLightbox(img.src);
+                });
                 const rm = document.createElement('button');
                 rm.type = 'button';
                 rm.className = 'community-preview-remove';
@@ -1121,29 +1192,26 @@
             updateCommunityChatImageMeta();
         }
 
-        async function onCommunityChatFilesSelected(ev) {
+        async function ingestCommunityChatFiles(files) {
             if (!isLoggedIn()) {
                 setCommunityChatHint('请先登录后再添加图片。');
-                const input0 = ev.target;
-                if (input0) input0.value = '';
                 return;
             }
-            const input = ev.target;
-            const files = input && input.files ? Array.from(input.files) : [];
-            if (!files.length) return;
+            const list = files && files.length ? Array.from(files) : [];
+            if (!list.length) return;
             clearCommunityChatHint();
-            for (let i = 0; i < files.length; i += 1) {
+            for (let i = 0; i < list.length; i += 1) {
                 if (communityChatPendingImages.length >= COMMUNITY_MAX_IMAGES) {
                     setCommunityChatHint('已达到 6 张上限。');
                     break;
                 }
-                const f = files[i];
+                const f = list[i];
                 if (!f.type || f.type.indexOf('image/') !== 0) {
                     setCommunityChatHint('仅支持图片文件。');
                     continue;
                 }
                 if (f.size > COMMUNITY_MAX_IMAGE_BYTES) {
-                    setCommunityChatHint('单张图片须 ≤512KB，请压缩后重试。');
+                    setCommunityChatHint('单张图片须 ≤5MB，请压缩后重试。');
                     continue;
                 }
                 try {
@@ -1159,7 +1227,13 @@
                 }
             }
             renderCommunityChatPreviews();
-            input.value = '';
+        }
+
+        async function onCommunityChatFilesSelected(ev) {
+            const input = ev.target;
+            const files = input && input.files ? Array.from(input.files) : [];
+            await ingestCommunityChatFiles(files);
+            if (input) input.value = '';
         }
 
         function readFileAsDataURL(file) {
@@ -1175,29 +1249,26 @@
             });
         }
 
-        async function onCommunityFilesSelected(ev) {
+        async function ingestCommunityPostFiles(files) {
             if (!isLoggedIn()) {
                 setCommunityFormHint('请先登录后再添加图片。');
-                const input0 = ev.target;
-                if (input0) input0.value = '';
                 return;
             }
-            const input = ev.target;
-            const files = input && input.files ? Array.from(input.files) : [];
-            if (!files.length) return;
+            const list = files && files.length ? Array.from(files) : [];
+            if (!list.length) return;
             clearCommunityFormHint();
-            for (let i = 0; i < files.length; i += 1) {
+            for (let i = 0; i < list.length; i += 1) {
                 if (communityPendingImages.length >= COMMUNITY_MAX_IMAGES) {
                     setCommunityFormHint('已达到 6 张上限。');
                     break;
                 }
-                const f = files[i];
+                const f = list[i];
                 if (!f.type || f.type.indexOf('image/') !== 0) {
                     setCommunityFormHint('仅支持图片文件。');
                     continue;
                 }
                 if (f.size > COMMUNITY_MAX_IMAGE_BYTES) {
-                    setCommunityFormHint('单张图片须 ≤512KB，请压缩后重试。');
+                    setCommunityFormHint('单张图片须 ≤5MB，请压缩后重试。');
                     continue;
                 }
                 try {
@@ -1213,7 +1284,13 @@
                 }
             }
             renderCommunityPreviews();
-            input.value = '';
+        }
+
+        async function onCommunityFilesSelected(ev) {
+            const input = ev.target;
+            const files = input && input.files ? Array.from(input.files) : [];
+            await ingestCommunityPostFiles(files);
+            if (input) input.value = '';
         }
 
         function formatCommunityTime(iso) {
@@ -1422,10 +1499,15 @@
                     im.className = 'community-chat-img';
                     im.loading = 'lazy';
                     im.alt = '聊天图片';
+                    im.style.cursor = 'pointer';
                     im.src =
                         window.UssAuthApi && typeof window.UssAuthApi.resolveAssetUrl === 'function'
                             ? window.UssAuthApi.resolveAssetUrl(rel)
                             : rel;
+                    im.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        openCommunityImageLightbox(im.src);
+                    });
                     grid.appendChild(im);
                 });
                 if (grid.childNodes.length) line.appendChild(grid);
@@ -1512,10 +1594,15 @@
                         im.className = 'community-post-img';
                         im.loading = 'lazy';
                         im.alt = '帖子配图';
+                        im.style.cursor = 'pointer';
                         im.src =
                             window.UssAuthApi && typeof window.UssAuthApi.resolveAssetUrl === 'function'
                                 ? window.UssAuthApi.resolveAssetUrl(rel)
                                 : rel;
+                        im.addEventListener('click', function (e) {
+                            e.stopPropagation();
+                            openCommunityImageLightbox(im.src);
+                        });
                         grid.appendChild(im);
                     });
                     if (grid.childNodes.length) main.appendChild(grid);
@@ -1789,7 +1876,7 @@
             inner.appendChild(fleetBtn);
             const sub = document.createElement('div');
             sub.className = 'community-chat-roster-sub';
-            sub.textContent = '私聊成员';
+            sub.textContent = '舰队成员';
             inner.appendChild(sub);
             const list = Array.isArray(members) ? members : [];
             list.forEach(function (mem) {
@@ -2157,6 +2244,50 @@
             }
         }
 
+        function installCommunityDropzones() {
+            function bindDropzone(el, ingestFn, setHint) {
+                if (!el) return;
+                el.addEventListener('dragover', function (e) {
+                    if (!isLoggedIn()) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    try {
+                        e.dataTransfer.dropEffect = 'copy';
+                    } catch (ignore) {}
+                    el.classList.add('community-dropzone--active');
+                });
+                el.addEventListener('dragleave', function (e) {
+                    if (!el.contains(e.relatedTarget)) el.classList.remove('community-dropzone--active');
+                });
+                el.addEventListener('drop', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    el.classList.remove('community-dropzone--active');
+                    if (!isLoggedIn()) return;
+                    var dt = e.dataTransfer;
+                    if (!dt || !dt.files || !dt.files.length) return;
+                    var imageFiles = Array.from(dt.files).filter(function (f) {
+                        return f.type && f.type.indexOf('image/') === 0;
+                    });
+                    if (!imageFiles.length) {
+                        setHint('请拖入图片文件。');
+                        return;
+                    }
+                    ingestFn(imageFiles);
+                });
+            }
+            bindDropzone(
+                document.querySelector('.community-chat-compose'),
+                ingestCommunityChatFiles,
+                setCommunityChatHint
+            );
+            bindDropzone(
+                document.querySelector('.community-panel-forum .community-composer'),
+                ingestCommunityPostFiles,
+                setCommunityFormHint
+            );
+        }
+
         function initCommunityBoard() {
             const fileInput = document.getElementById('communityFileInput');
             const submitBtn = document.getElementById('communitySubmitBtn');
@@ -2176,6 +2307,8 @@
                     }
                 });
             }
+
+            installCommunityDropzones();
 
             installCommunityChatScrollGuard();
             wireCommunityChatRoster();

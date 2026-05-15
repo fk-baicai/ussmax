@@ -1120,6 +1120,7 @@ a.drawer-checkin-textlink:hover {
     margin-bottom: 4px;
     flex: 1;
     min-height: 0;
+    max-height: 1200px;
 }
 
 .community-chat-split {
@@ -1127,8 +1128,11 @@ a.drawer-checkin-textlink:hover {
     flex-direction: row;
     align-items: stretch;
     flex: 1;
-    min-height: min(38vh, 360px);
+    min-height: 0;
     min-width: 0;
+    max-height: 100%;
+    overflow-x: hidden;
+    overflow-y: visible;
 }
 
 .community-chat-roster {
@@ -1139,14 +1143,15 @@ a.drawer-checkin-textlink:hover {
     display: flex;
     flex-direction: column;
     border-right: 1px solid rgba(84, 173, 247, 0.15);
-    background: rgba(0, 0, 0, 0.22);
+    background: rgba(0, 0, 0, 0.16);
     min-height: 0;
+    overflow-x: hidden;
+    overflow-y: visible;
 }
 
 .community-chat-roster-inner {
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
     padding: 10px 8px 12px;
     display: flex;
     flex-direction: column;
@@ -1274,6 +1279,7 @@ a.drawer-checkin-textlink:hover {
     display: flex;
     flex-direction: column;
     min-height: 0;
+    background: rgba(0, 0, 0, 0.16);
 }
 
 .community-chat-main-title {
@@ -1284,18 +1290,18 @@ a.drawer-checkin-textlink:hover {
     letter-spacing: 0.06em;
     color: #9fd8ff;
     border-bottom: 1px solid rgba(84, 173, 247, 0.15);
-    background: rgba(0, 0, 0, 0.18);
+    background: transparent;
 }
 
 .community-chat-main .community-chat-view {
     flex: 1;
-    min-height: min(30vh, 280px);
+    min-height: 0;
 }
 
 @media (max-width: 768px) {
     .community-chat-split {
         flex-direction: column;
-        min-height: auto;
+        min-height: 0;
     }
 
     .community-chat-roster {
@@ -1324,6 +1330,7 @@ a.drawer-checkin-textlink:hover {
 }
 
 .community-panel-head {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1356,19 +1363,44 @@ a.drawer-checkin-textlink:hover {
     background: transparent;
 }
 
-.community-scroller {
+.community-dropzone {
+    transition: box-shadow 0.15s ease, outline-color 0.15s ease;
+}
+
+.community-dropzone.community-dropzone--active {
+    box-shadow: inset 0 0 0 2px rgba(84, 173, 247, 0.55);
+    border-radius: 8px;
+}
+
+.community-scroller,
+.community-chat-roster-inner {
     overflow-y: auto;
     overflow-x: hidden;
-    overscroll-behavior: contain;
+    overscroll-behavior: auto;
     scrollbar-width: thin;
     scrollbar-color: rgba(84, 173, 247, 0.45) rgba(0, 0, 0, 0.25);
+}
+
+.community-scroller::-webkit-scrollbar,
+.community-chat-roster-inner::-webkit-scrollbar {
+    width: 8px;
+}
+
+.community-scroller::-webkit-scrollbar-thumb,
+.community-chat-roster-inner::-webkit-scrollbar-thumb {
+    background: rgba(84, 173, 247, 0.4);
+    border-radius: 4px;
+}
+
+.community-scroller::-webkit-scrollbar-track,
+.community-chat-roster-inner::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
 }
 
 .community-scroller.community-scroller-chat {
     width: 100%;
     box-sizing: border-box;
-    min-height: min(38vh, 360px);
-    max-height: min(45vh, 420px);
+    min-height: 0;
 }
 
 .community-scroller.community-scroller-feed {
@@ -1411,19 +1443,6 @@ a.drawer-checkin-textlink:hover {
     letter-spacing: 0.06em;
     color: #9fd8ff;
     text-transform: uppercase;
-}
-
-.community-scroller::-webkit-scrollbar {
-    width: 8px;
-}
-
-.community-scroller::-webkit-scrollbar-thumb {
-    background: rgba(84, 173, 247, 0.4);
-    border-radius: 4px;
-}
-
-.community-scroller::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.2);
 }
 
 .community-composer {
@@ -1553,6 +1572,8 @@ a.drawer-checkin-textlink:hover {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
+    cursor: pointer;
 }
 
 .community-preview-remove {
@@ -1765,6 +1786,7 @@ a.drawer-checkin-textlink:hover {
     object-fit: contain;
     background: rgba(0, 0, 0, 0.45);
     border: 1px solid rgba(84, 173, 247, 0.2);
+    cursor: pointer;
 }
 
 .community-replies {
@@ -1858,8 +1880,9 @@ a.drawer-checkin-textlink:hover {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: min(38vh, 360px);
+    min-height: 0;
     min-width: 0;
+    overscroll-behavior: auto;
 }
 
 .community-chat-scroll {
@@ -1868,6 +1891,10 @@ a.drawer-checkin-textlink:hover {
     width: 100%;
     box-sizing: border-box;
     overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: auto;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
 }
 
 .community-chat-guest-lock {
@@ -2013,6 +2040,7 @@ a.drawer-checkin-textlink:hover {
     object-fit: cover;
     border: 1px solid rgba(84, 173, 247, 0.25);
     background: rgba(0, 0, 0, 0.35);
+    cursor: pointer;
 }
 
 .community-chat-actions {
@@ -2052,12 +2080,13 @@ a.drawer-checkin-textlink:hover {
 }
 
 .community-chat-compose {
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding: 12px 14px;
+    padding: 12px 14px 14px;
     border-top: 1px solid rgba(84, 173, 247, 0.15);
-    background: rgba(0, 0, 0, 0.22);
+    background: transparent;
 }
 
 .community-chat-compose-row {
@@ -2076,6 +2105,19 @@ a.drawer-checkin-textlink:hover {
 .community-chat-toolbar-meta {
     font-size: 14px;
     color: rgba(180, 210, 230, 0.55);
+}
+
+/* 与输入框同一视觉基底，避免「添加图片」像单独浅蓝色块 */
+.community-chat-toolbar .community-attach-btn {
+    background: rgba(10, 28, 42, 0.85);
+    border-color: rgba(84, 173, 247, 0.25);
+    color: rgba(200, 230, 255, 0.92);
+}
+
+.community-chat-toolbar .community-attach-btn:hover {
+    background: rgba(18, 52, 82, 0.92);
+    border-color: rgba(84, 173, 247, 0.38);
+    color: #fff;
 }
 
 .community-chat-preview-row {
@@ -2119,11 +2161,46 @@ a.drawer-checkin-textlink:hover {
 }
 
 .community-chat-hint {
+    flex-shrink: 0;
     margin: 0;
-    padding: 0 14px 12px;
+    padding: 0 14px 14px;
     min-height: 1.25em;
     font-size: 15px;
     color: #ffb4b4;
+}
+
+/* 全站交流区图片点击放大 */
+.community-image-lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
+        max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    background: rgba(4, 12, 22, 0.92);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    cursor: zoom-out;
+}
+
+.community-image-lightbox.is-open {
+    display: flex;
+}
+
+.community-image-lightbox-img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 10px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(84, 173, 247, 0.28);
+    cursor: zoom-out;
+    vertical-align: middle;
 }
 
 .games-section {
