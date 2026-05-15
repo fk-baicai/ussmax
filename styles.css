@@ -1093,20 +1093,12 @@ a.drawer-checkin-textlink:hover {
 }
 
 .community-title {
-    margin: 0 0 8px;
+    margin: 0;
     font-size: clamp(28px, 4vw, 40px);
     font-weight: 600;
     color: #fff;
     letter-spacing: 0.04em;
     text-shadow: 0 0 24px rgba(84, 173, 247, 0.35);
-}
-
-.community-desc {
-    margin: 0;
-    font-size: 17px;
-    color: rgba(200, 230, 255, 0.8);
-    max-width: 900px;
-    line-height: 1.55;
 }
 
 .community-stack {
@@ -1175,12 +1167,12 @@ a.drawer-checkin-textlink:hover {
 }
 
 .community-chat-roster-sub {
-    font-size: 11px;
+    font-size: 14px;
     font-weight: 700;
-    letter-spacing: 0.12em;
-    color: rgba(140, 200, 255, 0.5);
-    text-transform: uppercase;
-    margin: 10px 6px 4px;
+    letter-spacing: 0.08em;
+    color: rgba(159, 216, 255, 0.88);
+    text-transform: none;
+    margin: 14px 6px 8px;
 }
 
 .community-chat-roster-item {

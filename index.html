@@ -130,9 +130,6 @@
             <header class="community-head">
                 <div class="community-head-text">
                     <h2 id="community-section-title" class="community-title">舰员交流区</h2>
-                    <p class="community-desc">
-                        左侧可选「舰队聊天」或成员私聊（支持图片，规则同论坛 ≤5MB/张，最多 6 张）；下方论坛发帖与回复。登录后可发言。
-                    </p>
                 </div>
             </header>
 
@@ -1874,11 +1871,16 @@
             fleetBadge.hidden = true;
             fleetBtn.appendChild(fleetBadge);
             inner.appendChild(fleetBtn);
+            const list = Array.isArray(members) ? members : [];
+            let totalInFleet = 0;
+            list.forEach(function (mem) {
+                const bid0 = mem && mem.bindingId != null ? String(mem.bindingId).trim() : '';
+                if (bid0) totalInFleet += 1;
+            });
             const sub = document.createElement('div');
             sub.className = 'community-chat-roster-sub';
-            sub.textContent = '舰队成员';
+            sub.textContent = '舰队成员（' + totalInFleet + '）';
             inner.appendChild(sub);
-            const list = Array.isArray(members) ? members : [];
             list.forEach(function (mem) {
                 const bid = mem && mem.bindingId != null ? String(mem.bindingId).trim() : '';
                 if (!bid) return;
