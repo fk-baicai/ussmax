@@ -1,11 +1,9 @@
 /**
  * 认证 API 根地址（先于 auth-api.js 执行）。
- * - localhost / 127.0.0.1 / file://：默认连本机 backend（127.0.0.1:3789）
- * - 其他域名（如 GitHub Pages）：默认连公网后端 http://8.138.237.183:3789
- * 如需强制地址，可在载入本文件之前执行：window.USS_AUTH_API_BASE = 'https://...';
- *
- * 注意：GitHub Pages 站点为 HTTPS 时，浏览器会阻止页面去请求普通的 http:// API（混合内容）。
- * 届时请为后端配置 HTTPS（例如服务器前加 Nginx/Caddy 证书），并把上面公网地址改为 https://你的域名。
+ * - localhost / 127.0.0.1 / file://：连本机 backend（127.0.0.1:3789）
+ * - Netlify（*.netlify.app）或显式 USS_AUTH_SAME_ORIGIN：用当前站点 origin，由 netlify.toml 反代到阿里云后端
+ * - 其它静态托管（如仅 HTTP 预览）：http://8.138.237.183:3789
+ * 强制地址：在载入本文件前设置 window.USS_AUTH_API_BASE = 'https://...'
  */
 (function () {
     if (typeof window === 'undefined') return;
@@ -16,5 +14,14 @@
         h === '127.0.0.1' ||
         /^127\.\d+\.\d+\.\d+$/.test(h) ||
         (window.location && window.location.protocol === 'file:');
-    window.USS_AUTH_API_BASE = isLocal ? 'http://127.0.0.1:3789' : 'http://8.138.237.183:3789';
+    if (isLocal) {
+        window.USS_AUTH_API_BASE = 'http://127.0.0.1:3789';
+        return;
+    }
+    var isNetlifyHost = /\.netlify\.app$/i.test(h);
+    if (isNetlifyHost || window.USS_AUTH_SAME_ORIGIN === true || window.USS_AUTH_SAME_ORIGIN === 1) {
+        window.USS_AUTH_API_BASE = String(window.location.origin || '').replace(/\/$/, '');
+        return;
+    }
+    window.USS_AUTH_API_BASE = 'http://8.138.237.183:3789';
 })();

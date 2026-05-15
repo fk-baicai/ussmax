@@ -1,0 +1,22 @@
+# 放在 frontend 目录：在 Netlify 控制台把 Base directory 设为 frontend（或只推送/发布本文件夹）。
+# HTTPS 站点不能直连 http://公网IP，由 Netlify 反代到阿里云后端。
+[build]
+  publish = "."
+
+[[redirects]]
+  from = "/api/*"
+  to = "http://8.138.237.183:3789/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/avatars/*"
+  to = "http://8.138.237.183:3789/avatars/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/community-uploads/*"
+  to = "http://8.138.237.183:3789/community-uploads/:splat"
+  status = 200
+  force = true
