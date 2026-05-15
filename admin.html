@@ -275,12 +275,40 @@
             white-space: normal;
             word-break: keep-all;
         }
-        .grid-sched .sched-grid-table > tbody > tr > th.sched-branch-head {
+        /* 分部名单独一行，下方再排各日格子 */
+        .grid-sched .sched-branch-title-tr > td.sched-branch-head-banner {
+            padding: 0.42rem 0.35rem 0.35rem;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: var(--txt);
+            vertical-align: middle;
+            border-top: 1px solid rgba(95, 184, 255, 0.22);
+            background: rgba(8, 20, 38, 0.55);
+        }
+        .grid-sched .sched-branch-title-tr:first-child > td.sched-branch-head-banner {
+            border-top: none;
+        }
+        .sched-branch-head-banner .sched-branch-title {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+        }
+        .grid-sched .sched-branch-spacer {
             width: 4.75rem;
             max-width: 4.75rem;
-            padding: 0.28rem 0.15rem;
-            font-size: 0.78rem;
-            line-height: 1.25;
+            padding: 0.15rem;
+            vertical-align: top;
+            border: none;
+            background: transparent;
+            box-shadow: none;
+        }
+        .grid-sched .sched-branch-data-tr > td.sched-cell {
+            border-top: none;
+        }
+        .grid-sched .sched-branch-data-tr {
+            border-bottom: 1px solid rgba(95, 184, 255, 0.12);
         }
         .grid-sched .sched-grid-table > tbody > tr > td.sched-cell {
             min-width: 0;
@@ -324,6 +352,22 @@
             min-height: 1.55rem;
             padding: 0.12rem 0.15rem;
             font-size: 0.74rem;
+            color-scheme: dark;
+            padding-inline-end: 0.28rem;
+        }
+        /* Chrome / Edge / Safari：原生时间图标默认偏深，拉高对比并贴近主题青色 */
+        .sched-cell input[type="time"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            opacity: 1;
+            width: 1.2rem;
+            height: 1.2rem;
+            padding: 0.12rem;
+            margin: 0;
+            box-sizing: content-box;
+            filter: invert(82%) sepia(28%) saturate(1200%) hue-rotate(158deg) brightness(105%) contrast(98%);
+        }
+        .sched-cell input[type="time"]::-webkit-calendar-picker-indicator:hover {
+            filter: invert(90%) sepia(32%) saturate(1400%) hue-rotate(158deg) brightness(115%) contrast(98%);
         }
         .sched-cell .sch-dur-row {
             display: flex;
@@ -351,18 +395,7 @@
             font-size: 0.68rem;
             flex-shrink: 0;
         }
-        th.sched-branch-head {
-            white-space: normal;
-            vertical-align: top;
-            padding-top: 0.4rem;
-        }
-        th.sched-branch-head .sched-branch-title {
-            display: inline-flex;
-            align-items: flex-start;
-            gap: 0.22rem;
-            flex-wrap: wrap;
-        }
-        th.sched-branch-head .sched-branch-title > span:last-child {
+        .sched-branch-head-banner .sched-branch-title > span:last-child {
             word-break: keep-all;
             line-height: 1.2;
         }
@@ -379,12 +412,8 @@
             font-size: 0.75rem;
             opacity: 0.95;
         }
-        tr.sched-branch-tr-collapsed td.sched-cell {
+        tr.sched-branch-data-tr.sched-branch-tr-collapsed {
             display: none;
-        }
-        tr.sched-branch-tr-collapsed th.sched-branch-head {
-            vertical-align: middle;
-            border-bottom: 1px solid rgba(95, 184, 255, 0.12);
         }
         /* 签到区块顶部说明、默认时长一行：比表格略大，易读 */
         #secSchedule > .hint {
@@ -648,8 +677,8 @@
                 </p>
                 <div class="def-dur-row">
                     <span>默认开放时长</span>
-                    <input type="range" id="defDurRng" min="5" max="180" step="5" value="10" aria-label="默认开放分钟数" />
-                    <strong id="defDurLbl">10</strong>
+                    <input type="range" id="defDurRng" min="1" max="180" step="1" value="3" aria-label="默认开放分钟数" />
+                    <strong id="defDurLbl">3</strong>
                     <span>分钟</span>
                 </div>
                 <div class="row">
@@ -1220,8 +1249,8 @@
                 showErr('schedErr', '');
                 try {
                     state.schedule = await window.UssAuthApi.adminGetSchedule(s.token);
-                    var defM = Number(state.schedule.defaultDurationMinutes) || 10;
-                    defM = Math.min(180, Math.max(5, Math.round(defM / 5) * 5));
+                    var defM = Number(state.schedule.defaultDurationMinutes) || 3;
+                    defM = Math.min(180, Math.max(1, Math.round(defM)));
                     var dr = document.getElementById('defDurRng');
                     if (dr) dr.value = String(defM);
                     syncDefDurLbl();
@@ -1240,8 +1269,9 @@
                     { id: 'ussprod', label: 'USS生产队' },
                 ];
                 var dates = state.dates;
-                var sch = state.schedule || { branches: {}, defaultDurationMinutes: 10 };
-                var defM = Math.min(180, Math.max(5, Math.round((Number(sch.defaultDurationMinutes) || 10) / 5) * 5));
+                var sch = state.schedule || { branches: {}, defaultDurationMinutes: 3 };
+                var defM = Math.min(180, Math.max(1, Math.round(Number(sch.defaultDurationMinutes) || 3)));
+                var colCount = dates.length + 1;
                 var html =
                     '<table class="sched-grid-table"><thead><tr><th>分部</th>' +
                     dates.map(function (d) {
@@ -1262,11 +1292,11 @@
                 branches.forEach(function (br) {
                     var folded = !!state.scheduleCollapsed[br.id];
                     html +=
-                        '<tr class="sched-branch-tr' +
-                        (folded ? ' sched-branch-tr-collapsed' : '') +
-                        '" data-sched-branch="' +
+                        '<tr class="sched-branch-title-tr" data-sched-branch="' +
                         esc(br.id) +
-                        '"><th class="sched-branch-head"><span class="sched-branch-title">' +
+                        '"><td class="sched-branch-head-banner" colspan="' +
+                        colCount +
+                        '"><span class="sched-branch-title">' +
                         '<button type="button" class="sched-fold-btn btn-ghost" data-sched-branch="' +
                         esc(br.id) +
                         '" aria-expanded="' +
@@ -1277,7 +1307,13 @@
                         (folded ? '▶' : '▼') +
                         '</span></button><span>' +
                         esc(br.label) +
-                        '</span></span></th>';
+                        '</span></span></td></tr>';
+                    html +=
+                        '<tr class="sched-branch-data-tr' +
+                        (folded ? ' sched-branch-tr-collapsed' : '') +
+                        '" data-sched-branch="' +
+                        esc(br.id) +
+                        '"><td class="sched-branch-spacer" aria-hidden="true"></td>';
                     dates.forEach(function (d) {
                         var day = (sch.branches && sch.branches[br.id] && sch.branches[br.id][d]) || {};
                         var stRaw = day.startTime != null ? String(day.startTime).trim() : '';
@@ -1286,7 +1322,7 @@
                         var timeVal = allDay ? '' : padTimeForInput(stRaw);
                         var durVal =
                             duRaw > 0
-                                ? Math.min(180, Math.max(5, Math.round(duRaw / 5) * 5))
+                                ? Math.min(180, Math.max(1, Math.round(duRaw)))
                                 : defM;
                         html +=
                             '<td class="sched-cell" data-b="' +
@@ -1303,7 +1339,7 @@
                             esc(timeVal) +
                             '" /></label>' +
                             '<div class="sch-dur-row">' +
-                            '<input type="range" class="sch-dur-rng" min="5" max="180" step="5" title="开放时长（分钟）" value="' +
+                            '<input type="range" class="sch-dur-rng" min="1" max="180" step="1" title="开放时长（分钟）" value="' +
                             esc(String(durVal)) +
                             '" />' +
                             '<span class="sch-dur-lbl">' +
@@ -1323,10 +1359,12 @@
                     btn.onclick = function () {
                         var bid = btn.getAttribute('data-sched-branch');
                         if (!bid) return;
-                        var tr = btn.closest('tr');
+                        var titleTr = btn.closest('tr.sched-branch-title-tr');
+                        var dataTr = titleTr && titleTr.nextElementSibling;
+                        if (!dataTr || !dataTr.classList.contains('sched-branch-data-tr')) return;
                         state.scheduleCollapsed[bid] = !state.scheduleCollapsed[bid];
                         var folded = !!state.scheduleCollapsed[bid];
-                        if (tr) tr.classList.toggle('sched-branch-tr-collapsed', folded);
+                        dataTr.classList.toggle('sched-branch-tr-collapsed', folded);
                         btn.setAttribute('aria-expanded', folded ? 'false' : 'true');
                         btn.setAttribute('title', folded ? '展开该分部' : '收起该分部');
                         var icon = btn.querySelector('.sched-fold-icon');
@@ -1337,7 +1375,7 @@
 
             async function saveSchedule() {
                 var s = loadSess();
-                var def = Number(document.getElementById('defDurRng').value) || 10;
+                var def = Number(document.getElementById('defDurRng').value) || 3;
                 var payloadBranches = { hq: {}, squad1: {}, uss: {}, ussprod: {} };
                 ['hq', 'squad1', 'uss', 'ussprod'].forEach(function (bid) {
                     state.dates.forEach(function (d) {

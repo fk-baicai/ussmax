@@ -73,6 +73,60 @@
         }
     }
 
+    function renderScheduleBanner(summary) {
+        var box = document.getElementById('checkinHubScheduleBanner');
+        var meta = document.getElementById('checkinHubScheduleMeta');
+        var list = document.getElementById('checkinHubScheduleList');
+        if (!box || !meta || !list) return;
+        if (!summary || !Array.isArray(summary.branches)) {
+            meta.textContent =
+                '签到须在管理员配置的开放时段内进行（上海时间）。默认单次开放时长一般为 3 分钟，具体以保存后的整站配置为准。下方列出各分部今日概况；详情以进入分部后的提示为准。';
+            list.innerHTML = '';
+            box.removeAttribute('hidden');
+            return;
+        }
+        var defDur = Number(summary.defaultDurationMinutes);
+        if (!Number.isFinite(defDur) || defDur < 1) defDur = 3;
+        var dateStr = summary.date != null ? String(summary.date).trim() : '';
+        meta.textContent =
+            '上海时间' +
+            (dateStr ? ' · ' + dateStr : '') +
+            ' · 默认单次开放 ' +
+            defDur +
+            ' 分钟（各分部开始时刻与是否全天以管理后台为准；某日未配置的分部当日不可签）。';
+        list.innerHTML = summary.branches
+            .map(function (b) {
+                var label = esc(b.branchLabel || b.branch || '');
+                var status = '';
+                if (b.mode === 'always') {
+                    status = '今日开放 · 全天可签';
+                } else if (b.mode === 'closed') {
+                    status = '未开放签到';
+                } else if (b.mode === 'window') {
+                    var st = b.startTime ? String(b.startTime) : '';
+                    var du = b.durationMinutes != null ? Number(b.durationMinutes) : defDur;
+                    if (!Number.isFinite(du) || du < 1) du = defDur;
+                    var win = st ? '自 ' + esc(st) + ' 起 ' + du + ' 分钟' : '';
+                    if (b.allowed) {
+                        status = '今日开放 · 当前在签到时段 · ' + win;
+                    } else {
+                        status = '今日开放 · 当前不在签到时段 · ' + win;
+                    }
+                } else {
+                    status = b.message ? esc(String(b.message)) : '';
+                }
+                return (
+                    '<li class="checkin-hub-schedule-item"><strong class="checkin-hub-schedule-item-name">' +
+                    label +
+                    '</strong><span class="checkin-hub-schedule-item-status">' +
+                    status +
+                    '</span></li>'
+                );
+            })
+            .join('');
+        box.removeAttribute('hidden');
+    }
+
     function renderHubCards(units) {
         var host = document.getElementById('checkinHubCards');
         if (!host) return;
@@ -141,11 +195,13 @@
         if (!sess || !sess.token) return;
         if (!window.UssAuthApi) {
             showHubError('未加载登录模块，请刷新。');
+            renderScheduleBanner(null);
             return;
         }
         try {
             var data = await window.UssAuthApi.checkinHub(sess.token);
             var units = data && Array.isArray(data.units) ? data.units : [];
+            renderScheduleBanner(data && data.checkinScheduleSummary ? data.checkinScheduleSummary : null);
             if (units.length) {
                 renderHubCards(units);
             } else {
@@ -153,6 +209,7 @@
                 showHubError('服务端未返回分部列表，当前为默认入口（总积分可能不准）。');
             }
         } catch (e) {
+            renderScheduleBanner(null);
             renderHubCards(FALLBACK_UNITS);
             var msg = isLikelyNetworkError(e && e.message)
                 ? '连不上签到服务（请确认服务已开、API 地址正确）。已显示默认分部入口。'
@@ -174,6 +231,7 @@
         setPanelHidden(gate, true);
         setPanelHidden(main, false);
 
+        renderScheduleBanner(null);
         renderHubCards(FALLBACK_UNITS);
 
         try {

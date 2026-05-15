@@ -1006,8 +1006,9 @@ a.drawer-checkin-textlink:hover {
 
 .ship-info {
     position: absolute;
-    bottom: 240px;
-    left: 150px;
+    bottom: 175px;
+    /* 整块右移（标题 / 说明 / 立即登舰），随视口略缩放避免贴边 */
+    left: clamp(220px, 16vw, 420px);
     z-index: 1000;
     display: flex;
     flex-direction: column;
@@ -1123,8 +1124,9 @@ a.drawer-checkin-textlink:hover {
     min-height: 0;
     min-width: 0;
     max-height: 100%;
-    overflow-x: hidden;
-    overflow-y: visible;
+    /* 勿同时写 overflow-x: hidden + overflow-y: visible：规范会把 y 算成 auto，
+       绝对定位的下拉菜单会撑出垂直滚动条（系统默认白条）。横向靠子项 min-width:0 收敛。 */
+    overflow: visible;
 }
 
 .community-chat-roster {
@@ -1137,8 +1139,7 @@ a.drawer-checkin-textlink:hover {
     border-right: 1px solid rgba(84, 173, 247, 0.15);
     background: rgba(0, 0, 0, 0.16);
     min-height: 0;
-    overflow-x: hidden;
-    overflow-y: visible;
+    overflow: visible;
 }
 
 .community-chat-roster-inner {
@@ -1489,50 +1490,134 @@ a.drawer-checkin-textlink:hover {
     gap: 12px 16px;
 }
 
-.community-attach-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    border-radius: 8px;
-    background: rgba(84, 173, 247, 0.12);
-    border: 1px solid rgba(84, 173, 247, 0.35);
-    color: #c5e9ff;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease;
-}
-
-.community-attach-btn:hover {
-    background: rgba(84, 173, 247, 0.22);
-    color: #fff;
-}
-
-.community-attach-btn.is-disabled {
-    opacity: 0.45;
-    pointer-events: none;
-    cursor: not-allowed;
-}
-
 .community-textarea:disabled {
     opacity: 0.55;
     cursor: not-allowed;
     background: rgba(10, 28, 42, 0.55);
 }
 
-.community-attach-btn .material-icons-outlined {
-    font-size: 22px;
+.community-send-split {
+    position: relative;
+    display: inline-flex;
+    align-items: stretch;
+    flex-shrink: 0;
 }
 
-.community-toolbar-meta {
-    flex: 1;
+.community-send-split--forum {
+    margin-left: auto;
+}
+
+.community-send-split .community-chat-send,
+.community-send-split .community-post-btn--main {
+    border-radius: 10px 0 0 10px;
+    margin-left: 0;
+}
+
+/* 聊天：输入框与「发送 + 下拉」同高（覆盖 .primary-btn 上下 padding） */
+.community-chat-compose-row .community-send-split .community-chat-send.primary-btn {
+    height: 48px;
+    min-height: 48px;
+    padding: 0 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+.community-chat-compose-row .community-send-split__more {
+    height: 48px;
+    min-height: 48px;
+    align-self: stretch;
+    box-sizing: border-box;
+}
+
+.community-send-split .primary-btn:hover:not(:disabled) {
+    transform: none;
+    filter: brightness(1.05);
+}
+
+.community-send-split__more {
+    flex-shrink: 0;
+    min-width: 44px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 0 10px 10px 0;
+    background-color: rgb(84, 173, 247);
+    color: #0a1c2a;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-left: 1px solid rgba(10, 28, 42, 0.25);
+    transition: filter 0.2s ease, opacity 0.2s ease;
+}
+
+.community-send-split__more:hover:not(:disabled) {
+    transform: none;
+    filter: brightness(1.08);
+}
+
+.community-send-split__more:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.community-send-split__caret {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid currentColor;
+    margin-top: 2px;
+}
+
+.community-send-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    min-width: 168px;
+    padding: 6px;
+    border-radius: 10px;
+    background: rgba(14, 40, 62, 0.98);
+    border: 1px solid rgba(84, 173, 247, 0.35);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+    z-index: 80;
+}
+
+.community-send-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: rgba(200, 230, 255, 0.95);
     font-size: 15px;
-    color: rgba(180, 210, 230, 0.55);
-    min-width: 80px;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s ease;
+}
+
+.community-send-menu__item:hover {
+    background: rgba(84, 173, 247, 0.18);
+    color: #fff;
+}
+
+.community-send-menu__item .material-icons-outlined {
+    font-size: 20px;
+    opacity: 0.9;
+}
+
+/* 聊天输入在面板底部：菜单向上展开，避免向下伸出触发布局/滚动异常 */
+.community-chat-compose .community-send-menu {
+    top: auto;
+    bottom: calc(100% + 8px);
 }
 
 .community-post-btn {
-    margin-left: auto;
     min-width: 100px;
 }
 
@@ -2083,33 +2168,8 @@ a.drawer-checkin-textlink:hover {
 
 .community-chat-compose-row {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     gap: 10px;
-}
-
-.community-chat-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px 14px;
-}
-
-.community-chat-toolbar-meta {
-    font-size: 14px;
-    color: rgba(180, 210, 230, 0.55);
-}
-
-/* 与输入框同一视觉基底，避免「添加图片」像单独浅蓝色块 */
-.community-chat-toolbar .community-attach-btn {
-    background: rgba(10, 28, 42, 0.85);
-    border-color: rgba(84, 173, 247, 0.25);
-    color: rgba(200, 230, 255, 0.92);
-}
-
-.community-chat-toolbar .community-attach-btn:hover {
-    background: rgba(18, 52, 82, 0.92);
-    border-color: rgba(84, 173, 247, 0.38);
-    color: #fff;
 }
 
 .community-chat-preview-row {
@@ -2119,13 +2179,15 @@ a.drawer-checkin-textlink:hover {
 .community-chat-input {
     flex: 1;
     min-width: 0;
-    padding: 12px 16px;
+    height: 48px;
+    padding: 0 16px;
     border-radius: 8px;
     border: 1px solid rgba(84, 173, 247, 0.25);
     background: rgba(10, 28, 42, 0.85);
     color: #e8f4ff;
     font-size: 16px;
     font-family: inherit;
+    line-height: calc(48px - 2px);
     outline: none;
 }
 
@@ -2142,8 +2204,6 @@ a.drawer-checkin-textlink:hover {
 .community-chat-send {
     flex-shrink: 0;
     min-width: 80px;
-    padding-left: 18px;
-    padding-right: 18px;
     font-size: 16px;
 }
 

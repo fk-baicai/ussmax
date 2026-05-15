@@ -169,16 +169,29 @@
                                         disabled
                                         autocomplete="off"
                                     />
-                                    <button type="button" class="primary-btn community-chat-send" id="communityChatSendBtn" disabled>发送</button>
+                                    <div class="community-send-split">
+                                        <button type="button" class="primary-btn community-chat-send" id="communityChatSendBtn" disabled>发送</button>
+                                        <button
+                                            type="button"
+                                            class="community-send-split__more"
+                                            id="communityChatSendMenuBtn"
+                                            disabled
+                                            aria-label="更多操作"
+                                            aria-expanded="false"
+                                            aria-haspopup="menu"
+                                            aria-controls="communityChatSendMenu"
+                                        >
+                                            <span class="community-send-split__caret" aria-hidden="true"></span>
+                                        </button>
+                                        <div id="communityChatSendMenu" class="community-send-menu" role="menu" hidden>
+                                            <button type="button" class="community-send-menu__item" id="communityChatAddImageBtn" role="menuitem">
+                                                <span class="material-icons-outlined" aria-hidden="true">add_photo_alternate</span>
+                                                添加图片
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="community-chat-toolbar">
-                                    <label class="community-attach-btn community-chat-attach-label" id="communityChatAttachLabel" for="communityChatFileInput">
-                                        <span class="material-icons-outlined" aria-hidden="true">add_photo_alternate</span>
-                                        添加图片
-                                        <input type="file" id="communityChatFileInput" accept="image/*" multiple hidden disabled />
-                                    </label>
-                                    <span class="community-chat-toolbar-meta" id="communityChatImageMeta">0 / 6 张</span>
-                                </div>
+                                <input type="file" id="communityChatFileInput" accept="image/*" multiple hidden disabled />
                                 <div id="communityChatPreviewRow" class="community-preview-row community-chat-preview-row" aria-live="polite"></div>
                             </div>
                             <p id="communityChatHint" class="community-chat-hint" role="status"></p>
@@ -201,14 +214,31 @@
                             disabled
                         ></textarea>
                         <div class="community-toolbar">
-                            <label class="community-attach-btn" id="communityAttachLabel" for="communityFileInput">
-                                <span class="material-icons-outlined" aria-hidden="true">add_photo_alternate</span>
-                                添加图片
-                                <input type="file" id="communityFileInput" accept="image/*" multiple hidden disabled />
-                            </label>
-                            <span class="community-toolbar-meta" id="communityImageMeta">0 / 6 张</span>
-                            <button type="button" class="primary-btn community-post-btn" id="communitySubmitBtn" disabled>发布帖子</button>
+                            <div class="community-send-split community-send-split--forum">
+                                <button type="button" class="primary-btn community-post-btn community-post-btn--main" id="communitySubmitBtn" disabled>
+                                    发布帖子
+                                </button>
+                                <button
+                                    type="button"
+                                    class="community-send-split__more"
+                                    id="communityPostMenuBtn"
+                                    disabled
+                                    aria-label="更多操作"
+                                    aria-expanded="false"
+                                    aria-haspopup="menu"
+                                    aria-controls="communityPostSendMenu"
+                                >
+                                    <span class="community-send-split__caret" aria-hidden="true"></span>
+                                </button>
+                                <div id="communityPostSendMenu" class="community-send-menu" role="menu" hidden>
+                                    <button type="button" class="community-send-menu__item" id="communityPostAddImageBtn" role="menuitem">
+                                        <span class="material-icons-outlined" aria-hidden="true">add_photo_alternate</span>
+                                        添加图片
+                                    </button>
+                                </div>
+                            </div>
                         </div>
+                        <input type="file" id="communityFileInput" accept="image/*" multiple hidden disabled />
                         <div id="communityPreviewRow" class="community-preview-row" aria-live="polite"></div>
                         <p id="communityFormHint" class="community-form-hint" role="status"></p>
                     </div>
@@ -232,7 +262,7 @@
                     <h2>巴奴门票</h2>
                     <p>Banu ticket</p>
                     <div class="game-buttons">
-                        <button class="primary-btn" onclick="showModal('banu')">购买</button>
+                        <button class="primary-btn" onclick="showTicketPurchaseClosedNotice()">购买</button>
                     </div>
                 </div>
             </div>
@@ -245,7 +275,7 @@
                     <h2>UEE海军门票</h2>
                     <p>UEE Navy ticket</p>
                     <div class="game-buttons">
-                        <button class="primary-btn" onclick="showModal('uee')">购买</button>
+                        <button class="primary-btn" onclick="showTicketPurchaseClosedNotice()">购买</button>
                     </div>
                 </div>
             </div>
@@ -509,13 +539,6 @@
             }
         }
 
-        function showModal(type) {
-            document.getElementById('loginDrawer').classList.remove('active');
-            document.getElementById('sidebarModal').classList.add('active');
-            document.getElementById('modalTicketType').textContent = type === 'banu' ? '巴奴门票' : 'UEE海军门票';
-            syncOverlay();
-        }
-
         function closeModal() {
             document.getElementById('sidebarModal').classList.remove('active');
             syncOverlay();
@@ -562,6 +585,10 @@
         function closeAlert() {
             document.getElementById('alertModal').style.display = 'none';
             syncOverlay();
+        }
+
+        function showTicketPurchaseClosedNotice() {
+            showAlert('USS HANGZHOU BC 已完美闭幕');
         }
 
         function verifyAndProceed() {
@@ -1092,11 +1119,6 @@
             if (el) el.textContent = msg || '';
         }
 
-        function updateCommunityImageMeta() {
-            const meta = document.getElementById('communityImageMeta');
-            if (meta) meta.textContent = communityPendingImages.length + ' / ' + COMMUNITY_MAX_IMAGES + ' 张';
-        }
-
         function renderCommunityPreviews() {
             const row = document.getElementById('communityPreviewRow');
             if (!row) return;
@@ -1125,18 +1147,11 @@
                     }
                     communityPendingImages.splice(idx, 1);
                     renderCommunityPreviews();
-                    updateCommunityImageMeta();
                 });
                 wrap.appendChild(img);
                 wrap.appendChild(rm);
                 row.appendChild(wrap);
             });
-            updateCommunityImageMeta();
-        }
-
-        function updateCommunityChatImageMeta() {
-            const meta = document.getElementById('communityChatImageMeta');
-            if (meta) meta.textContent = communityChatPendingImages.length + ' / ' + COMMUNITY_MAX_IMAGES + ' 张';
         }
 
         function clearCommunityChatPendingImages() {
@@ -1180,13 +1195,11 @@
                     }
                     communityChatPendingImages.splice(idx, 1);
                     renderCommunityChatPreviews();
-                    updateCommunityChatImageMeta();
                 });
                 wrap.appendChild(img);
                 wrap.appendChild(rm);
                 row.appendChild(wrap);
             });
-            updateCommunityChatImageMeta();
         }
 
         async function ingestCommunityChatFiles(files) {
@@ -2090,7 +2103,9 @@
                 return;
             }
             const btn = document.getElementById('communityChatSendBtn');
+            const chatMenuBtn = document.getElementById('communityChatSendMenuBtn');
             if (btn) btn.disabled = true;
+            if (chatMenuBtn) chatMenuBtn.disabled = true;
             try {
                 const payload =
                     imgs.length > 0 ? { text: text, images: imgs } : text;
@@ -2150,10 +2165,12 @@
             }
             clearCommunityFormHint();
             const btn = document.getElementById('communitySubmitBtn');
+            const postMenuBtn = document.getElementById('communityPostMenuBtn');
             if (btn) {
                 btn.disabled = true;
                 btn.textContent = '发布中…';
             }
+            if (postMenuBtn) postMenuBtn.disabled = true;
             try {
                 await window.UssAuthApi.communityCreatePost(sess.token, { content: content, images: imgs });
                 if (ta) ta.value = '';
@@ -2194,17 +2211,18 @@
             const hint = document.getElementById('communityAuthHint');
             const ta = document.getElementById('communityText');
             const fileInput = document.getElementById('communityFileInput');
-            const attachLabel = document.getElementById('communityAttachLabel');
             const postBtn = document.getElementById('communitySubmitBtn');
+            const postMenuBtn = document.getElementById('communityPostMenuBtn');
             const chatInput = document.getElementById('communityChatInput');
             const chatBtn = document.getElementById('communityChatSendBtn');
+            const chatMenuBtn = document.getElementById('communityChatSendMenuBtn');
             const chatFileInput = document.getElementById('communityChatFileInput');
-            const chatAttachLabel = document.getElementById('communityChatAttachLabel');
             const guestLock = document.getElementById('communityChatGuestLock');
             const chatLog = document.getElementById('communityChatLog');
 
             if (guestLock) guestLock.hidden = !!logged;
             if (!logged) {
+                closeCommunitySendMenus();
                 if (chatLog) chatLog.innerHTML = '';
                 communityChatMaxSeq = 0;
                 communityDmMaxSeq = 0;
@@ -2228,10 +2246,7 @@
                 ta.placeholder = logged ? '分享见闻、截图或动图…' : '登录后可发帖…';
             }
             if (fileInput) fileInput.disabled = !logged;
-            if (attachLabel) {
-                if (logged) attachLabel.classList.remove('is-disabled');
-                else attachLabel.classList.add('is-disabled');
-            }
+            if (postMenuBtn) postMenuBtn.disabled = !logged;
             if (postBtn) postBtn.disabled = !logged;
             if (chatInput) {
                 chatInput.disabled = !logged;
@@ -2239,11 +2254,78 @@
                 else updateCommunityChatInputPlaceholder();
             }
             if (chatBtn) chatBtn.disabled = !logged;
+            if (chatMenuBtn) chatMenuBtn.disabled = !logged;
             if (chatFileInput) chatFileInput.disabled = !logged;
-            if (chatAttachLabel) {
-                if (logged) chatAttachLabel.classList.remove('is-disabled');
-                else chatAttachLabel.classList.add('is-disabled');
+        }
+
+        function closeCommunitySendMenus() {
+            var chatMenu = document.getElementById('communityChatSendMenu');
+            var postMenu = document.getElementById('communityPostSendMenu');
+            var cmb = document.getElementById('communityChatSendMenuBtn');
+            var pmb = document.getElementById('communityPostMenuBtn');
+            if (chatMenu) chatMenu.hidden = true;
+            if (postMenu) postMenu.hidden = true;
+            if (cmb) cmb.setAttribute('aria-expanded', 'false');
+            if (pmb) pmb.setAttribute('aria-expanded', 'false');
+        }
+
+        function installCommunitySendMenus() {
+            var chatMenuBtn = document.getElementById('communityChatSendMenuBtn');
+            var chatMenu = document.getElementById('communityChatSendMenu');
+            var chatAdd = document.getElementById('communityChatAddImageBtn');
+            var chatFile = document.getElementById('communityChatFileInput');
+            var postMenuBtn = document.getElementById('communityPostMenuBtn');
+            var postMenu = document.getElementById('communityPostSendMenu');
+            var postAdd = document.getElementById('communityPostAddImageBtn');
+            var postFile = document.getElementById('communityFileInput');
+            if (chatMenuBtn && chatMenu) {
+                chatMenuBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var opening = chatMenu.hidden;
+                    closeCommunitySendMenus();
+                    if (opening) {
+                        chatMenu.hidden = false;
+                        chatMenuBtn.setAttribute('aria-expanded', 'true');
+                    }
+                });
             }
+            if (chatAdd && chatFile) {
+                chatAdd.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeCommunitySendMenus();
+                    if (chatFile && !chatFile.disabled) chatFile.click();
+                });
+            }
+            if (postMenuBtn && postMenu) {
+                postMenuBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var opening = postMenu.hidden;
+                    closeCommunitySendMenus();
+                    if (opening) {
+                        postMenu.hidden = false;
+                        postMenuBtn.setAttribute('aria-expanded', 'true');
+                    }
+                });
+            }
+            if (postAdd && postFile) {
+                postAdd.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeCommunitySendMenus();
+                    if (postFile && !postFile.disabled) postFile.click();
+                });
+            }
+            document.addEventListener('click', function (e) {
+                if (e.target.closest && e.target.closest('.community-send-menu')) return;
+                if (e.target.closest && e.target.closest('.community-send-split__more')) return;
+                closeCommunitySendMenus();
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') closeCommunitySendMenus();
+            });
         }
 
         function installCommunityDropzones() {
@@ -2311,6 +2393,7 @@
             }
 
             installCommunityDropzones();
+            installCommunitySendMenus();
 
             installCommunityChatScrollGuard();
             wireCommunityChatRoster();
