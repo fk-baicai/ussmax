@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>签到中心 — U.S.S HANGZHOU</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="checkin-page.css">
+    <link rel="icon" type="image/png" href="sp/png/favicon.png">
+    <script src="auth-config.js"></script>
+</head>
+<body class="checkin-page-body">
+    <header class="checkin-page-nav">
+        <a class="checkin-nav-home" href="index.html">返回首页</a>
+    </header>
+
+    <main class="checkin-page-main checkin-page-main--hub">
+        <div id="checkinGateHint" class="checkin-gate-hint" hidden>
+            <p>请先登录再使用签到。</p>
+            <p><a href="index.html">去首页登录</a></p>
+        </div>
+
+        <div id="checkinHubMain" hidden>
+            <header class="checkin-hub-hero">
+                <p class="checkin-hub-eyebrow">U.S.S HANGZHOU</p>
+                <h1 class="checkin-hub-page-title">签到中心</h1>
+                <p class="checkin-hub-lead">各分部总积分与连续天数互不影响，点击卡片进入对应分部。</p>
+            </header>
+            <div id="checkinHubCards" class="checkin-hub-cards"></div>
+            <noscript>
+                <div class="checkin-hub-cards">
+                    <a class="checkin-hub-card" href="checkin-unit.html#unit=hq">总部（开 JavaScript 可看实时总积分）</a>
+                    <a class="checkin-hub-card" href="checkin-unit.html#unit=squad1">一中队</a>
+                    <a class="checkin-hub-card" href="checkin-unit.html#unit=uss">USS创伤舰队</a>
+                    <a class="checkin-hub-card" href="checkin-unit.html#unit=ussprod">USS生产队</a>
+                </div>
+            </noscript>
+            <p id="checkinHubError" class="checkin-hub-error" hidden></p>
+        </div>
+    </main>
+
+    <script src="auth-api.js"></script>
+    <script src="checkin-hub.js"></script>
+</body>
+</html>
