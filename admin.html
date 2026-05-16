@@ -292,10 +292,40 @@
             border-top: none;
         }
         .sched-branch-head-banner .sched-branch-title {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.35rem 0.75rem;
+            width: 100%;
+        }
+        .sched-branch-name-label {
+            word-break: keep-all;
+            line-height: 1.2;
+        }
+        .sched-branch-points-inline {
+            margin-left: auto;
             display: inline-flex;
             align-items: center;
             gap: 0.35rem;
-            flex-wrap: wrap;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: rgba(180, 210, 255, 0.88);
+        }
+        .sched-branch-points-inline .sched-ppt-lbl {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.28rem;
+            cursor: pointer;
+        }
+        .sched-branch-points-inline .sched-ppt-inp {
+            width: 3.5rem;
+            min-height: 1.42rem;
+            padding: 0.12rem 0.28rem;
+            border-radius: 6px;
+            border: 1px solid rgba(95, 184, 255, 0.35);
+            background: rgba(6, 14, 28, 0.92);
+            color: var(--txt);
+            font-size: 0.8rem;
         }
         .grid-sched .sched-branch-spacer {
             width: 4.75rem;
@@ -336,14 +366,21 @@
         }
         .sched-cell .sch-slot-wrap { opacity: 1; }
         .sched-cell.sch-cell-off .sch-slot-wrap { opacity: 0.38; pointer-events: none; }
-        .sched-cell label.sch-time-lbl {
+        .sched-cell label.sch-time-lbl,
+        .sched-cell label.sch-dur-lbl {
             display: flex;
             flex-direction: column;
             gap: 0.12rem;
             color: var(--muted);
-            margin-bottom: 0.22rem;
             font-size: 0.72rem;
             line-height: 1.2;
+        }
+        .sched-cell label.sch-time-lbl {
+            margin-bottom: 0.22rem;
+        }
+        .sched-cell label.sch-dur-lbl {
+            margin-bottom: 0;
+            margin-top: 0.02rem;
         }
         .sched-cell label.sch-time-lbl .hint {
             font-size: 0.65rem;
@@ -377,29 +414,16 @@
             align-items: center;
             gap: 0.22rem;
             flex-wrap: nowrap;
-            margin-top: 0.08rem;
+            margin-top: 0;
         }
-        .sched-cell .sch-dur-row > .sch-dur-rng {
-            flex: 1 1 0;
-            min-width: 0;
-            width: auto;
-            max-width: none;
-            accent-color: var(--accent);
-        }
-        .sched-cell .sch-dur-lbl {
-            color: var(--txt);
-            font-weight: 600;
-            font-variant-numeric: tabular-nums;
-            font-size: 0.74rem;
-            flex-shrink: 0;
+        .sched-cell .sch-dur-row .sch-dur-inp {
+            flex: 0 0 auto;
+            width: min(4.2rem, 26vw);
+            max-width: 100%;
         }
         .sched-cell .sch-dur-unit {
             font-size: 0.68rem;
             flex-shrink: 0;
-        }
-        .sched-branch-head-banner .sched-branch-title > span:last-child {
-            word-break: keep-all;
-            line-height: 1.2;
         }
         button.sched-fold-btn {
             flex-shrink: 0;
@@ -432,12 +456,28 @@
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.45rem 0.65rem;
             margin-bottom: 0.75rem;
         }
-        .def-dur-row input[type="range"] {
-            width: min(220px, 50vw);
-            accent-color: var(--accent);
+        .def-dur-row label {
+            font-weight: 600;
+            color: var(--txt);
+        }
+        .def-dur-row .def-dur-sep {
+            width: 1px;
+            height: 1.25rem;
+            background: rgba(95, 184, 255, 0.22);
+            margin: 0 0.15rem;
+        }
+        input.sched-num-inp {
+            width: min(5rem, 28vw);
+            padding: 0.28rem 0.45rem;
+            border-radius: 8px;
+            border: 1px solid rgba(95, 184, 255, 0.35);
+            background: rgba(6, 14, 28, 0.92);
+            color: var(--txt);
+            font-size: 0.88rem;
+            font-variant-numeric: tabular-nums;
         }
         .users-toolbar {
             display: flex;
@@ -598,6 +638,271 @@
             font-size: 0.76em;
         }
 
+        #secBranch .branch-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        #secBranch .branch-toolbar label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            color: var(--muted);
+            font-size: 0.86rem;
+        }
+        #secBranch .branch-filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.45rem 0.75rem;
+            margin: 0.4rem 0 0.1rem;
+        }
+        #secBranch .branch-filter-bar label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            color: var(--muted);
+            font-size: 0.86rem;
+        }
+        #secBranch #branchUserFilter {
+            min-width: 14rem;
+            max-width: 22rem;
+            padding: 0.28rem 0.5rem;
+            border-radius: 8px;
+            border: 1px solid rgba(95, 184, 255, 0.35);
+            background: rgba(6, 14, 28, 0.92);
+            color: var(--txt);
+        }
+        #secBranch #branchFilterCount {
+            font-size: 0.82rem;
+            color: var(--muted);
+        }
+        #secBranch input[type='month'] {
+            padding: 0.28rem 0.45rem;
+            border-radius: 8px;
+            border: 1px solid rgba(95, 184, 255, 0.35);
+            background: rgba(6, 14, 28, 0.92);
+            color: var(--txt);
+            color-scheme: dark;
+        }
+        #secBranch .branch-table-wrap {
+            --branch-row-h: 2.62rem;
+            --branch-thead-h: 2.95rem;
+            --branch-visible-rows: 20;
+            overflow-x: auto;
+            overflow-y: auto;
+            max-width: 100%;
+            max-height: min(72vh, calc(var(--branch-thead-h) + var(--branch-visible-rows) * var(--branch-row-h)));
+            margin-top: 0.35rem;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 10px;
+            border: 1px solid rgba(95, 184, 255, 0.14);
+            cursor: grab;
+            scrollbar-gutter: stable;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(95, 184, 255, 0.48) rgba(4, 12, 24, 0.65);
+        }
+        #secBranch .branch-table-wrap::-webkit-scrollbar {
+            width: 9px;
+            height: 9px;
+        }
+        #secBranch .branch-table-wrap::-webkit-scrollbar:horizontal {
+            height: 0;
+            display: none;
+        }
+        #secBranch .branch-table-wrap::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, rgba(120, 210, 255, 0.55), rgba(72, 168, 228, 0.38));
+            border-radius: 8px;
+            border: 2px solid rgba(6, 14, 28, 0.55);
+            box-shadow: 0 0 6px rgba(95, 184, 255, 0.2);
+        }
+        #secBranch .branch-table-wrap::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, rgba(150, 225, 255, 0.65), rgba(90, 188, 240, 0.5));
+        }
+        #secBranch .branch-table-wrap::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.38);
+            border-radius: 8px;
+            margin: 4px 0;
+        }
+        #secBranch .branch-table-wrap::-webkit-scrollbar-corner {
+            background: transparent;
+        }
+        #secBranch .branch-table-wrap.is-drag-scroll {
+            cursor: grabbing;
+            user-select: none;
+        }
+        #secBranch .branch-grid-table {
+            width: max(100%, 1020px);
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        #secBranch .branch-grid-table th.branch-day-col,
+        #secBranch .branch-grid-table td.branch-day-cell {
+            min-width: 1.55rem;
+            max-width: 2rem;
+            text-align: center;
+            font-size: 0.68rem;
+            padding: 0.35rem 0.12rem;
+            font-variant-numeric: tabular-nums;
+        }
+        #secBranch .branch-grid-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            background: rgba(12, 26, 44, 0.99);
+            box-shadow: 0 1px 0 rgba(95, 184, 255, 0.16);
+        }
+        #secBranch .branch-grid-table thead th:nth-child(1) {
+            z-index: 7;
+        }
+        #secBranch .branch-grid-table thead th:nth-child(2) {
+            z-index: 6;
+        }
+        #secBranch .branch-grid-table thead th:nth-child(3) {
+            z-index: 6;
+        }
+        #secBranch .branch-grid-table th,
+        #secBranch .branch-grid-table td {
+            white-space: nowrap;
+            padding: 0.45rem 0.55rem;
+            vertical-align: middle;
+        }
+        #secBranch .branch-grid-table th:nth-child(1),
+        #secBranch .branch-grid-table td:nth-child(1) {
+            position: sticky;
+            left: 0;
+            z-index: 4;
+            min-width: 12rem;
+            background: rgba(8, 18, 36, 0.98);
+            box-shadow: 1px 0 0 rgba(95, 184, 255, 0.12);
+        }
+        #secBranch .branch-grid-table th:nth-child(2),
+        #secBranch .branch-grid-table td:nth-child(2) {
+            position: sticky;
+            left: 12rem;
+            z-index: 3;
+            min-width: 7.5rem;
+            background: rgba(8, 18, 36, 0.98);
+            box-shadow: 1px 0 0 rgba(95, 184, 255, 0.12);
+        }
+        #secBranch .branch-grid-table th:nth-child(3),
+        #secBranch .branch-grid-table td:nth-child(3) {
+            position: sticky;
+            left: calc(12rem + 7.5rem);
+            z-index: 2;
+            min-width: 11rem;
+            max-width: 14rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            background: rgba(8, 18, 36, 0.98);
+            box-shadow: 1px 0 0 rgba(95, 184, 255, 0.12);
+        }
+        #secBranch .branch-adj-cell {
+            display: inline-flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+        #secBranch .branch-grid-table th.branch-adj-th {
+            min-width: 12rem;
+        }
+        #secBranch .branch-export-panel {
+            margin-top: 0.75rem;
+            padding: 0.65rem 0.75rem;
+            border-radius: 10px;
+            border: 1px solid rgba(95, 184, 255, 0.16);
+            background: rgba(0, 0, 0, 0.2);
+        }
+        #secBranch .branch-export-panel .hint {
+            margin: 0 0 0.45rem;
+            font-size: 0.82rem;
+        }
+        #secBranch .branch-export-months-outer {
+            max-width: 100%;
+        }
+        #secBranch #branchExportMonths {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0;
+            padding: 0.45rem 0.35rem;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            border-radius: 8px;
+            border: 1px solid rgba(95, 184, 255, 0.14);
+            background: rgba(6, 14, 28, 0.55);
+            max-width: 100%;
+        }
+        #secBranch #branchExportMonths::-webkit-scrollbar {
+            display: none;
+            width: 0;
+            height: 0;
+        }
+        #secBranch .branch-export-pan-track {
+            margin-top: 0.4rem;
+            height: 2rem;
+            max-width: 100%;
+            border-radius: 8px;
+            border: 1px solid rgba(95, 184, 255, 0.18);
+            background: linear-gradient(
+                90deg,
+                rgba(95, 184, 255, 0.12) 0%,
+                rgba(6, 14, 28, 0.4) 50%,
+                rgba(95, 184, 255, 0.12) 100%
+            );
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.74rem;
+            color: rgba(200, 220, 255, 0.55);
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        #secBranch .branch-export-pan-track:hover {
+            border-color: rgba(95, 184, 255, 0.32);
+            color: rgba(220, 235, 255, 0.75);
+        }
+        #secBranch .branch-export-pan-track::before,
+        #secBranch .branch-export-pan-track::after {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.15rem;
+            line-height: 1;
+            opacity: 0.5;
+            pointer-events: none;
+            color: rgba(140, 200, 255, 0.85);
+        }
+        #secBranch .branch-export-pan-track::before {
+            content: '‹';
+            left: 0.55rem;
+        }
+        #secBranch .branch-export-pan-track::after {
+            content: '›';
+            right: 0.55rem;
+        }
+        #secBranch .branch-export-month-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            flex-shrink: 0;
+            font-size: 0.8rem;
+            color: var(--txt);
+            cursor: pointer;
+            white-space: nowrap;
+            padding: 0.2rem 0.35rem;
+            border-radius: 6px;
+            border: 1px solid rgba(95, 184, 255, 0.12);
+            background: rgba(0, 0, 0, 0.18);
+        }
+
         @keyframes admin-bar-glow {
             0%,
             100% {
@@ -619,6 +924,63 @@
     <main>
         <p id="gateMsg" class="err"></p>
         <div id="app" style="display: none;">
+            <section id="secSchedule">
+                <h2>分部签到开放窗口（北京时间）</h2>
+                <p class="hint">
+                    默认规则：未配置日期禁止签到。<br />
+                    勾选全天开放：当日随时可签；<br />
+                    不勾选：需设置开始时间与开放时长，仅规定时段内可签。<br />
+                    各分部签到积分可在分部标题旁单独设置，默认 1 分，签到成功自动加分。
+                </p>
+                <datalist id="adminSchedDurOpts">
+                    <option value="1"></option>
+                    <option value="2"></option>
+                    <option value="3"></option>
+                    <option value="5"></option>
+                    <option value="10"></option>
+                    <option value="15"></option>
+                    <option value="20"></option>
+                    <option value="30"></option>
+                    <option value="45"></option>
+                    <option value="60"></option>
+                    <option value="90"></option>
+                    <option value="120"></option>
+                    <option value="180"></option>
+                </datalist>
+                <datalist id="adminSchedPointsOpts">
+                    <option value="1"></option>
+                    <option value="2"></option>
+                    <option value="3"></option>
+                    <option value="5"></option>
+                    <option value="10"></option>
+                    <option value="15"></option>
+                    <option value="20"></option>
+                    <option value="30"></option>
+                    <option value="50"></option>
+                    <option value="100"></option>
+                </datalist>
+                <div class="def-dur-row">
+                    <label for="defDurInp">默认开放时长</label>
+                    <input
+                        type="number"
+                        id="defDurInp"
+                        min="1"
+                        max="180"
+                        step="1"
+                        value="3"
+                        list="adminSchedDurOpts"
+                        aria-label="默认开放分钟数"
+                        class="sched-num-inp"
+                    />
+                    <span>分钟</span>
+                </div>
+                <div class="row">
+                    <button type="button" id="btnSaveSchedule">保存整表</button>
+                </div>
+                <div id="schedErr" class="err" hidden></div>
+                <div id="schedGrid" class="grid-sched"></div>
+            </section>
+
             <section id="secUsers">
                 <h2>用户（修改绑定 ID / 邮箱 / 密码）</h2>
                 <p class="hint">密码留空则不修改。仅超级管理员可改「fkbaicai」账户。</p>
@@ -650,68 +1012,78 @@
                 </div>
             </section>
 
-            <section id="secAdmins" style="display: none;">
-                <h2>管理员列表（仅超级管理员）</h2>
-                <p class="hint">超级管理员 <code>fkbaicai</code> 写死在程序中，不可删除。</p>
-                <div class="row">
-                    <input type="text" id="newAdminId" placeholder="新管理员绑定 ID（小写 RSI Handle）" style="min-width:220px" />
-                    <button type="button" id="btnAddAdmin">添加</button>
-                </div>
-                <ul id="adminList"></ul>
-                <div id="admErr" class="err" hidden></div>
-            </section>
-
             <section id="secBranch">
                 <h2>分部积分</h2>
-                <div class="row">
+                <div class="branch-toolbar">
                     <label>分部 <select id="branchSel">
                         <option value="hq">总部</option>
                         <option value="squad1">一中队</option>
                         <option value="uss">USS创伤舰队</option>
                         <option value="ussprod">USS生产队</option>
                     </select></label>
+                    <label>统计月份（北京时间） <input type="month" id="branchYm" /></label>
                     <button type="button" id="btnLoadBranch">刷新列表</button>
-                    <button type="button" id="btnExportBranchXlsx" class="btn-secondary">下载 xlsx</button>
+                    <button type="button" id="btnExportBranchXlsx" class="btn-secondary">下载当前月 xlsx</button>
+                </div>
+                <div class="branch-filter-bar">
+                    <label for="branchUserFilter">用户搜索</label>
+                    <input
+                        type="search"
+                        id="branchUserFilter"
+                        placeholder="绑定 ID 或邮箱（子串匹配）"
+                        autocomplete="off"
+                        aria-label="筛选分部成员"
+                    />
+                    <span id="branchFilterCount"></span>
                 </div>
                 <p id="branchWindowHint" class="hint"></p>
                 <p class="hint" style="margin-top: 0.15rem">
-                    本表按<strong>总积分从高到低</strong>排列（同分再比组织槽位、绑定 ID）。「下载 xlsx」导出当前分部、当前列表（须先刷新）。
+                    本表按总积分降序排列。<br />
+                    本月签到、积分、未签为北京时间当月汇总；后面日期为每日签到状态，√代表已签。<br />
+                    列表默认显示约 20 行，更多成员用右侧青蓝滚动条上下滑动；表头固定置顶。<br />
+                    表格过宽时，在空白处按住左键可左右拖拽平移。<br />
+                    最左三列固定：调整、绑定 ID、邮箱。<br />
+                    「下载当前月 xlsx」包含全部列（需先刷新）；下方可多选月份批量导出，每月单独一个工作表。
                 </p>
-                <div style="overflow-x: auto;">
-                    <table>
+                <div class="branch-table-wrap" id="branchTableScrollWrap">
+                    <table class="branch-grid-table">
                         <thead>
-                            <tr>
+                            <tr id="branchTheadRow">
+                                <th class="branch-adj-th">调整值（可负）</th>
                                 <th>绑定 ID</th>
                                 <th>邮箱</th>
                                 <th>基础分</th>
                                 <th>调整</th>
                                 <th>总积分</th>
-                                <th>调整值（可负）</th>
+                                <th>本月签到（天）</th>
+                                <th>本月签到积分</th>
+                                <th>本月未签（天）</th>
                             </tr>
                         </thead>
                         <tbody id="branchTbody"></tbody>
                     </table>
                 </div>
-                <p class="hint">在「调整值」列输入整数后点「应用」即可；每行已自动对应到具体用户。</p>
+                <p class="hint">在<strong>最左列「调整值」</strong>：先在输入框填写整数，再点左侧「应用」；每行已对应到具体用户。上方搜索在已加载列表上即时筛选；<strong>下载 xlsx 仍为该分部全部成员</strong>（不受搜索影响）。</p>
+                <div class="branch-export-panel">
+                    <p class="hint">
+                        批量导出：在下方勾选要导出的月份；月份较多时可在<strong>浅蓝色条带</strong>上<strong>点击偏左/偏右</strong>横向翻阅（不再使用底部细滚动条拖拽）。点按钮生成一个
+                        xlsx，<strong>每个勾选月份单独工作表</strong>（列与上表一致）。
+                    </p>
+                    <div class="branch-export-months-outer">
+                        <div id="branchExportMonths" aria-label="选择要导出的月份"></div>
+                        <div
+                            class="branch-export-pan-track"
+                            id="branchExportPanTrack"
+                            role="button"
+                            tabindex="0"
+                            title="点击左侧向左、右侧向右滚动月份"
+                        >
+                            点击此处左侧或右侧浏览更多月份
+                        </div>
+                    </div>
+                    <button type="button" id="btnExportBranchXlsxMulti" class="btn-secondary">导出勾选月份（多表）</button>
+                </div>
                 <div id="branchErr" class="err" hidden></div>
-            </section>
-
-            <section id="secSchedule">
-                <h2>分部签到开放窗口（上海时间）</h2>
-                <p class="hint">
-                    <strong>默认关闭：</strong>未保存配置的日期<strong>不能签到</strong>。勾选「全天开放」则该日任意时刻可签；不勾选时须选择<strong>开始时刻</strong>并用<strong>滑块</strong>设定开放分钟数，仅在此时段内可签。
-                </p>
-                <div class="def-dur-row">
-                    <span>默认开放时长</span>
-                    <input type="range" id="defDurRng" min="1" max="180" step="1" value="3" aria-label="默认开放分钟数" />
-                    <strong id="defDurLbl">3</strong>
-                    <span>分钟</span>
-                </div>
-                <div class="row">
-                    <button type="button" id="btnSaveSchedule">保存整表</button>
-                </div>
-                <div id="schedErr" class="err" hidden></div>
-                <div id="schedGrid" class="grid-sched"></div>
             </section>
 
             <section id="secWhitelist">
@@ -732,6 +1104,16 @@
                 </div>
                 <div id="whitelistErr" class="err" hidden></div>
                 <div id="whitelistOk" class="ok" hidden></div>
+            </section>
+
+            <section id="secAdmins" style="display: none;">
+                <h2>管理员列表（仅超级管理员）</h2>
+                <div class="row">
+                    <input type="text" id="newAdminId" placeholder="新管理员绑定 ID（小写 RSI Handle）" style="min-width:220px" />
+                    <button type="button" id="btnAddAdmin">添加</button>
+                </div>
+                <ul id="adminList"></ul>
+                <div id="admErr" class="err" hidden></div>
             </section>
         </div>
     </main>
@@ -775,7 +1157,7 @@
                 return null;
             }
 
-            /** 从上海「今天」起连续若干天的 YYYY-MM-DD，用于签到日程表列 */
+            /** 从北京时间的「今天」起连续若干天的 YYYY-MM-DD，用于签到日程表列（时区 Asia/Shanghai） */
             function shanghaiDateKeysAhead(count) {
                 var keys = [];
                 var n = Math.max(1, Math.min(31, Math.round(Number(count)) || 5));
@@ -807,6 +1189,9 @@
                 branchRankingSnapshot: null,
             };
             var usersUiWired = false;
+            var branchExportPanWired = false;
+            var branchFilterWired = false;
+            var branchTableDragWired = false;
 
             function esc(s) {
                 return String(s == null ? '' : s)
@@ -853,6 +1238,28 @@
                 loadUsers();
                 document.getElementById('btnLoadBranch').onclick = loadBranch;
                 document.getElementById('btnExportBranchXlsx').onclick = exportBranchRankingXlsx;
+                document.getElementById('btnExportBranchXlsxMulti').onclick = function () {
+                    exportBranchRankingXlsxMulti();
+                };
+                var bym = document.getElementById('branchYm');
+                if (bym && !bym.value) bym.value = shanghaiMonthInputValue();
+                var ymInit = bym && bym.value ? String(bym.value) : shanghaiMonthInputValue();
+                var spInit = ymInit.split('-');
+                var yInit = parseInt(spInit[0], 10);
+                var mInit = parseInt(spInit[1], 10);
+                renderBranchTableHead(branchStatsLastDay(yInit, mInit));
+                if (bym) {
+                    bym.addEventListener('change', function () {
+                        var v = String(bym.value || '').trim();
+                        if (!/^\d{4}-\d{2}$/.test(v)) return;
+                        var spc = v.split('-');
+                        renderBranchTableHead(branchStatsLastDay(parseInt(spc[0], 10), parseInt(spc[1], 10)));
+                    });
+                }
+                renderBranchMonthExportChoices();
+                wireBranchExportPanOnce();
+                wireBranchFilterOnce();
+                wireBranchTableDragScrollOnce();
                 document.getElementById('btnAddAdmin').onclick = addAdmin;
                 document.getElementById('btnSaveSchedule').onclick = saveSchedule;
                 document.getElementById('btnSaveWhitelist').onclick = saveWhitelist;
@@ -1122,41 +1529,413 @@
                 return list;
             }
 
+            function shanghaiMonthInputValue() {
+                var p = new Intl.DateTimeFormat('en-CA', {
+                    timeZone: 'Asia/Shanghai',
+                    year: 'numeric',
+                    month: '2-digit',
+                }).formatToParts(new Date());
+                var y = p.find(function (x) { return x.type === 'year'; }).value;
+                var m = p.find(function (x) { return x.type === 'month'; }).value;
+                return y + '-' + m;
+            }
+
+            function shiftMonth(y, m, delta) {
+                var nm = m + delta;
+                var ny = y;
+                while (nm > 12) {
+                    nm -= 12;
+                    ny++;
+                }
+                while (nm < 1) {
+                    nm += 12;
+                    ny--;
+                }
+                return { y: ny, m: nm };
+            }
+
+            function renderBranchMonthExportChoices() {
+                var wrap = document.getElementById('branchExportMonths');
+                if (!wrap) return;
+                var parts = new Intl.DateTimeFormat('en-CA', {
+                    timeZone: 'Asia/Shanghai',
+                    year: 'numeric',
+                    month: '2-digit',
+                }).formatToParts(new Date());
+                var cy = Number(parts.find(function (x) { return x.type === 'year'; }).value);
+                var cm = Number(parts.find(function (x) { return x.type === 'month'; }).value);
+                var html = '';
+                for (var i = 0; i < 12; i++) {
+                    var o = shiftMonth(cy, cm, -i);
+                    html +=
+                        '<label class="branch-export-month-chip"><input type="checkbox" class="branch-export-month-cb" data-y="' +
+                        o.y +
+                        '" data-m="' +
+                        o.m +
+                        '" />' +
+                        o.y +
+                        '年' +
+                        o.m +
+                        '月</label>';
+                }
+                wrap.innerHTML = html;
+            }
+
+            function wireBranchExportPanOnce() {
+                if (branchExportPanWired) return;
+                var track = document.getElementById('branchExportPanTrack');
+                var months = document.getElementById('branchExportMonths');
+                if (!track || !months) return;
+                branchExportPanWired = true;
+                function panStep() {
+                    return Math.max(200, Math.floor((months.clientWidth || 360) * 0.78));
+                }
+                function panBy(dir) {
+                    months.scrollLeft += dir * panStep();
+                }
+                track.addEventListener('click', function (e) {
+                    var rect = track.getBoundingClientRect();
+                    var w = rect.width || 1;
+                    var x = e.clientX - rect.left;
+                    if (x < w * 0.5) panBy(-1);
+                    else panBy(1);
+                });
+                track.addEventListener('keydown', function (e) {
+                    if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        panBy(-1);
+                    } else if (e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        panBy(1);
+                    } else if (e.key === 'Home') {
+                        e.preventDefault();
+                        months.scrollLeft = 0;
+                    } else if (e.key === 'End') {
+                        e.preventDefault();
+                        months.scrollLeft = months.scrollWidth - months.clientWidth;
+                    }
+                });
+                months.addEventListener(
+                    'wheel',
+                    function (e) {
+                        if (!e.shiftKey || !e.deltaY) return;
+                        months.scrollLeft += e.deltaY;
+                        e.preventDefault();
+                    },
+                    { passive: false }
+                );
+            }
+
+            function branchStatsLastDay(y, m) {
+                if (!Number.isFinite(y) || !Number.isFinite(m) || m < 1 || m > 12) return 31;
+                return new Date(y, m, 0).getDate();
+            }
+
+            function renderBranchTableHead(lastDay) {
+                var tr = document.getElementById('branchTheadRow');
+                if (!tr) return;
+                var lastD = Number(lastDay);
+                if (!Number.isFinite(lastD) || lastD < 28) lastD = 31;
+                if (lastD > 31) lastD = 31;
+                var fixed = ['绑定 ID', '邮箱', '基础分', '调整', '总积分', '本月签到（天）', '本月签到积分', '本月未签（天）'];
+                var html = '<th class="branch-adj-th">调整值（可负）</th>';
+                for (var i = 0; i < fixed.length; i++) html += '<th>' + fixed[i] + '</th>';
+                for (var d = 1; d <= lastD; d++) html += '<th class="branch-day-col">' + d + '</th>';
+                tr.innerHTML = html;
+                var tbl = document.querySelector('#secBranch .branch-grid-table');
+                if (tbl) tbl.style.minWidth = Math.max(960, 720 + lastD * 28) + 'px';
+            }
+
+            /** 分部积分导出为二维数组：固定列在前，1～当月最后一天在最右侧（避免 json 键 "1" 等被排至最前）。 */
+            function branchRankingToAoa(rows, lastDay) {
+                var lastD = Number(lastDay);
+                if (!Number.isFinite(lastD) || lastD < 28) lastD = 31;
+                if (lastD > 31) lastD = 31;
+                var headers = [
+                    '绑定ID',
+                    '邮箱',
+                    '基础分',
+                    '调整',
+                    '总积分',
+                    '本月签到天数',
+                    '本月签到积分',
+                    '本月未签天数',
+                ];
+                for (var hd = 1; hd <= lastD; hd++) headers.push(String(hd));
+                var aoa = [headers];
+                (rows || []).forEach(function (r) {
+                    var miss = r.monthMissedDays;
+                    var row = [
+                        r.bindingId || '',
+                        r.email || '',
+                        Number(r.branchPointsBase) || 0,
+                        Number(r.branchPointsAdjust) || 0,
+                        Number(r.branchPoints) || 0,
+                        r.monthSignedDays != null ? r.monthSignedDays : '',
+                        r.monthCheckinPoints != null ? r.monthCheckinPoints : '',
+                        miss == null ? '' : miss,
+                    ];
+                    var daily = r.monthDailySigns;
+                    for (var d = 1; d <= lastD; d++) {
+                        row.push(daily && Number(daily[d - 1]) === 1 ? '√' : '');
+                    }
+                    aoa.push(row);
+                });
+                return aoa;
+            }
+
             function exportBranchRankingXlsx() {
                 var snap = state.branchRankingSnapshot;
                 if (!snap || !snap.rows || !snap.rows.length) {
-                    alert('请先选择分部并点击「刷新列表」加载数据后再导出。');
+                    alert('请先选择分部、统计月份并点击「刷新列表」加载数据后再导出。');
                     return;
                 }
                 if (typeof XLSX === 'undefined') {
                     alert('表格导出库未加载，请检查网络连接后刷新页面重试。');
                     return;
                 }
-                var sheetRows = snap.rows.map(function (r) {
-                    return {
-                        绑定ID: r.bindingId || '',
-                        邮箱: r.email || '',
-                        基础分: Number(r.branchPointsBase) || 0,
-                        调整: Number(r.branchPointsAdjust) || 0,
-                        总积分: Number(r.branchPoints) || 0,
-                    };
-                });
-                var ws = XLSX.utils.json_to_sheet(sheetRows);
+                var ld =
+                    snap.statsMonthLastDay != null
+                        ? Number(snap.statsMonthLastDay)
+                        : branchStatsLastDay(snap.statsYear, snap.statsMonth);
+                var aoa = branchRankingToAoa(snap.rows, ld);
+                var ws = XLSX.utils.aoa_to_sheet(aoa);
                 var wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, '分部积分');
-                var day = new Intl.DateTimeFormat('en-CA', {
-                    timeZone: 'Asia/Shanghai',
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                }).format(new Date());
+                var sheetName =
+                    String(snap.branch || 'b') +
+                    '_' +
+                    snap.statsYear +
+                    '_' +
+                    String(snap.statsMonth).padStart(2, '0');
+                XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
                 var fname =
                     'branch-points_' +
                     String(snap.branch || 'branch') +
                     '_' +
-                    day.replace(/-/g, '') +
+                    snap.statsYear +
+                    '-' +
+                    String(snap.statsMonth).padStart(2, '0') +
                     '.xlsx';
                 XLSX.writeFile(wb, fname);
+            }
+
+            async function exportBranchRankingXlsxMulti() {
+                var s = loadSess();
+                if (!s || !s.token) {
+                    alert('请先登录');
+                    return;
+                }
+                if (typeof XLSX === 'undefined') {
+                    alert('表格导出库未加载，请检查网络连接后刷新页面重试。');
+                    return;
+                }
+                var branch = document.getElementById('branchSel').value;
+                var cbs = Array.prototype.slice.call(document.querySelectorAll('.branch-export-month-cb:checked'));
+                if (!cbs.length) {
+                    alert('请先勾选至少一个月份。');
+                    return;
+                }
+                var wb = XLSX.utils.book_new();
+                var usedNames = {};
+                for (var i = 0; i < cbs.length; i++) {
+                    var y = Number(cbs[i].getAttribute('data-y'));
+                    var mo = Number(cbs[i].getAttribute('data-m'));
+                    if (!Number.isFinite(y) || !Number.isFinite(mo)) continue;
+                    try {
+                        var data = await window.UssAuthApi.adminCheckinBranch(s.token, branch, y, mo);
+                        var list = (data.memberRanking || []).slice();
+                        sortBranchRankingByPoints(list);
+                        var ldMulti =
+                            data.statsMonthLastDay != null
+                                ? Number(data.statsMonthLastDay)
+                                : branchStatsLastDay(
+                                      data.statsYear != null ? data.statsYear : y,
+                                      data.statsMonth != null ? data.statsMonth : mo
+                                  );
+                        var aoa = branchRankingToAoa(list, ldMulti);
+                        var ws = XLSX.utils.aoa_to_sheet(aoa);
+                        var baseName = String(branch || 'b') + '_' + y + '_' + String(mo).padStart(2, '0');
+                        var sn = baseName.slice(0, 31);
+                        var n = 2;
+                        while (usedNames[sn]) {
+                            sn = (baseName + '_' + n).slice(0, 31);
+                            n++;
+                        }
+                        usedNames[sn] = true;
+                        XLSX.utils.book_append_sheet(wb, ws, sn);
+                    } catch (e) {
+                        alert('导出 ' + y + '年' + mo + '月 失败：' + ((e && e.message) || '未知错误'));
+                        return;
+                    }
+                }
+                if (!wb.SheetNames || !wb.SheetNames.length) {
+                    alert('没有成功生成任何工作表。');
+                    return;
+                }
+                var fname =
+                    'branch-points_' +
+                    String(branch || 'branch') +
+                    '_multi_' +
+                    shanghaiMonthInputValue().replace(/-/g, '') +
+                    '.xlsx';
+                XLSX.writeFile(wb, fname);
+            }
+
+            function branchRankingRowMatchesFilter(r, q) {
+                var t = String(q || '').trim().toLowerCase();
+                if (!t) return true;
+                var bid = String(r.bindingId || '').toLowerCase();
+                var em = String(r.email || '').toLowerCase();
+                return bid.indexOf(t) >= 0 || em.indexOf(t) >= 0;
+            }
+
+            function buildBranchRankingRowElement(r, lastD, branch, token) {
+                var uid = r.userId || '';
+                var miss = r.monthMissedDays;
+                var missTxt = miss == null ? '—' : String(miss);
+                var daily = r.monthDailySigns;
+                var dayHtml = '';
+                for (var di = 1; di <= lastD; di++) {
+                    var signed = daily && Number(daily[di - 1]) === 1;
+                    dayHtml += '<td class="branch-day-cell">' + (signed ? '√' : '') + '</td>';
+                }
+                var tr = document.createElement('tr');
+                tr.innerHTML =
+                    '<td class="branch-adj-cell"><button type="button" class="adj-go">应用</button> <input type="number" class="adj-delta" style="width:4.5rem" step="1" /><input type="hidden" class="adj-uid" value="' +
+                    esc(uid) +
+                    '" /></td><td>' +
+                    esc(r.bindingId) +
+                    '</td><td>' +
+                    esc(r.email || '') +
+                    '</td><td>' +
+                    (r.branchPointsBase != null ? r.branchPointsBase : '') +
+                    '</td><td>' +
+                    (r.branchPointsAdjust != null ? r.branchPointsAdjust : '') +
+                    '</td><td>' +
+                    esc(r.branchPoints) +
+                    '</td><td>' +
+                    (r.monthSignedDays != null ? esc(String(r.monthSignedDays)) : '') +
+                    '</td><td>' +
+                    (r.monthCheckinPoints != null ? esc(String(r.monthCheckinPoints)) : '') +
+                    '</td><td>' +
+                    esc(missTxt) +
+                    '</td>' +
+                    dayHtml;
+                tr.querySelector('.adj-go').onclick = function () {
+                    var delta = Number(tr.querySelector('.adj-delta').value);
+                    var hid = tr.querySelector('.adj-uid').value;
+                    if (!hid) {
+                        alert('无法识别该用户，请点击「刷新列表」后重试。');
+                        return;
+                    }
+                    if (!Number.isFinite(delta) || delta === 0) {
+                        alert('请输入非零整数');
+                        return;
+                    }
+                    window.UssAuthApi
+                        .adminAdjustPoints(token, { userId: hid, branch: branch, delta: delta })
+                        .then(loadBranch)
+                        .catch(function (e) {
+                            showErr('branchErr', (e && e.message) || '调整失败');
+                        });
+                };
+                return tr;
+            }
+
+            function renderBranchRankingBody() {
+                var snap = state.branchRankingSnapshot;
+                var tb = document.getElementById('branchTbody');
+                var countEl = document.getElementById('branchFilterCount');
+                if (!tb) return;
+                tb.innerHTML = '';
+                if (countEl) countEl.textContent = '';
+                if (!snap || !snap.rows || !snap.rows.length) return;
+                var filtEl = document.getElementById('branchUserFilter');
+                var q = filtEl && filtEl.value ? String(filtEl.value) : '';
+                var lastD = snap.statsMonthLastDay;
+                var branch = snap.branch;
+                var s = loadSess();
+                var token = s && s.token ? s.token : '';
+                var all = snap.rows;
+                var rows = all.filter(function (row) {
+                    return branchRankingRowMatchesFilter(row, q);
+                });
+                rows.forEach(function (r) {
+                    tb.appendChild(buildBranchRankingRowElement(r, lastD, branch, token));
+                });
+                if (countEl) {
+                    var trimmed = String(q || '').trim();
+                    if (trimmed) {
+                        if (rows.length === 0) {
+                            countEl.textContent = '无匹配结果（共 ' + all.length + ' 人）';
+                        } else if (rows.length < all.length) {
+                            countEl.textContent = '显示 ' + rows.length + ' / 共 ' + all.length + ' 人';
+                        } else {
+                            countEl.textContent = '共 ' + all.length + ' 人（全部匹配）';
+                        }
+                    }
+                }
+            }
+
+            function wireBranchFilterOnce() {
+                if (branchFilterWired) return;
+                branchFilterWired = true;
+                var inp = document.getElementById('branchUserFilter');
+                if (!inp) return;
+                inp.addEventListener('input', function () {
+                    renderBranchRankingBody();
+                });
+            }
+
+            function wireBranchTableDragScrollOnce() {
+                if (branchTableDragWired) return;
+                var el = document.getElementById('branchTableScrollWrap');
+                if (!el) return;
+                branchTableDragWired = true;
+                var pressed = false;
+                var dragging = false;
+                var downX = 0;
+                var scrollAtDown = 0;
+                function isInteractiveTarget(t) {
+                    if (!t || typeof t.closest !== 'function') return false;
+                    return !!t.closest('input, textarea, button, select, a, label');
+                }
+                function onPointerMove(e) {
+                    if (!pressed) return;
+                    if (!dragging) {
+                        if (Math.abs(e.clientX - downX) < 8) return;
+                        dragging = true;
+                        el.classList.add('is-drag-scroll');
+                    }
+                    el.scrollLeft = scrollAtDown - (e.clientX - downX);
+                    e.preventDefault();
+                }
+                function onPointerUp() {
+                    if (!pressed) return;
+                    pressed = false;
+                    dragging = false;
+                    el.classList.remove('is-drag-scroll');
+                }
+                el.addEventListener('pointerdown', function (e) {
+                    if (e.button !== 0) return;
+                    if (isInteractiveTarget(e.target)) return;
+                    pressed = true;
+                    dragging = false;
+                    downX = e.clientX;
+                    scrollAtDown = el.scrollLeft;
+                });
+                document.addEventListener('pointermove', onPointerMove, { passive: false });
+                document.addEventListener('pointerup', onPointerUp);
+                document.addEventListener('pointercancel', onPointerUp);
+                el.addEventListener(
+                    'wheel',
+                    function (e) {
+                        if (!e.shiftKey || !e.deltaY) return;
+                        el.scrollLeft += e.deltaY;
+                        e.preventDefault();
+                    },
+                    { passive: false }
+                );
             }
 
             async function loadBranch() {
@@ -1164,64 +1943,57 @@
                 var branch = document.getElementById('branchSel').value;
                 showErr('branchErr', '');
                 state.branchRankingSnapshot = null;
+                renderBranchRankingBody();
                 try {
-                    var data = await window.UssAuthApi.adminCheckinBranch(s.token, branch);
+                    var ymEl = document.getElementById('branchYm');
+                    var ymStr = ymEl && ymEl.value ? String(ymEl.value).trim() : '';
+                    var yPart = NaN;
+                    var mPart = NaN;
+                    if (/^\d{4}-\d{2}$/.test(ymStr)) {
+                        var sp = ymStr.split('-');
+                        yPart = parseInt(sp[0], 10);
+                        mPart = parseInt(sp[1], 10);
+                    }
+                    if (!Number.isFinite(yPart) || !Number.isFinite(mPart) || mPart < 1 || mPart > 12) {
+                        ymStr = shanghaiMonthInputValue();
+                        if (ymEl) ymEl.value = ymStr;
+                        var sp2 = ymStr.split('-');
+                        yPart = parseInt(sp2[0], 10);
+                        mPart = parseInt(sp2[1], 10);
+                    }
+                    var data = await window.UssAuthApi.adminCheckinBranch(s.token, branch, yPart, mPart);
                     var w = data.checkinTodayWindow || {};
                     document.getElementById('branchWindowHint').textContent = w.allowed
                         ? '今日该分部：已开放签到（全天开放或当前在开放时段内）。'
                         : '今日：' + (w.message || '当前不可签到');
-                    var tb = document.getElementById('branchTbody');
-                    tb.innerHTML = '';
                     var raw = data.memberRanking || [];
                     var list = raw.map(function (x) {
                         return x;
                     });
                     sortBranchRankingByPoints(list);
+                    var sy = data.statsYear != null ? data.statsYear : yPart;
+                    var sm = data.statsMonth != null ? data.statsMonth : mPart;
+                    var lastD =
+                        data.statsMonthLastDay != null
+                            ? Number(data.statsMonthLastDay)
+                            : branchStatsLastDay(sy, sm);
+                    if (!Number.isFinite(lastD) || lastD < 28 || lastD > 31) lastD = branchStatsLastDay(sy, sm);
+                    renderBranchTableHead(lastD);
                     state.branchRankingSnapshot = {
                         branch: branch,
                         branchLabel: data.branchLabel || branch,
+                        statsYear: sy,
+                        statsMonth: sm,
+                        statsMonthLastDay: lastD,
                         rows: list,
                     };
-                    list.forEach(function (r) {
-                        var uid = r.userId || '';
-                        var tr = document.createElement('tr');
-                        tr.innerHTML =
-                            '<td>' +
-                            esc(r.bindingId) +
-                            '</td><td>' +
-                            esc(r.email || '') +
-                            '</td><td>' +
-                            (r.branchPointsBase != null ? r.branchPointsBase : '') +
-                            '</td><td>' +
-                            (r.branchPointsAdjust != null ? r.branchPointsAdjust : '') +
-                            '</td><td>' +
-                            esc(r.branchPoints) +
-                            '</td><td><input type="number" class="adj-delta" style="width:4.5rem" step="1" /> ' +
-                            '<button type="button" class="adj-go">应用</button><input type="hidden" class="adj-uid" value="' +
-                            esc(uid) +
-                            '" /></td>';
-                        tr.querySelector('.adj-go').onclick = function () {
-                            var delta = Number(tr.querySelector('.adj-delta').value);
-                            var hid = tr.querySelector('.adj-uid').value;
-                            if (!hid) {
-                                alert('无法识别该用户，请点击「刷新列表」后重试。');
-                                return;
-                            }
-                            if (!Number.isFinite(delta) || delta === 0) {
-                                alert('请输入非零整数');
-                                return;
-                            }
-                            window.UssAuthApi
-                                .adminAdjustPoints(s.token, { userId: hid, branch: branch, delta: delta })
-                                .then(loadBranch)
-                                .catch(function (e) {
-                                    showErr('branchErr', (e && e.message) || '调整失败');
-                                });
-                        };
-                        tb.appendChild(tr);
-                    });
+                    renderBranchRankingBody();
                 } catch (e) {
                     state.branchRankingSnapshot = null;
+                    var tbE = document.getElementById('branchTbody');
+                    if (tbE) tbE.innerHTML = '';
+                    var fcE = document.getElementById('branchFilterCount');
+                    if (fcE) fcE.textContent = '';
                     showErr('branchErr', (e && e.message) || '加载失败');
                 }
             }
@@ -1234,38 +2006,31 @@
                 return String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
             }
 
-            function syncDefDurLbl() {
-                var rng = document.getElementById('defDurRng');
-                var lbl = document.getElementById('defDurLbl');
-                if (rng && lbl) lbl.textContent = rng.value;
+            function clampScheduleMinutes(raw) {
+                var n = Math.round(Number(raw));
+                if (!Number.isFinite(n)) return 3;
+                return Math.min(180, Math.max(1, n));
             }
 
-            function wireDefDurRangeOnce() {
-                var rng = document.getElementById('defDurRng');
-                if (!rng || rng.dataset.wired === '1') return;
-                rng.dataset.wired = '1';
-                rng.addEventListener('input', syncDefDurLbl);
+            function clampSchedulePoints(raw) {
+                var n = Math.round(Number(raw));
+                if (!Number.isFinite(n)) return 1;
+                return Math.min(1000, Math.max(1, n));
             }
 
             function bindScheduleCells() {
                 document.querySelectorAll('#schedGrid td.sched-cell').forEach(function (td) {
                     var alld = td.querySelector('.sch-allday');
-                    var rng = td.querySelector('.sch-dur-rng');
-                    var lbl = td.querySelector('.sch-dur-lbl');
-                    if (!alld || !rng || !lbl) return;
-                    function syncDurLbl() {
-                        lbl.textContent = rng.value;
-                    }
+                    var durInp = td.querySelector('.sch-dur-inp');
+                    if (!alld || !durInp) return;
                     function syncAllDay() {
                         td.classList.toggle('sch-cell-off', alld.checked);
                         if (alld.checked) {
                             var ti = td.querySelector('.sch-time');
                             if (ti) ti.value = '';
                         }
-                        syncDurLbl();
                     }
                     alld.addEventListener('change', syncAllDay);
-                    rng.addEventListener('input', syncDurLbl);
                     syncAllDay();
                 });
             }
@@ -1275,12 +2040,9 @@
                 showErr('schedErr', '');
                 try {
                     state.schedule = await window.UssAuthApi.adminGetSchedule(s.token);
-                    var defM = Number(state.schedule.defaultDurationMinutes) || 3;
-                    defM = Math.min(180, Math.max(1, Math.round(defM)));
-                    var dr = document.getElementById('defDurRng');
-                    if (dr) dr.value = String(defM);
-                    syncDefDurLbl();
-                    wireDefDurRangeOnce();
+                    var defM = clampScheduleMinutes(state.schedule.defaultDurationMinutes);
+                    var defInp = document.getElementById('defDurInp');
+                    if (defInp) defInp.value = String(defM);
                     renderScheduleGrid();
                 } catch (e) {
                     showErr('schedErr', (e && e.message) || '加载日程失败');
@@ -1295,8 +2057,15 @@
                     { id: 'ussprod', label: 'USS生产队' },
                 ];
                 var dates = state.dates;
-                var sch = state.schedule || { branches: {}, defaultDurationMinutes: 3 };
-                var defM = Math.min(180, Math.max(1, Math.round(Number(sch.defaultDurationMinutes) || 3)));
+                var sch =
+                    state.schedule || {
+                        branches: {},
+                        defaultDurationMinutes: 3,
+                        pointsPerCheckin: 1,
+                        pointsPerCheckinByBranch: { hq: 1, squad1: 1, uss: 1, ussprod: 1 },
+                    };
+                var defM = clampScheduleMinutes(sch.defaultDurationMinutes);
+                var pptMap = sch.pointsPerCheckinByBranch || {};
                 var colCount = dates.length + 1;
                 var html =
                     '<table class="sched-grid-table"><thead><tr><th>分部</th>' +
@@ -1317,6 +2086,9 @@
                     '</tr></thead><tbody>';
                 branches.forEach(function (br) {
                     var folded = !!state.scheduleCollapsed[br.id];
+                    var pptBr = clampSchedulePoints(
+                        pptMap[br.id] != null ? pptMap[br.id] : sch.pointsPerCheckin != null ? sch.pointsPerCheckin : 1
+                    );
                     html +=
                         '<tr class="sched-branch-title-tr" data-sched-branch="' +
                         esc(br.id) +
@@ -1331,9 +2103,14 @@
                         (folded ? '展开该分部' : '收起该分部') +
                         '"><span class="sched-fold-icon" aria-hidden="true">' +
                         (folded ? '▶' : '▼') +
-                        '</span></button><span>' +
+                        '</span></button><span class="sched-branch-name-label">' +
                         esc(br.label) +
-                        '</span></span></td></tr>';
+                        '</span><span class="sched-branch-points-inline"><label class="sched-ppt-lbl">签到积分' +
+                        '<input type="number" class="sched-ppt-inp sched-num-inp" data-sched-ppt="' +
+                        esc(br.id) +
+                        '" min="1" max="1000" step="1" list="adminSchedPointsOpts" title="该分部每次成功签到的基础积分" value="' +
+                        esc(String(pptBr)) +
+                        '" /></label></span></span></td></tr>';
                     html +=
                         '<tr class="sched-branch-data-tr' +
                         (folded ? ' sched-branch-tr-collapsed' : '') +
@@ -1364,13 +2141,13 @@
                             '<input type="time" class="sch-time" step="300" title="24小时制" value="' +
                             esc(timeVal) +
                             '" /></label>' +
+                            '<label class="sch-dur-lbl" title="开放持续时间（分钟）">持续时间' +
                             '<div class="sch-dur-row">' +
-                            '<input type="range" class="sch-dur-rng" min="1" max="180" step="1" title="开放时长（分钟）" value="' +
+                            '<input type="number" class="sch-dur-inp sched-num-inp" min="1" max="180" step="1" list="adminSchedDurOpts" title="开放时长（分钟），可点下箭头选常用值" value="' +
                             esc(String(durVal)) +
                             '" />' +
-                            '<span class="sch-dur-lbl">' +
-                            esc(String(durVal)) +
-                            '</span><span class="hint sch-dur-unit">分</span></div></div></td>';
+                            '<span class="hint sch-dur-unit">分</span></div></label>' +
+                            '</div></td>';
                     });
                     html += '</tr>';
                 });
@@ -1401,7 +2178,12 @@
 
             async function saveSchedule() {
                 var s = loadSess();
-                var def = Number(document.getElementById('defDurRng').value) || 3;
+                var def = clampScheduleMinutes(document.getElementById('defDurInp') && document.getElementById('defDurInp').value);
+                var pptBy = { hq: 1, squad1: 1, uss: 1, ussprod: 1 };
+                ['hq', 'squad1', 'uss', 'ussprod'].forEach(function (bid) {
+                    var pin = document.querySelector('#schedGrid input.sched-ppt-inp[data-sched-ppt="' + bid + '"]');
+                    pptBy[bid] = clampSchedulePoints(pin && pin.value);
+                });
                 var payloadBranches = { hq: {}, squad1: {}, uss: {}, ussprod: {} };
                 ['hq', 'squad1', 'uss', 'ussprod'].forEach(function (bid) {
                     state.dates.forEach(function (d) {
@@ -1416,7 +2198,8 @@
                             payloadBranches[bid][d] = null;
                             return;
                         }
-                        var dur = Number(td.querySelector('.sch-dur-rng').value) || def;
+                        var durInp = td.querySelector('.sch-dur-inp');
+                        var dur = clampScheduleMinutes(durInp ? durInp.value : def) || def;
                         payloadBranches[bid][d] = {
                             startTime: tim,
                             durationMinutes: dur,
@@ -1427,6 +2210,7 @@
                 try {
                     state.schedule = await window.UssAuthApi.adminPutSchedule(s.token, {
                         defaultDurationMinutes: def,
+                        pointsPerCheckinByBranch: pptBy,
                         branches: payloadBranches,
                     });
                     renderScheduleGrid();

@@ -299,7 +299,15 @@
         }
         ul.innerHTML = list
             .map(function (row) {
-                var id = row.bindingId != null ? String(row.bindingId) : '—';
+                var id =
+                    row.oopzDisplay ||
+                    (row.oopzName && row.bindingId
+                        ? String(row.oopzName) + '（' + String(row.bindingId) + '）'
+                        : row.oopzName
+                          ? String(row.oopzName)
+                          : row.bindingId != null
+                            ? String(row.bindingId)
+                            : '—');
                 var role =
                     row.rsiOrgRoleLabel != null && String(row.rsiOrgRoleLabel).trim() !== ''
                         ? String(row.rsiOrgRoleLabel).trim()
@@ -776,8 +784,26 @@
             showAlert('请先登录。');
             return;
         }
+        if (!window.CheckinCaptcha || typeof window.CheckinCaptcha.run !== 'function') {
+            showAlert('验证组件未加载，请刷新页面后重试。');
+            return;
+        }
+        var captchaPayload;
         try {
-            var res = await window.UssAuthApi.checkin(sess.token, { branch: UNIT });
+            captchaPayload = await window.CheckinCaptcha.run(function () {
+                return window.UssAuthApi.checkinCaptcha(sess.token);
+            });
+        } catch (e) {
+            if (e && e.message && e.message.indexOf('取消') >= 0) return;
+            showAlert((e && e.message) || '人机验证失败');
+            return;
+        }
+        try {
+            var res = await window.UssAuthApi.checkin(sess.token, {
+                branch: UNIT,
+                captchaId: captchaPayload.captchaId,
+                captchaX: captchaPayload.captchaX,
+            });
             await loadSummary();
             var label = res && res.branchLabel ? res.branchLabel : '';
             var streak = res && res.streak != null ? res.streak : 0;

@@ -122,6 +122,15 @@
         /** 与 checkinUnit 相同，兼容旧代码 */
         checkinSummary: fetchCheckinBranchUnit,
 
+        async checkinCaptcha(token) {
+            var r = await fetch(joinUrl('/api/checkin/captcha'), {
+                headers: { Authorization: 'Bearer ' + token },
+            });
+            var data = await parseJson(r);
+            if (!r.ok) throw new Error(data.message || '加载验证失败');
+            return data;
+        },
+
         async checkin(token, body) {
             var r = await fetch(joinUrl('/api/checkin'), {
                 method: 'POST',
@@ -159,8 +168,12 @@
                 body: JSON.stringify(body || {}),
             });
         },
-        async adminCheckinBranch(token, branch) {
-            return adminJson(token, '/api/admin/checkin/branch?branch=' + encodeURIComponent(branch));
+        async adminCheckinBranch(token, branch, year, month) {
+            var q = '/api/admin/checkin/branch?branch=' + encodeURIComponent(branch);
+            if (year != null && month != null && String(year) !== '' && String(month) !== '') {
+                q += '&year=' + encodeURIComponent(year) + '&month=' + encodeURIComponent(month);
+            }
+            return adminJson(token, q);
         },
         async adminAdjustPoints(token, body) {
             return adminJson(token, '/api/admin/checkin/adjust-points', {

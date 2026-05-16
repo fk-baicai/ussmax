@@ -99,7 +99,7 @@
     function branchScheduleStatusForCard(b, defDur) {
         if (!b) {
             return {
-                text: '开放状态以上海时间为准，进入分部可查看详情。',
+                text: '开放状态以北京时间为准，进入分部可查看详情。',
                 mod: 'muted',
             };
         }
