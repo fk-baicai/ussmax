@@ -819,32 +819,194 @@ html.auth-session-cached #navLoginBtn {
 
 .login-drawer-authed {
     --dps: 1.2;
+    --drawer-content-inset-x: 1.25rem;
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+    width: 100%;
+    min-height: 0;
+    padding-bottom: 2.35rem;
+}
+
+.login-drawer .modal-content.login-drawer-content.login-drawer-content--authed {
+    justify-content: flex-start;
+    transform: none;
+    padding-top: 2.15rem;
+    padding-bottom: 2.5rem;
 }
 
 .login-drawer-authed .drawer-profile-row {
     border-bottom-color: rgba(95, 184, 255, 0.22);
 }
 
-/* 主名称与副名称紧挨；资料区纵向：头像在上，名称与下方字段左对齐 */
+.login-drawer-authed .rsi-auth-card--profile {
+    flex: 1;
+    min-height: 0;
+}
 
-/* 已登录抽屉：退出按钮约 80% 体量，右缘与资料区对齐 */
-.login-drawer-authed #logoutSubmitBtn {
+/* 已登录抽屉：右下退出 + 设置并排（退出在左、设置在右） */
+.drawer-footer-actions {
+    position: absolute;
+    left: var(--drawer-content-inset-x);
+    right: var(--drawer-content-inset-x);
+    bottom: -0.55rem;
+    z-index: 2;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.drawer-footer-icon-btn {
     box-sizing: border-box;
-    width: auto;
-    min-width: 7rem;
-    max-width: min(100%, 11.2rem);
-    margin-left: auto;
-    margin-right: 0;
-    min-height: 2.2rem;
-    padding: 0.58rem 1.08rem;
-    font-size: 0.9rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+    padding: 0.38rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.drawer-logout-btn,
+#logoutSubmitBtn.drawer-footer-icon-btn {
+    border: 1px solid rgba(95, 184, 255, 0.38);
+    background: rgba(10, 20, 30, 0.72);
+    color: #8ee0ff;
+}
+
+.drawer-logout-btn:hover:not(:disabled),
+#logoutSubmitBtn.drawer-footer-icon-btn:hover:not(:disabled) {
+    color: #b8e4ff;
+    border-color: rgba(95, 184, 255, 0.65);
+    background: rgba(95, 184, 255, 0.12);
+}
+
+.drawer-settings-btn {
+    border: 1px solid rgba(180, 190, 200, 0.35);
+    background: rgba(30, 36, 44, 0.55);
+    color: rgba(200, 208, 216, 0.88);
+}
+
+.drawer-settings-btn:hover:not(:disabled) {
+    color: rgba(230, 234, 240, 0.95);
+    border-color: rgba(200, 210, 220, 0.5);
+    background: rgba(55, 62, 72, 0.65);
+}
+
+.drawer-footer-icon-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.drawer-footer-icon {
+    width: 1.215rem;
+    height: 1.215rem;
+    display: block;
+    flex-shrink: 0;
+}
+
+/* 修改密码弹窗 */
+.account-settings-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1105;
     display: flex;
     align-items: center;
     justify-content: center;
-    letter-spacing: 0.1em;
+    padding: 1.25rem;
+    background: rgba(4, 10, 18, 0.72);
+    backdrop-filter: blur(4px);
+}
+
+.account-settings-backdrop[hidden] {
+    display: none !important;
+}
+
+.account-settings-panel {
+    width: min(100%, 22rem);
+    padding: 1.25rem 1.2rem 1.35rem;
+    border-radius: 10px;
+    border: 1px solid rgba(95, 184, 255, 0.22);
+    background: linear-gradient(165deg, #0c151c 0%, #101f2c 50%, #0a1218 100%);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+    color: #e8eef3;
+}
+
+.account-settings-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.65rem;
+}
+
+.account-settings-head h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.account-settings-close {
+    border: none;
+    background: none;
+    color: rgba(200, 220, 235, 0.75);
+    font-size: 1.35rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.15rem 0.35rem;
+}
+
+.account-settings-close:hover {
+    color: #b8e4ff;
+}
+
+.account-settings-hint {
+    margin: 0 0 1rem;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: rgba(200, 220, 235, 0.72);
+}
+
+.account-settings-panel .rsi-field {
+    margin-bottom: 0.85rem;
+}
+
+.account-settings-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: stretch;
+    gap: 0.65rem;
+    margin-top: 1.1rem;
+}
+
+.account-settings-actions .rsi-btn-ghost,
+.account-settings-actions .rsi-submit-btn {
+    margin: 0;
+    box-sizing: border-box;
+    width: 7.5rem;
+    min-width: 7.5rem;
+    max-width: 7.5rem;
+    min-height: 2.5rem;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
     text-indent: 0;
     border-radius: 6px;
-    margin-top: 0.5rem;
+    line-height: 1.2;
+}
+
+.account-settings-actions .rsi-submit-btn {
+    font-weight: 700;
 }
 
 /* 舰队下方：签到纯文字（非按钮块） */
@@ -1170,6 +1332,7 @@ a.drawer-checkin-textlink:hover {
 }
 
 .community-chat-split {
+    position: relative;
     display: flex;
     flex-direction: row;
     align-items: stretch;
@@ -2009,11 +2172,22 @@ a.community-author-avatar-link:focus-visible {
 
 .community-reply-form {
     margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .community-reply-input {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
+    width: auto;
     box-sizing: border-box;
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
     padding: 12px 14px;
     border-radius: 8px;
     border: 1px solid rgba(84, 173, 247, 0.12);
@@ -2021,7 +2195,9 @@ a.community-author-avatar-link:focus-visible {
     color: #e8f4ff;
     font-size: 16px;
     font-family: inherit;
-    resize: vertical;
+    line-height: 22px;
+    resize: none;
+    overflow-y: auto;
     outline: none;
 }
 
@@ -2032,18 +2208,23 @@ a.community-author-avatar-link:focus-visible {
 
 .community-reply-actions {
     display: flex;
-    justify-content: flex-end;
-    margin-top: 8px;
+    flex-shrink: 0;
+    align-items: center;
+    margin-top: 0;
 }
 
 .community-reply-btn {
     min-width: 80px;
-    padding: 10px 18px;
+    height: 48px;
+    min-height: 48px;
+    padding: 0 18px;
     font-size: 16px;
+    box-sizing: border-box;
 }
 
 .community-reply-hint {
-    margin: 6px 0 0;
+    flex: 0 0 100%;
+    margin: 0;
     min-height: 1.1em;
     font-size: 15px;
     color: #ffb4b4;
@@ -2085,15 +2266,17 @@ a.community-author-avatar-link:focus-visible {
 .community-chat-guest-lock {
     position: absolute;
     inset: 0;
-    z-index: 6;
+    z-index: 12;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 24px 18px;
     box-sizing: border-box;
-    background: rgba(4, 14, 26, 0.38);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    border-radius: inherit;
+    background: rgba(4, 14, 26, 0.42);
+    backdrop-filter: blur(16px) saturate(1.15);
+    -webkit-backdrop-filter: blur(16px) saturate(1.15);
+    pointer-events: auto;
 }
 
 .community-chat-guest-lock[hidden] {
@@ -2103,11 +2286,16 @@ a.community-author-avatar-link:focus-visible {
 .community-chat-guest-lock-inner {
     max-width: 300px;
     text-align: center;
-    padding: 20px 22px;
+    padding: 18px 22px;
     border-radius: 12px;
-    border: 1px solid rgba(84, 173, 247, 0.38);
-    background: rgba(8, 26, 44, 0.78);
-    box-shadow: 0 14px 44px rgba(0, 0, 0, 0.38);
+    border: 1px solid rgba(84, 173, 247, 0.42);
+    background: rgba(8, 26, 44, 0.62);
+    box-shadow: 0 10px 36px rgba(0, 0, 0, 0.32);
+}
+
+.community-chat-line--guest-preview {
+    pointer-events: none;
+    user-select: none;
 }
 
 .community-chat-guest-lock-title {
@@ -3261,6 +3449,12 @@ a.community-author-avatar-link:focus-visible {
     min-height: 0;
     overflow-y: auto;
     transform: translateY(-100px);
+  }
+
+  .login-drawer .modal-content.login-drawer-content.login-drawer-content--authed {
+    transform: none;
+    justify-content: flex-start;
+    padding-top: 1.85rem;
   }
   .form-input {
     font-size: 14px;

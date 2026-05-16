@@ -89,6 +89,20 @@
             return data;
         },
 
+        async changePassword(token, body) {
+            var r = await fetch(joinUrl('/api/account/password'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: 'Bearer ' + token,
+                },
+                body: JSON.stringify(body || {}),
+            });
+            var data = await parseJson(r);
+            if (!r.ok) throw new Error(data.message || '修改密码失败');
+            return data;
+        },
+
         async health() {
             var r = await fetch(joinUrl('/api/health'));
             return r.ok;

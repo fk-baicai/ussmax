@@ -143,9 +143,6 @@
                     </div>
                     <div class="community-chat-split">
                         <aside class="community-chat-roster" id="communityChatRoster" aria-label="聊天对象">
-                            <div id="communityChatRosterGuest" class="community-chat-roster-guest" hidden>
-                                <p>登录后查看成员列表</p>
-                            </div>
                             <div id="communityChatRosterInner" class="community-chat-roster-inner" hidden></div>
                         </aside>
                         <div class="community-chat-main">
@@ -153,12 +150,6 @@
                             <div class="community-chat-view">
                                 <div id="communityChatScroll" class="community-chat-scroll community-scroller community-scroller-chat">
                                     <div id="communityChatLog" class="community-chat-log"></div>
-                                </div>
-                                <div id="communityChatGuestLock" class="community-chat-guest-lock" hidden>
-                                    <div class="community-chat-guest-lock-inner">
-                                        <p class="community-chat-guest-lock-title">登录后查看聊天</p>
-                                        <p class="community-chat-guest-lock-desc">舰员频道内容仅对已登录成员可见，请使用右上角登录或注册。</p>
-                                    </div>
                                 </div>
                             </div>
                             <div class="community-chat-compose community-dropzone">
@@ -208,6 +199,12 @@
                             </div>
                             <p id="communityChatHint" class="community-chat-hint" role="status"></p>
                             <div id="communityMentionToast" class="community-mention-toast" hidden role="status"></div>
+                        </div>
+                        <div id="communityChatGuestLock" class="community-chat-guest-lock" hidden>
+                            <div class="community-chat-guest-lock-inner">
+                                <p class="community-chat-guest-lock-title">登录后参与聊天</p>
+                                <p class="community-chat-guest-lock-desc">舰员频道仅对已登录成员开放，请使用右上角登录或注册。</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -525,8 +522,59 @@
                             <a href="admin.html" id="drawerAdminLink" class="drawer-checkin-textlink" style="display: none;">管理系统</a>
                         </div>
                     </div>
-                    <button type="button" id="logoutSubmitBtn" class="rsi-btn-ghost" onclick="logoutUser()">退出登录</button>
                 </div>
+                <div class="drawer-footer-actions">
+                    <button type="button" id="logoutSubmitBtn" class="drawer-footer-icon-btn drawer-logout-btn" onclick="logoutUser()" aria-label="退出登录" title="退出登录">
+                        <svg class="drawer-footer-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path d="M113.778 56.889h56.889v910.222H113.778z" fill="currentColor"></path>
+                            <path d="M739.556 56.889h56.889v170.667h-56.889V56.889zm0 796.444h56.889v170.667h-56.889V853.333z" fill="currentColor"></path>
+                            <path d="M113.778 56.889h625.778v56.889H113.778V56.889zm0 910.222h625.778v56.889H113.778v-56.889z" fill="currentColor"></path>
+                            <path d="M284.444 512h568.889v56.889H284.444V512z" fill="currentColor"></path>
+                            <path d="M904.533 563.2l17.067-22.756L722.489 341.333l-39.822 39.822 159.289 159.289-159.289 164.978 39.822 39.822z" fill="currentColor"></path>
+                        </svg>
+                    </button>
+                    <button type="button" id="drawerSettingsBtn" class="drawer-footer-icon-btn drawer-settings-btn" onclick="openAccountSettings()" aria-label="账户设置" title="账户设置">
+                        <svg class="drawer-footer-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path d="M919.6 405.6l-57.2-8c-12.7-1.8-23-10.4-28-22.1-11.3-26.7-25.7-51.7-42.9-74.5-7.7-10.2-10-23.5-5.2-35.3l21.7-53.5c6.7-16.4 0.2-35.3-15.2-44.1L669.1 96.6c-15.4-8.9-34.9-5.1-45.8 8.9l-35.4 45.3c-7.9 10.2-20.7 14.9-33.5 13.3-14-1.8-28.3-2.8-42.8-2.8-14.5 0-28.8 1-42.8 2.8-12.8 1.6-25.6-3.1-33.5-13.3l-35.4-45.3c-10.9-14-30.4-17.8-45.8-8.9L230.4 168c-15.4 8.9-21.8 27.7-15.2 44.1l21.7 53.5c4.8 11.9 2.5 25.1-5.2 35.3-17.2 22.8-31.7 47.8-42.9 74.5-5 11.8-15.3 20.4-28 22.1l-57.2 8C86 408 72.9 423 72.9 440.8v142.9c0 17.7 13.1 32.7 30.6 35.2l57.2 8c12.7 1.8 23 10.4 28 22.1 11.3 26.7 25.7 51.7 42.9 74.5 7.7 10.2 10 23.5 5.2 35.3l-21.7 53.5c-6.7 16.4-0.2 35.3 15.2 44.1L354 927.8c15.4 8.9 34.9 5.1 45.8-8.9l35.4-45.3c7.9-10.2 20.7-14.9 33.5-13.3 14 1.8 28.3 2.8 42.8 2.8 14.5 0 28.8-1 42.8-2.8 12.8-1.6 25.6 3.1 33.5 13.3l35.4 45.3c10.9 14 30.4 17.8 45.8 8.9l123.7-71.4c15.4-8.9 21.8-27.7 15.2-44.1l-21.7-53.5c-4.8-11.8-2.5-25.1 5.2-35.3 17.2-22.8 31.7-47.8 42.9-74.5 5-11.8 15.3-20.4 28-22.1l57.2-8c17.6-2.5 30.6-17.5 30.6-35.2V440.8c0.2-17.8-12.9-32.8-30.5-35.2z m-408 245.5c-76.7 0-138.9-62.2-138.9-138.9s62.2-138.9 138.9-138.9 138.9 62.2 138.9 138.9-62.2 138.9-138.9 138.9z" fill="currentColor"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="accountSettingsBackdrop" class="account-settings-backdrop" hidden>
+        <div class="account-settings-panel" role="dialog" aria-modal="true" aria-labelledby="accountSettingsTitle">
+            <div class="account-settings-head">
+                <h3 id="accountSettingsTitle">修改密码</h3>
+                <button type="button" class="account-settings-close" onclick="closeAccountSettings()" aria-label="关闭">×</button>
+            </div>
+            <p class="account-settings-hint">请先输入当前密码，再设置新密码（需输入两次确认）。</p>
+            <div class="rsi-field rsi-field--password">
+                <label for="settingsCurrentPassword">当前密码</label>
+                <input type="password" class="rsi-input" id="settingsCurrentPassword" autocomplete="current-password" oninput="clearAccountSettingsHint()">
+                <button type="button" class="rsi-pw-toggle" id="settingsCurrentPwToggle" onclick="togglePasswordField('settingsCurrentPassword', 'settingsCurrentPwToggle')" aria-label="显示或隐藏密码">
+                    <span class="material-icons-outlined rsi-pw-toggle-icon">visibility</span>
+                </button>
+            </div>
+            <div class="rsi-field rsi-field--password">
+                <label for="settingsNewPassword">新密码</label>
+                <input type="password" class="rsi-input" id="settingsNewPassword" autocomplete="new-password" oninput="clearAccountSettingsHint()">
+                <button type="button" class="rsi-pw-toggle" id="settingsNewPwToggle" onclick="togglePasswordField('settingsNewPassword', 'settingsNewPwToggle')" aria-label="显示或隐藏密码">
+                    <span class="material-icons-outlined rsi-pw-toggle-icon">visibility</span>
+                </button>
+            </div>
+            <div class="rsi-field rsi-field--password">
+                <label for="settingsConfirmPassword">确认新密码</label>
+                <input type="password" class="rsi-input" id="settingsConfirmPassword" autocomplete="new-password" oninput="clearAccountSettingsHint()">
+                <button type="button" class="rsi-pw-toggle" id="settingsConfirmPwToggle" onclick="togglePasswordField('settingsConfirmPassword', 'settingsConfirmPwToggle')" aria-label="显示或隐藏密码">
+                    <span class="material-icons-outlined rsi-pw-toggle-icon">visibility</span>
+                </button>
+            </div>
+            <p id="accountSettingsHint" class="rsi-form-hint rsi-form-hint--error" hidden></p>
+            <div class="account-settings-actions">
+                <button type="button" class="rsi-btn-ghost" onclick="closeAccountSettings()">取消</button>
+                <button type="button" id="settingsPasswordSubmitBtn" class="rsi-submit-btn" onclick="submitChangePassword()">确认修改</button>
             </div>
         </div>
     </div>
@@ -828,8 +876,120 @@
         function resetLogoutSubmitBtn() {
             const b = document.getElementById('logoutSubmitBtn');
             if (b) {
-                b.textContent = '退出登录';
                 b.disabled = false;
+                b.setAttribute('aria-label', '退出登录');
+                b.title = '退出登录';
+            }
+        }
+
+        function clearAccountSettingsHint() {
+            const el = document.getElementById('accountSettingsHint');
+            if (el) {
+                el.textContent = '';
+                el.hidden = true;
+                el.classList.remove('rsi-form-hint--info');
+                el.classList.add('rsi-form-hint--error');
+            }
+        }
+
+        function setAccountSettingsHint(msg, isInfo) {
+            const el = document.getElementById('accountSettingsHint');
+            if (!el) return;
+            if (!msg) {
+                clearAccountSettingsHint();
+                return;
+            }
+            el.textContent = msg;
+            el.hidden = false;
+            el.classList.toggle('rsi-form-hint--info', !!isInfo);
+            el.classList.toggle('rsi-form-hint--error', !isInfo);
+        }
+
+        function resetAccountSettingsForm() {
+            ['settingsCurrentPassword', 'settingsNewPassword', 'settingsConfirmPassword'].forEach(function (id) {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.value = '';
+                    input.type = 'password';
+                }
+            });
+            ['settingsCurrentPwToggle', 'settingsNewPwToggle', 'settingsConfirmPwToggle'].forEach(function (id) {
+                const btn = document.getElementById(id);
+                const icon = btn && btn.querySelector('.rsi-pw-toggle-icon');
+                if (icon) icon.textContent = 'visibility';
+            });
+            const submit = document.getElementById('settingsPasswordSubmitBtn');
+            if (submit) {
+                submit.disabled = false;
+                submit.textContent = '确认修改';
+            }
+            clearAccountSettingsHint();
+        }
+
+        function openAccountSettings() {
+            if (!isLoggedIn()) {
+                openLoginDrawer();
+                return;
+            }
+            resetAccountSettingsForm();
+            const backdrop = document.getElementById('accountSettingsBackdrop');
+            if (!backdrop) return;
+            backdrop.hidden = false;
+            backdrop.onclick = function (e) {
+                if (e.target === backdrop) closeAccountSettings();
+            };
+        }
+
+        function closeAccountSettings() {
+            const backdrop = document.getElementById('accountSettingsBackdrop');
+            if (backdrop) backdrop.hidden = true;
+            resetAccountSettingsForm();
+        }
+
+        async function submitChangePassword() {
+            clearAccountSettingsHint();
+            const sess = loadAuthSession();
+            if (!sess || !sess.token) {
+                setAccountSettingsHint('请先登录');
+                return;
+            }
+            const currentPassword = String(document.getElementById('settingsCurrentPassword')?.value || '');
+            const newPassword = String(document.getElementById('settingsNewPassword')?.value || '');
+            const confirmPassword = String(document.getElementById('settingsConfirmPassword')?.value || '');
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                setAccountSettingsHint('请填写完整');
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                setAccountSettingsHint('两次输入的新密码不一致');
+                return;
+            }
+            if (newPassword.length < 6) {
+                setAccountSettingsHint('新密码至少 6 位');
+                return;
+            }
+            const btn = document.getElementById('settingsPasswordSubmitBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = '提交中…';
+            }
+            try {
+                await window.UssAuthApi.changePassword(sess.token, {
+                    currentPassword: currentPassword,
+                    newPassword: newPassword,
+                    confirmPassword: confirmPassword,
+                });
+                setAccountSettingsHint('密码已更新', true);
+                setTimeout(function () {
+                    closeAccountSettings();
+                }, 700);
+            } catch (e) {
+                setAccountSettingsHint((e && e.message) || '修改失败');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '确认修改';
+                }
             }
         }
 
@@ -2155,7 +2315,7 @@
                 replyForm.className = 'community-reply-form';
                 const replyTa = document.createElement('textarea');
                 replyTa.className = 'community-reply-input';
-                replyTa.rows = 2;
+                replyTa.rows = 1;
                 replyTa.maxLength = 2000;
                 replyTa.placeholder = isLoggedIn() ? '写下你的回复…' : '登录后可回复';
                 replyTa.disabled = !isLoggedIn();
@@ -2260,10 +2420,11 @@
             if (!log || !window.UssAuthApi) return;
             clearCommunityChatHint();
             if (!isLoggedIn()) {
-                log.innerHTML = '';
+                renderCommunityChatGuestPreview();
                 communityChatMaxSeq = 0;
                 return;
             }
+            delete log.dataset.guestPreview;
             try {
                 const data = await window.UssAuthApi.communityChatFetch(0);
                 log.innerHTML = '';
@@ -2296,10 +2457,15 @@
             if (!log || !window.UssAuthApi) return;
             clearCommunityChatHint();
             if (!isLoggedIn() || communityChatKind !== 'dm' || !communityChatDmPeer) {
-                log.innerHTML = '';
+                if (!isLoggedIn()) {
+                    renderCommunityChatGuestPreview();
+                } else {
+                    log.innerHTML = '';
+                }
                 communityDmMaxSeq = 0;
                 return;
             }
+            delete log.dataset.guestPreview;
             const sess = loadAuthSession();
             if (!sess || !sess.token) return;
             try {
@@ -2367,6 +2533,53 @@
                 const hit = !needle || peer.indexOf(needle) !== -1 || lab.indexOf(needle) !== -1;
                 row.hidden = !hit;
             });
+        }
+
+        const COMMUNITY_GUEST_ROSTER_PREVIEW = [
+            { bindingId: 'Helios-7' },
+            { bindingId: 'Vanguard-12' },
+            { bindingId: 'Atlas-3' }
+        ];
+
+        function renderCommunityChatGuestPreview() {
+            const log = document.getElementById('communityChatLog');
+            if (!log || isLoggedIn()) return;
+            const now = Date.now();
+            const samples = [
+                {
+                    seq: 'guest-preview-1',
+                    bindingId: 'Helios-7',
+                    text: '今晚舰队巡航还照常吗？',
+                    createdAt: new Date(now - 55 * 60000).toISOString()
+                },
+                {
+                    seq: 'guest-preview-2',
+                    bindingId: 'Vanguard-12',
+                    text: '照常，20:00 在 Pyro 集合。',
+                    createdAt: new Date(now - 48 * 60000).toISOString()
+                },
+                {
+                    seq: 'guest-preview-3',
+                    bindingId: 'Atlas-3',
+                    text: '收到，我带两艘补给船。',
+                    createdAt: new Date(now - 41 * 60000).toISOString()
+                }
+            ];
+            log.innerHTML = '';
+            log.dataset.guestPreview = '1';
+            samples.forEach(function (m) {
+                const line = buildCommunityChatLine(m, 'fleet');
+                line.classList.add('community-chat-line--guest-preview');
+                log.appendChild(line);
+            });
+            scrollCommunityChatToBottom(true);
+        }
+
+        function renderCommunityChatGuestRoster() {
+            const inner = document.getElementById('communityChatRosterInner');
+            if (!inner || isLoggedIn()) return;
+            inner.hidden = false;
+            renderCommunityChatRosterFromMembers(COMMUNITY_GUEST_ROSTER_PREVIEW);
         }
 
         function renderCommunityChatRosterFromMembers(members) {
@@ -2449,17 +2662,13 @@
 
         async function loadCommunityRoster() {
             const inner = document.getElementById('communityChatRosterInner');
-            const guest = document.getElementById('communityChatRosterGuest');
-            if (!inner || !guest) return;
+            if (!inner) return;
             if (!isLoggedIn() || !window.UssAuthApi) {
-                inner.innerHTML = '';
-                inner.hidden = true;
-                guest.hidden = false;
                 communityRosterSearchQuery = '';
                 communityChatRosterMembersList = [];
+                renderCommunityChatGuestRoster();
                 return;
             }
-            guest.hidden = true;
             inner.hidden = false;
             try {
                 const sess = loadAuthSession();
@@ -2751,7 +2960,7 @@
             if (guestLock) guestLock.hidden = !!logged;
             if (!logged) {
                 closeCommunitySendMenus();
-                if (chatLog) chatLog.innerHTML = '';
+                renderCommunityChatGuestPreview();
                 communityChatMaxSeq = 0;
                 communityDmMaxSeq = 0;
                 communityChatKind = 'fleet';
@@ -2763,6 +2972,7 @@
                 syncCommunityChatMainTitle();
                 loadCommunityRoster();
             } else {
+                if (chatLog) delete chatLog.dataset.guestPreview;
                 startCommunityChatPoll();
                 updateCommunityChatInputPlaceholder();
                 loadCommunityRoster();
@@ -3062,10 +3272,12 @@
         function refreshLoginDrawerView() {
             const guest = document.getElementById('loginDrawerGuest');
             const authed = document.getElementById('loginDrawerAuthed');
+            const drawerContent = document.querySelector('.login-drawer-content');
             if (!guest || !authed) return;
             if (isLoggedIn()) {
                 guest.style.display = 'none';
                 authed.style.display = 'block';
+                if (drawerContent) drawerContent.classList.add('login-drawer-content--authed');
                 const sess = loadAuthSession();
                 /* 与注册表单 #regBindingId 同源字段（bindingId），服务端 normalize 后的账号 Handle */
                 document.getElementById('loggedInBindingId').textContent = sess && sess.bindingId ? sess.bindingId : '—';
@@ -3151,6 +3363,7 @@
             } else {
                 guest.style.display = 'block';
                 authed.style.display = 'none';
+                if (drawerContent) drawerContent.classList.remove('login-drawer-content--authed');
             }
         }
 
@@ -3391,8 +3604,9 @@
         function logoutUser() {
             const lo = document.getElementById('logoutSubmitBtn');
             if (lo) {
-                lo.textContent = '已退出';
                 lo.disabled = true;
+                lo.setAttribute('aria-label', '已退出');
+                lo.title = '已退出';
             }
             clearAuthSession();
             refreshNavLoginState();
