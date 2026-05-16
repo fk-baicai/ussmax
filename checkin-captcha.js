@@ -1,6 +1,6 @@
 /**
- * 签到滑动拼图人机验证（GET /api/checkin/captcha）
- * 背景：frontend/captcha/a.jpg、b.jpg、c.jpg（缺失时用 Canvas 备用图）
+ * 签到滑动拼图人机验证
+ * 缺口坐标仅保存在服务端；拼图由 GET /api/checkin/captcha/:id/puzzle 返回
  */
 (function (global) {
     'use strict';
@@ -9,82 +9,8 @@
     var PUZZLE_H = 150;
     var PIECE = 44;
     var SLIDER_PAD = 8;
-
-    function drawProceduralBg(ctx, w, h, index) {
-        var g = ctx.createLinearGradient(0, 0, w, h);
-        if (index === 0) {
-            g.addColorStop(0, '#0a1628');
-            g.addColorStop(0.5, '#123a5c');
-            g.addColorStop(1, '#0d2240');
-        } else if (index === 1) {
-            g.addColorStop(0, '#120a28');
-            g.addColorStop(0.45, '#2a1850');
-            g.addColorStop(1, '#0f1835');
-        } else {
-            g.addColorStop(0, '#081820');
-            g.addColorStop(0.4, '#0e3d4a');
-            g.addColorStop(1, '#102838');
-        }
-        ctx.fillStyle = g;
-        ctx.fillRect(0, 0, w, h);
-        ctx.globalAlpha = 0.35;
-        for (var i = 0; i < 28; i++) {
-            ctx.fillStyle = i % 3 === 0 ? '#5fb8ff' : '#88d4ff';
-            ctx.beginPath();
-            ctx.arc(Math.random() * w, Math.random() * h, 0.5 + Math.random() * 2.2, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-    }
-
-    function loadBgImage(imageKey, imageIndex) {
-        return new Promise(function (resolve) {
-            var img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = function () {
-                resolve(img);
-            };
-            img.onerror = function () {
-                var c = document.createElement('canvas');
-                c.width = PUZZLE_W;
-                c.height = PUZZLE_H;
-                var ctx = c.getContext('2d');
-                drawProceduralBg(ctx, PUZZLE_W, PUZZLE_H, imageIndex);
-                var fallback = new Image();
-                fallback.onload = function () {
-                    resolve(fallback);
-                };
-                fallback.src = c.toDataURL('image/png');
-            };
-            img.src = 'captcha/' + imageKey + '.jpg';
-        });
-    }
-
-    function buildPuzzleCanvases(img, targetX, pieceY) {
-        var bg = document.createElement('canvas');
-        bg.width = PUZZLE_W;
-        bg.height = PUZZLE_H;
-        var bctx = bg.getContext('2d');
-        bctx.drawImage(img, 0, 0, PUZZLE_W, PUZZLE_H);
-        bctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-        bctx.fillRect(targetX, pieceY, PIECE, PIECE);
-        bctx.strokeStyle = 'rgba(95, 184, 255, 0.85)';
-        bctx.lineWidth = 2;
-        bctx.setLineDash([4, 3]);
-        bctx.strokeRect(targetX + 0.5, pieceY + 0.5, PIECE - 1, PIECE - 1);
-        bctx.setLineDash([]);
-
-        var piece = document.createElement('canvas');
-        piece.width = PIECE;
-        piece.height = PIECE;
-        var pctx = piece.getContext('2d');
-        pctx.drawImage(img, targetX, pieceY, PIECE, PIECE, 0, 0, PIECE, PIECE);
-        pctx.strokeStyle = 'rgba(120, 210, 255, 0.9)';
-        pctx.lineWidth = 1.5;
-        pctx.strokeRect(0.5, 0.5, PIECE - 1, PIECE - 1);
-
-        return { bg: bg, piece: piece };
-    }
+    var MIN_DRAG_MS = 120;
+    var MIN_MOVE_COUNT = 3;
 
     function ensureModal() {
         var el = document.getElementById('checkinCaptchaBackdrop');
@@ -122,17 +48,40 @@
         return el;
     }
 
-    function run(fetchChallenge) {
+    function loadDataUrlImage(dataUrl) {
+        return new Promise(function (resolve, reject) {
+            var img = new Image();
+            img.onload = function () {
+                resolve(img);
+            };
+            img.onerror = function () {
+                reject(new Error('拼图加载失败'));
+            };
+            img.src = dataUrl;
+        });
+    }
+
+    function drawToCanvas(canvas, img) {
+        var ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    }
+
+    /**
+     * @param {() => Promise<object>} fetchChallenge
+     * @param {(captchaId: string) => Promise<object>} fetchPuzzle
+     */
+    function run(fetchChallenge, fetchPuzzle) {
         return new Promise(function (resolve, reject) {
             var backdrop = ensureModal();
             var state = {
                 captchaId: '',
-                targetX: 120,
                 pieceY: 30,
                 sliderX: 0,
                 maxSlider: PUZZLE_W - PIECE - SLIDER_PAD * 2,
                 dragging: false,
-                img: null,
+                dragStart: 0,
+                dragMeta: { durationMs: 0, moveCount: 0, samples: [] },
             };
 
             var bgCanvas = backdrop.querySelector('.checkin-captcha-bg');
@@ -157,6 +106,26 @@
                 state.dragging = false;
             }
 
+            function resetDragMeta() {
+                state.dragStart = 0;
+                state.dragging = false;
+                state.dragMeta = { durationMs: 0, moveCount: 0, samples: [] };
+            }
+
+            function beginDrag() {
+                state.dragging = true;
+                state.dragStart = Date.now();
+                state.dragMeta = { durationMs: 0, moveCount: 0, samples: [] };
+                pushSample();
+            }
+
+            function pushSample() {
+                var t = state.dragStart ? Date.now() - state.dragStart : 0;
+                var samples = state.dragMeta.samples;
+                if (samples.length >= 60) return;
+                samples.push({ t: t, x: Math.round(state.sliderX) });
+            }
+
             function paintSlider(x) {
                 state.sliderX = Math.max(0, Math.min(state.maxSlider, x));
                 pieceCanvas.style.left = state.sliderX + SLIDER_PAD + 'px';
@@ -165,33 +134,36 @@
                 fill.style.width = state.sliderX + PIECE * 0.45 + 'px';
             }
 
-            function renderPuzzle() {
-                if (!state.img) return;
-                var pair = buildPuzzleCanvases(state.img, state.targetX, state.pieceY);
-                bgCanvas.getContext('2d').drawImage(pair.bg, 0, 0);
-                var pctx = pieceCanvas.getContext('2d');
-                pctx.clearRect(0, 0, PIECE, PIECE);
-                pctx.drawImage(pair.piece, 0, 0);
-                paintSlider(0);
+            function renderFromPuzzle(puzzle) {
+                return Promise.all([
+                    loadDataUrlImage(puzzle.bgDataUrl),
+                    loadDataUrlImage(puzzle.pieceDataUrl),
+                ]).then(function (imgs) {
+                    drawToCanvas(bgCanvas, imgs[0]);
+                    drawToCanvas(pieceCanvas, imgs[1]);
+                    state.pieceY = Number(puzzle.pieceY) || state.pieceY;
+                    paintSlider(0);
+                    resetDragMeta();
+                });
             }
 
             function loadChallenge() {
                 showErr('');
                 btnSubmit.disabled = true;
                 btnRefresh.disabled = true;
+                resetDragMeta();
                 return fetchChallenge()
                     .then(function (ch) {
                         state.captchaId = ch.captchaId;
-                        state.targetX = Number(ch.targetX);
                         state.pieceY = Number(ch.pieceY) || 30;
-                        if (!Number.isFinite(state.targetX)) state.targetX = 120;
-                        var idx = ch.imageIndex != null ? Number(ch.imageIndex) : 0;
-                        var key = ch.imageKey || ['a', 'b', 'c'][idx] || 'a';
-                        return loadBgImage(key, idx).then(function (img) {
-                            state.img = img;
-                            renderPuzzle();
-                            btnSubmit.disabled = false;
-                        });
+                        if (!state.captchaId) throw new Error('验证初始化失败');
+                        return fetchPuzzle(state.captchaId);
+                    })
+                    .then(function (puzzle) {
+                        return renderFromPuzzle(puzzle);
+                    })
+                    .then(function () {
+                        btnSubmit.disabled = false;
                     })
                     .catch(function (e) {
                         showErr((e && e.message) || '加载验证失败');
@@ -210,26 +182,65 @@
             };
             btnSubmit.onclick = function () {
                 showErr('');
+                var meta = state.dragMeta;
+                meta.durationMs = state.dragStart ? Date.now() - state.dragStart : 0;
+                pushSample();
+                if (state.sliderX < 6) {
+                    showErr('请先拖动滑块，将拼图对齐缺口');
+                    return;
+                }
+                if (!state.dragStart || meta.moveCount < MIN_MOVE_COUNT) {
+                    showErr('请拖动滑块完成验证');
+                    return;
+                }
+                if (meta.durationMs < MIN_DRAG_MS) {
+                    showErr('请拖动滑块后再提交');
+                    return;
+                }
                 var captchaX = Math.round(state.sliderX + SLIDER_PAD);
                 closeModal();
-                resolve({ captchaId: state.captchaId, captchaX: captchaX });
+                resolve({
+                    captchaId: state.captchaId,
+                    captchaX: captchaX,
+                    captchaDrag: meta,
+                });
             };
+            var track = backdrop.querySelector('.checkin-captcha-slider-track');
+
+            function dragToClientX(clientX) {
+                if (!track) return;
+                var rect = track.getBoundingClientRect();
+                paintSlider(clientX - rect.left - PIECE / 2);
+                state.dragMeta.moveCount += 1;
+                pushSample();
+            }
+
             knob.onpointerdown = function (e) {
-                state.dragging = true;
+                e.preventDefault();
+                beginDrag();
                 if (knob.setPointerCapture) knob.setPointerCapture(e.pointerId);
             };
             knob.onpointermove = function (e) {
                 if (!state.dragging) return;
-                var track = backdrop.querySelector('.checkin-captcha-slider-track');
-                var rect = track.getBoundingClientRect();
-                paintSlider(e.clientX - rect.left - PIECE / 2);
+                dragToClientX(e.clientX);
             };
-            knob.onpointerup = function () {
+            track.onpointerdown = function (e) {
+                if (e.target === knob) return;
+                beginDrag();
+                dragToClientX(e.clientX);
+            };
+            track.onpointermove = function (e) {
+                if (!state.dragging) return;
+                dragToClientX(e.clientX);
+            };
+            function endDrag() {
+                if (state.dragging) pushSample();
                 state.dragging = false;
-            };
-            knob.onpointercancel = function () {
-                state.dragging = false;
-            };
+            }
+            knob.onpointerup = endDrag;
+            knob.onpointercancel = endDrag;
+            track.onpointerup = endDrag;
+            track.onpointercancel = endDrag;
             backdrop.onclick = function (e) {
                 if (e.target === backdrop) {
                     closeModal();

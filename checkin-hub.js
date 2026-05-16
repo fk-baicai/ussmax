@@ -110,14 +110,10 @@
             return { text: '未开放签到', mod: 'off' };
         }
         if (b.mode === 'window') {
-            var st = b.startTime ? String(b.startTime) : '';
-            var du = b.durationMinutes != null ? Number(b.durationMinutes) : defDur;
-            if (!Number.isFinite(du) || du < 1) du = defDur;
-            var win = st ? '自 ' + esc(st) + ' 起 ' + du + ' 分钟' : '';
             if (b.allowed) {
-                return { text: '今日开放 · 当前在签到时段 · ' + win, mod: 'ok' };
+                return { text: '今日开放 · 当前在签到时段', mod: 'ok' };
             }
-            return { text: '今日开放 · 当前不在签到时段 · ' + win, mod: 'warn' };
+            return { text: '今日开放 · 当前不在签到时段', mod: 'warn' };
         }
         var msg = b.message ? esc(String(b.message)) : '未开放签到';
         return { text: msg, mod: 'off' };

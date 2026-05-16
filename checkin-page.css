@@ -589,11 +589,35 @@
     margin-top: 0.22rem;
     max-height: min(50vh, 14rem);
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 0.2rem 0;
     border-radius: 8px;
     border: 1px solid rgba(95, 184, 255, 0.32);
     background: rgba(10, 22, 38, 0.98);
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(95, 184, 255, 0.45) rgba(0, 0, 0, 0.22);
+}
+
+.checkin-history-month-dropdown::-webkit-scrollbar {
+    width: 8px;
+}
+
+.checkin-history-month-dropdown::-webkit-scrollbar-thumb {
+    background: rgba(95, 184, 255, 0.42);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+.checkin-history-month-dropdown::-webkit-scrollbar-thumb:hover {
+    background: rgba(120, 210, 255, 0.55);
+}
+
+.checkin-history-month-dropdown::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 4px;
 }
 
 .checkin-history-month-dropdown[hidden] {

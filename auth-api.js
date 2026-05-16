@@ -131,6 +131,16 @@
             return data;
         },
 
+        async checkinCaptchaPuzzle(token, captchaId) {
+            var id = encodeURIComponent(String(captchaId || '').trim());
+            var r = await fetch(joinUrl('/api/checkin/captcha/' + id + '/puzzle'), {
+                headers: { Authorization: 'Bearer ' + token },
+            });
+            var data = await parseJson(r);
+            if (!r.ok) throw new Error(data.message || '加载拼图失败');
+            return data;
+        },
+
         async checkin(token, body) {
             var r = await fetch(joinUrl('/api/checkin'), {
                 method: 'POST',

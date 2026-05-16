@@ -790,9 +790,14 @@
         }
         var captchaPayload;
         try {
-            captchaPayload = await window.CheckinCaptcha.run(function () {
-                return window.UssAuthApi.checkinCaptcha(sess.token);
-            });
+            captchaPayload = await window.CheckinCaptcha.run(
+                function () {
+                    return window.UssAuthApi.checkinCaptcha(sess.token);
+                },
+                function (captchaId) {
+                    return window.UssAuthApi.checkinCaptchaPuzzle(sess.token, captchaId);
+                }
+            );
         } catch (e) {
             if (e && e.message && e.message.indexOf('取消') >= 0) return;
             showAlert((e && e.message) || '人机验证失败');
@@ -803,6 +808,7 @@
                 branch: UNIT,
                 captchaId: captchaPayload.captchaId,
                 captchaX: captchaPayload.captchaX,
+                captchaDrag: captchaPayload.captchaDrag,
             });
             await loadSummary();
             var label = res && res.branchLabel ? res.branchLabel : '';
