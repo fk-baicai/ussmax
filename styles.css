@@ -11,6 +11,19 @@ body {
 }
 
 /* 首页：与签到中心相同的深蓝渐变 + 网格底（checkin-page.css 中 .checkin-page-body） */
+html.page-scroll-locked,
+body.page-scroll-locked {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+}
+
+body.page-scroll-locked {
+    position: fixed;
+    width: 100%;
+    left: 0;
+    right: 0;
+}
+
 body.home-page-body {
     margin: 0;
     min-height: 100vh;
@@ -654,8 +667,22 @@ html.auth-session-cached #navLoginBtn {
 }
 
 .rsi-pw-toggle-icon {
-    font-size: 1.25rem !important;
-    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+    font-size: 0;
+}
+
+.rsi-pw-icon {
+    display: block;
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+}
+
+.rsi-pw-icon[hidden] {
+    display: none !important;
 }
 
 .rsi-auth-row {

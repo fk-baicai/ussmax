@@ -89,6 +89,21 @@
             return data;
         },
 
+        /** 提交浏览器抓取的 RSI 公民页资料（服务器不再主动访问 RSI HTML） */
+        async syncRsiProfile(token, payload) {
+            var r = await fetch(joinUrl('/api/me/rsi-sync'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: 'Bearer ' + token,
+                },
+                body: JSON.stringify(payload || {}),
+            });
+            var data = await parseJson(r);
+            if (!r.ok) throw new Error(data.message || '同步 RSI 资料失败');
+            return data;
+        },
+
         async changePassword(token, body) {
             var r = await fetch(joinUrl('/api/account/password'), {
                 method: 'POST',

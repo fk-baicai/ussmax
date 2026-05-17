@@ -3,7 +3,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const navbar = document.querySelector('.navbar');
     let lastScrollTop = 0;
 
+    function isMainPageScrollLocked() {
+        return document.body.classList.contains('page-scroll-locked');
+    }
+
     window.addEventListener('scroll', () => {
+        if (isMainPageScrollLocked()) {
+            if (navbar) navbar.style.transform = 'translateY(0)';
+            return;
+        }
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         
         if (scrollTop > lastScrollTop) {
@@ -28,8 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add parallax effect to hero section
     const heroContent = document.querySelector('.hero-content');
     window.addEventListener('scroll', () => {
+        if (isMainPageScrollLocked()) return;
         const scroll = window.pageYOffset;
-        heroContent.style.transform = `translateY(${scroll * 0.5}px)`;
+        if (heroContent) heroContent.style.transform = `translateY(${scroll * 0.5}px)`;
     });
 
     // Animate cards on scroll

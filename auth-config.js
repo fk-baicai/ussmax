@@ -25,3 +25,14 @@
     }
     window.USS_AUTH_API_BASE = 'http://8.138.237.183:3789';
 })();
+
+/** 与后端 RSI_REQUIRED_ORG_HREF 一致，供浏览器端解析公民页组织块 */
+(function () {
+    if (typeof window === 'undefined') return;
+    if (!window.USS_RSI_ORIGIN) {
+        window.USS_RSI_ORIGIN = 'https://robertsspaceindustries.com';
+    }
+    if (!window.USS_RSI_REQUIRED_ORG_HREF) {
+        window.USS_RSI_REQUIRED_ORG_HREF = '/orgs/5000';
+    }
+})();
