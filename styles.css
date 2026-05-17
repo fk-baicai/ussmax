@@ -1069,6 +1069,34 @@ html.auth-session-cached #navLoginBtn {
     margin-top: 1.1rem;
 }
 
+.forgot-password-panel {
+    width: min(100%, 24rem);
+}
+
+.forgot-pw-code-inner {
+    display: flex;
+    gap: 0.5rem;
+    align-items: stretch;
+}
+
+.forgot-pw-code-inner .rsi-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.forgot-pw-send-btn {
+    flex-shrink: 0;
+    align-self: stretch;
+    padding: 0 0.75rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.forgot-pw-send-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
 .account-settings-actions .rsi-btn-ghost,
 .account-settings-actions .rsi-submit-btn {
     margin: 0;

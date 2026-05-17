@@ -474,7 +474,7 @@
                                 <input type="checkbox" id="rememberMe" checked>
                                 <span>记住我</span>
                             </label>
-                            <button type="button" class="rsi-auth-link rsi-auth-link--small" onclick="showForgotPasswordHint()">忘记密码？</button>
+                            <button type="button" class="rsi-auth-link rsi-auth-link--small" onclick="openForgotPasswordDialog()">忘记密码？</button>
                         </div>
                         <button type="button" id="loginSubmitBtn" class="rsi-submit-btn" onclick="submitLogin()">登录</button>
                     </div>
@@ -606,6 +606,46 @@
         </div>
     </div>
 
+    <div id="forgotPasswordBackdrop" class="account-settings-backdrop" hidden>
+        <div class="account-settings-panel forgot-password-panel" role="dialog" aria-modal="true" aria-labelledby="forgotPasswordTitle">
+            <div class="account-settings-head">
+                <h3 id="forgotPasswordTitle">忘记密码</h3>
+                <button type="button" class="account-settings-close" onclick="closeForgotPasswordDialog()" aria-label="关闭">×</button>
+            </div>
+            <p class="account-settings-hint">输入注册邮箱获取验证码，验证通过后设置新密码。</p>
+            <div class="rsi-field">
+                <label for="forgotPwEmail">注册邮箱</label>
+                <input type="email" class="rsi-input" id="forgotPwEmail" autocomplete="email" oninput="clearForgotPasswordHint()">
+            </div>
+            <div class="rsi-field forgot-pw-code-row">
+                <label for="forgotPwCode">验证码</label>
+                <div class="forgot-pw-code-inner">
+                    <input type="text" class="rsi-input" id="forgotPwCode" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" placeholder="6 位数字" oninput="clearForgotPasswordHint()">
+                    <button type="button" id="forgotPwSendCodeBtn" class="rsi-btn-ghost forgot-pw-send-btn" onclick="submitForgotPasswordSendCode()">发送验证码</button>
+                </div>
+            </div>
+            <div class="rsi-field rsi-field--password">
+                <label for="forgotPwNewPassword">新密码</label>
+                <input type="password" class="rsi-input" id="forgotPwNewPassword" autocomplete="new-password" oninput="clearForgotPasswordHint()">
+                <button type="button" class="rsi-pw-toggle" id="forgotPwNewToggle" onclick="togglePasswordField('forgotPwNewPassword', 'forgotPwNewToggle')" aria-label="显示或隐藏密码">
+                    <span class="rsi-pw-toggle-icon" aria-hidden="true"><svg class="rsi-pw-icon rsi-pw-icon--show" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 6a6 6 0 1 1 0 12 6 6 0 0 1 0-12m0-4C6.5 2 1.73 7.11 1 12c.73 4.89 5.5 10 11 10s10.27-5.11 11-10C21.27 7.11 17.5 2 12 2m0 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg><svg class="rsi-pw-icon rsi-pw-icon--hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" hidden aria-hidden="true"><path d="M2.28 3.51 1 4.79l4.37 4.37C3.61 10.28 2.12 11.09 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l2.92 2.92L21 20.73 22.27 19.5 3.51 2.28M12 17c-2.76 0-5-2.24-5-5 0-.65.13-1.26.36-1.83l1.63 1.63c.17.58.68 1 1.31 1 1.1 0 2-.9 2-2 0-.63-.42-1.14-1-1.31l1.63 1.63c.57-.23 1.18-.36 1.83-.36 2.76 0 5 2.24 5 5 0 .79-.2 1.53-.53 2.2l1.46 1.46A9.9 9.9 0 0 0 12 17m6.24-3.59-1.88-1.88a2.98 2.98 0 0 0 .05-.41 3 3 0 0 0-3-3c-.14 0-.28.02-.41.05L11.41 7.3A4.98 4.98 0 0 1 12 7c2.76 0 5 2.24 5 5 0 .7-.15 1.36-.41 1.97z"/></svg></span>
+                </button>
+            </div>
+            <div class="rsi-field rsi-field--password">
+                <label for="forgotPwConfirmPassword">确认新密码</label>
+                <input type="password" class="rsi-input" id="forgotPwConfirmPassword" autocomplete="new-password" oninput="clearForgotPasswordHint()">
+                <button type="button" class="rsi-pw-toggle" id="forgotPwConfirmToggle" onclick="togglePasswordField('forgotPwConfirmPassword', 'forgotPwConfirmToggle')" aria-label="显示或隐藏密码">
+                    <span class="rsi-pw-toggle-icon" aria-hidden="true"><svg class="rsi-pw-icon rsi-pw-icon--show" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 6a6 6 0 1 1 0 12 6 6 0 0 1 0-12m0-4C6.5 2 1.73 7.11 1 12c.73 4.89 5.5 10 11 10s10.27-5.11 11-10C21.27 7.11 17.5 2 12 2m0 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg><svg class="rsi-pw-icon rsi-pw-icon--hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" hidden aria-hidden="true"><path d="M2.28 3.51 1 4.79l4.37 4.37C3.61 10.28 2.12 11.09 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l2.92 2.92L21 20.73 22.27 19.5 3.51 2.28M12 17c-2.76 0-5-2.24-5-5 0-.65.13-1.26.36-1.83l1.63 1.63c.17.58.68 1 1.31 1 1.1 0 2-.9 2-2 0-.63-.42-1.14-1-1.31l1.63 1.63c.57-.23 1.18-.36 1.83-.36 2.76 0 5 2.24 5 5 0 .79-.2 1.53-.53 2.2l1.46 1.46A9.9 9.9 0 0 0 12 17m6.24-3.59-1.88-1.88a2.98 2.98 0 0 0 .05-.41 3 3 0 0 0-3-3c-.14 0-.28.02-.41.05L11.41 7.3A4.98 4.98 0 0 1 12 7c2.76 0 5 2.24 5 5 0 .7-.15 1.36-.41 1.97z"/></svg></span>
+                </button>
+            </div>
+            <p id="forgotPasswordHint" class="rsi-form-hint rsi-form-hint--error" hidden></p>
+            <div class="account-settings-actions">
+                <button type="button" class="rsi-btn-ghost" onclick="closeForgotPasswordDialog()">取消</button>
+                <button type="button" id="forgotPwSubmitBtn" class="rsi-submit-btn" onclick="submitForgotPasswordReset()">重置密码</button>
+            </div>
+        </div>
+    </div>
+
     <script src="material-icons-svg.js"></script>
     <script src="pw-toggle-icons.js"></script>
     <script src="script.js"></script>
@@ -650,9 +690,11 @@
             const alertOpen = document.getElementById('alertModal').style.display === 'block';
             const settingsBackdrop = document.getElementById('accountSettingsBackdrop');
             const settingsOpen = settingsBackdrop && !settingsBackdrop.hidden;
+            const forgotBackdrop = document.getElementById('forgotPasswordBackdrop');
+            const forgotOpen = forgotBackdrop && !forgotBackdrop.hidden;
             const lightbox = document.getElementById('communityImageLightbox');
             const lightboxOpen = lightbox && lightbox.classList.contains('is-open');
-            return !!(loginOpen || ticketOpen || alertOpen || settingsOpen || lightboxOpen);
+            return !!(loginOpen || ticketOpen || alertOpen || settingsOpen || forgotOpen || lightboxOpen);
         }
 
         function updatePageScrollLock() {
@@ -3812,13 +3854,184 @@
             }
         }
 
-        function showForgotPasswordHint() {
-            const el = document.getElementById('loginFormHint');
+        let forgotPwSendCooldownTimer = null;
+
+        function clearForgotPasswordHint() {
+            const el = document.getElementById('forgotPasswordHint');
+            if (el) {
+                el.textContent = '';
+                el.hidden = true;
+                el.classList.remove('rsi-form-hint--info');
+                el.classList.add('rsi-form-hint--error');
+            }
+        }
+
+        function setForgotPasswordHint(msg, isInfo) {
+            const el = document.getElementById('forgotPasswordHint');
             if (!el) return;
-            el.textContent = '联系管理员';
+            if (!msg) {
+                clearForgotPasswordHint();
+                return;
+            }
+            el.textContent = msg;
             el.hidden = false;
-            el.classList.remove('rsi-form-hint--error');
-            el.classList.add('rsi-form-hint--info');
+            el.classList.toggle('rsi-form-hint--info', !!isInfo);
+            el.classList.toggle('rsi-form-hint--error', !isInfo);
+        }
+
+        function resetForgotPasswordForm() {
+            ['forgotPwEmail', 'forgotPwCode', 'forgotPwNewPassword', 'forgotPwConfirmPassword'].forEach(function (id) {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.value = '';
+                    if (id.indexOf('Password') >= 0) input.type = 'password';
+                }
+            });
+            ['forgotPwNewToggle', 'forgotPwConfirmToggle'].forEach(function (id) {
+                setPasswordToggleIcon(document.getElementById(id), false);
+            });
+            const submit = document.getElementById('forgotPwSubmitBtn');
+            if (submit) {
+                submit.disabled = false;
+                submit.textContent = '重置密码';
+            }
+            stopForgotPwSendCooldown();
+            clearForgotPasswordHint();
+        }
+
+        function stopForgotPwSendCooldown() {
+            if (forgotPwSendCooldownTimer) {
+                clearInterval(forgotPwSendCooldownTimer);
+                forgotPwSendCooldownTimer = null;
+            }
+            const btn = document.getElementById('forgotPwSendCodeBtn');
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = '发送验证码';
+            }
+        }
+
+        function startForgotPwSendCooldown(seconds) {
+            stopForgotPwSendCooldown();
+            const btn = document.getElementById('forgotPwSendCodeBtn');
+            if (!btn || !seconds || seconds < 1) return;
+            let left = Math.ceil(seconds);
+            btn.disabled = true;
+            btn.textContent = left + 's 后重发';
+            forgotPwSendCooldownTimer = setInterval(function () {
+                left -= 1;
+                if (left <= 0) {
+                    stopForgotPwSendCooldown();
+                    return;
+                }
+                btn.textContent = left + 's 后重发';
+            }, 1000);
+        }
+
+        function openForgotPasswordDialog() {
+            resetForgotPasswordForm();
+            const loginEmail = document.getElementById('loginEmail');
+            const forgotEmail = document.getElementById('forgotPwEmail');
+            if (loginEmail && forgotEmail && loginEmail.value.trim()) {
+                forgotEmail.value = loginEmail.value.trim();
+            }
+            const backdrop = document.getElementById('forgotPasswordBackdrop');
+            if (!backdrop) return;
+            backdrop.hidden = false;
+            backdrop.onclick = function (e) {
+                if (e.target === backdrop) closeForgotPasswordDialog();
+            };
+            updatePageScrollLock();
+            if (forgotEmail) forgotEmail.focus();
+        }
+
+        function closeForgotPasswordDialog() {
+            const backdrop = document.getElementById('forgotPasswordBackdrop');
+            if (backdrop) backdrop.hidden = true;
+            resetForgotPasswordForm();
+            updatePageScrollLock();
+        }
+
+        async function submitForgotPasswordSendCode() {
+            clearForgotPasswordHint();
+            const email = String(document.getElementById('forgotPwEmail')?.value || '').trim();
+            if (!validateEmail(email)) {
+                setForgotPasswordHint('请填写有效的注册邮箱');
+                return;
+            }
+            const btn = document.getElementById('forgotPwSendCodeBtn');
+            if (btn && btn.disabled) return;
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = '发送中…';
+            }
+            try {
+                const res = await window.UssAuthApi.sendPasswordResetCode(email);
+                setForgotPasswordHint(res.message || '若该邮箱已注册，验证码将发送到您的邮箱', true);
+                startForgotPwSendCooldown(60);
+            } catch (e) {
+                if (e.cooldownSec) startForgotPwSendCooldown(e.cooldownSec);
+                else stopForgotPwSendCooldown();
+                setForgotPasswordHint(e.message || '发送失败');
+            }
+        }
+
+        async function submitForgotPasswordReset() {
+            clearForgotPasswordHint();
+            const email = String(document.getElementById('forgotPwEmail')?.value || '').trim();
+            const code = String(document.getElementById('forgotPwCode')?.value || '').trim();
+            const newPassword = String(document.getElementById('forgotPwNewPassword')?.value || '');
+            const confirmPassword = String(document.getElementById('forgotPwConfirmPassword')?.value || '');
+
+            if (!validateEmail(email)) {
+                setForgotPasswordHint('请填写有效的注册邮箱');
+                return;
+            }
+            if (!/^\d{6}$/.test(code)) {
+                setForgotPasswordHint('请输入 6 位数字验证码');
+                return;
+            }
+            if (!newPassword || newPassword.length < 6) {
+                setForgotPasswordHint('新密码至少 6 位');
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                setForgotPasswordHint('两次输入的新密码不一致');
+                return;
+            }
+
+            const btn = document.getElementById('forgotPwSubmitBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = '提交中…';
+            }
+            try {
+                const res = await window.UssAuthApi.confirmPasswordReset({
+                    email: email,
+                    code: code,
+                    newPassword: newPassword,
+                    confirmPassword: confirmPassword,
+                });
+                setForgotPasswordHint(res.message || '密码已重置', true);
+                const loginEmail = document.getElementById('loginEmail');
+                if (loginEmail) loginEmail.value = email;
+                setTimeout(function () {
+                    closeForgotPasswordDialog();
+                    setLoginFormHint('密码已重置，请使用新密码登录');
+                    const loginHint = document.getElementById('loginFormHint');
+                    if (loginHint) {
+                        loginHint.classList.remove('rsi-form-hint--error');
+                        loginHint.classList.add('rsi-form-hint--info');
+                    }
+                }, 1200);
+            } catch (e) {
+                setForgotPasswordHint(e.message || '重置失败');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '重置密码';
+                }
+            }
         }
 
         function clearRegisterFormHint() {

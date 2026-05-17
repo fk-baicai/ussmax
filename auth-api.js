@@ -118,6 +118,32 @@
             return data;
         },
 
+        async sendPasswordResetCode(email) {
+            var r = await fetch(joinUrl('/api/password-reset/send-code'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email }),
+            });
+            var data = await parseJson(r);
+            if (!r.ok) {
+                var err = new Error(data.message || '发送验证码失败');
+                if (data.cooldownSec != null) err.cooldownSec = data.cooldownSec;
+                throw err;
+            }
+            return data;
+        },
+
+        async confirmPasswordReset(body) {
+            var r = await fetch(joinUrl('/api/password-reset/confirm'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body || {}),
+            });
+            var data = await parseJson(r);
+            if (!r.ok) throw new Error(data.message || '重置密码失败');
+            return data;
+        },
+
         async health() {
             var r = await fetch(joinUrl('/api/health'));
             return r.ok;
