@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>USS</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
     <link rel="icon" type="image/jpeg" href="fleet-logo.jpg">
     <link rel="apple-touch-icon" href="fleet-logo.jpg">
     <script src="auth-config.js"></script>
@@ -607,6 +606,8 @@
         </div>
     </div>
 
+    <script src="material-icons-svg.js"></script>
+    <script src="pw-toggle-icons.js"></script>
     <script src="script.js"></script>
     <script src="rsi-client.js"></script>
     <script src="rsi-sync.js"></script>
@@ -663,11 +664,9 @@
                 savedPageScrollY = window.scrollY || html.scrollTop || 0;
                 body.classList.add('page-scroll-locked');
                 html.classList.add('page-scroll-locked');
-                body.style.top = '-' + savedPageScrollY + 'px';
             } else if (!needLock && locked) {
                 body.classList.remove('page-scroll-locked');
                 html.classList.remove('page-scroll-locked');
-                body.style.top = '';
                 window.scrollTo(0, savedPageScrollY);
             }
         }
@@ -679,8 +678,10 @@
             const alertOpen = document.getElementById('alertModal').style.display === 'block';
             if (ticketOpen || loginOpen || alertOpen) {
                 overlay.classList.add('active');
+                /* 仅账户侧栏：透明遮罩，避免礼品区等主内容被压暗变色 */
+                overlay.classList.toggle('overlay--login-only', !!(loginOpen && !ticketOpen && !alertOpen));
             } else {
-                overlay.classList.remove('active');
+                overlay.classList.remove('active', 'overlay--login-only');
             }
             updatePageScrollLock();
         }
@@ -3636,7 +3637,7 @@
             if (!guest || !authed) return;
             if (isLoggedIn()) {
                 guest.style.display = 'none';
-                authed.style.display = 'block';
+                authed.style.display = '';
                 if (drawerContent) drawerContent.classList.add('login-drawer-content--authed');
                 const sess = loadAuthSession();
                 /* 与注册表单 #regBindingId 同源字段（bindingId），服务端 normalize 后的账号 Handle */
@@ -3721,7 +3722,7 @@
                     dImg.alt = '用户头像';
                 }
             } else {
-                guest.style.display = 'block';
+                guest.style.display = '';
                 authed.style.display = 'none';
                 if (drawerContent) drawerContent.classList.remove('login-drawer-content--authed');
             }
@@ -3756,6 +3757,20 @@
             if (hideIcon) hideIcon.hidden = !showPlainText;
         }
 
+        function playPasswordToggleTapAnimation(btn) {
+            if (!btn) return;
+            btn.classList.remove('rsi-pw-toggle--tap');
+            void btn.offsetWidth;
+            btn.classList.add('rsi-pw-toggle--tap');
+            const iconWrap = btn.querySelector('.rsi-pw-toggle-icon');
+            const target = iconWrap || btn;
+            const done = function () {
+                btn.classList.remove('rsi-pw-toggle--tap');
+                target.removeEventListener('animationend', done);
+            };
+            target.addEventListener('animationend', done, { once: true });
+        }
+
         function togglePasswordField(inputId, toggleBtnId) {
             const input = document.getElementById(inputId);
             const btn = document.getElementById(toggleBtnId);
@@ -3767,6 +3782,7 @@
                 input.type = 'password';
                 setPasswordToggleIcon(btn, false);
             }
+            playPasswordToggleTapAnimation(btn);
         }
 
         function validateEmail(email) {
