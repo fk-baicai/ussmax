@@ -148,6 +148,21 @@
                         <div class="community-chat-main">
                             <div id="communityChatMainTitle" class="community-chat-main-title">舰队聊天</div>
                             <div class="community-chat-view">
+                                <div id="communityChatPinBar" class="community-chat-pin-bar" hidden>
+                                    <button type="button" class="community-chat-pin-bar__btn" id="communityChatPinBarBtn">
+                                        <span class="community-chat-pin-bar__tag" aria-hidden="true">置顶</span>
+                                        <span class="community-chat-pin-bar__text" id="communityChatPinBarText"></span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="community-chat-pin-bar__unpin"
+                                        id="communityChatPinUnpinBtn"
+                                        hidden
+                                        aria-label="取消置顶"
+                                    >
+                                        取消置顶
+                                    </button>
+                                </div>
                                 <div id="communityChatScroll" class="community-chat-scroll community-scroller community-scroller-chat">
                                     <div id="communityChatLog" class="community-chat-log"></div>
                                 </div>
@@ -281,6 +296,19 @@
                 <button type="button" class="community-confirm-btn community-confirm-btn-ok" id="communityConfirmOk">确定</button>
             </div>
         </div>
+    </div>
+
+    <div
+        id="communityChatContextMenu"
+        class="community-chat-context-menu"
+        role="menu"
+        aria-label="聊天消息操作"
+        hidden
+    >
+        <button type="button" class="community-chat-context-menu__item" data-action="recall" role="menuitem">撤回</button>
+        <button type="button" class="community-chat-context-menu__item" data-action="pin" role="menuitem">置顶</button>
+        <button type="button" class="community-chat-context-menu__item" data-action="unpin" role="menuitem">取消置顶</button>
+        <button type="button" class="community-chat-context-menu__item community-chat-context-menu__item--danger" data-action="delete" role="menuitem">删除</button>
     </div>
 
     <section class="games-section" id="tickets-section">
@@ -1075,6 +1103,7 @@
         let communityChatPollBackoffMs = 0;
         let communityChatNearBottom = true;
         let communityChatKind = 'fleet';
+        let communityChatPinned = null;
         let communityChatDmPeer = '';
         let communityChatDmLabel = '';
         let communityDmMaxSeq = 0;
@@ -1468,6 +1497,46 @@
             renderCommunityChatMentionPicker(items);
         }
 
+        const COMMUNITY_URL_RE = /(https?:\/\/[^\s<>"']+)/gi;
+
+        function normalizeCommunityUrl(url) {
+            return String(url || '').replace(/[.,;:!?，。；：！？、）」』\]]+$/u, '');
+        }
+
+        function appendCommunityTextWithLinks(parent, text) {
+            const raw = String(text != null ? text : '');
+            if (!raw) return;
+            let lastIndex = 0;
+            COMMUNITY_URL_RE.lastIndex = 0;
+            let match;
+            while ((match = COMMUNITY_URL_RE.exec(raw)) !== null) {
+                if (match.index > lastIndex) {
+                    parent.appendChild(document.createTextNode(raw.slice(lastIndex, match.index)));
+                }
+                const href = normalizeCommunityUrl(match[0]);
+                if (href && /^https?:\/\//i.test(href)) {
+                    const link = document.createElement('a');
+                    link.className = 'community-text-link';
+                    link.href = href;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.textContent = match[0];
+                    parent.appendChild(link);
+                } else {
+                    parent.appendChild(document.createTextNode(match[0]));
+                }
+                lastIndex = match.index + match[0].length;
+            }
+            if (lastIndex < raw.length) {
+                parent.appendChild(document.createTextNode(raw.slice(lastIndex)));
+            }
+        }
+
+        function applyCommunityPlainTextWithLinks(el, text) {
+            while (el.firstChild) el.removeChild(el.firstChild);
+            appendCommunityTextWithLinks(el, text);
+        }
+
         function applyCommunityChatTextWithMentions(el, text, mentionBindingIds, mentionEveryone) {
             while (el.firstChild) el.removeChild(el.firstChild);
             const raw = String(text != null ? text : '');
@@ -1497,8 +1566,8 @@
                     span.className = 'community-chat-mention';
                     span.textContent = part;
                     el.appendChild(span);
-                } else {
-                    el.appendChild(document.createTextNode(part));
+                } else if (part) {
+                    appendCommunityTextWithLinks(el, part);
                 }
             }
         }
@@ -1771,6 +1840,133 @@
             }
         }
 
+        function shouldShowCommunityChatTimeDivider(prevIso, curIso) {
+            if (!curIso) return false;
+            if (!prevIso) return true;
+            const prev = new Date(prevIso);
+            const cur = new Date(curIso);
+            if (Number.isNaN(prev.getTime()) || Number.isNaN(cur.getTime())) return false;
+            if (prev.toDateString() !== cur.toDateString()) return true;
+            return prev.getHours() !== cur.getHours();
+        }
+
+        function formatCommunityChatTimeDivider(iso) {
+            try {
+                const d = new Date(iso);
+                if (Number.isNaN(d.getTime())) return '';
+                const now = new Date();
+                const timeStr = new Intl.DateTimeFormat('zh-CN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                }).format(d);
+                if (d.toDateString() === now.toDateString()) return timeStr;
+                const yesterday = new Date(now);
+                yesterday.setDate(yesterday.getDate() - 1);
+                if (d.toDateString() === yesterday.toDateString()) return '昨天 ' + timeStr;
+                if (d.getFullYear() === now.getFullYear()) {
+                    return new Intl.DateTimeFormat('zh-CN', {
+                        month: 'numeric',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false,
+                    }).format(d);
+                }
+                return formatCommunityTime(iso);
+            } catch (e) {
+                return '';
+            }
+        }
+
+        function buildCommunityChatTimeDivider(iso) {
+            const el = document.createElement('div');
+            el.className = 'community-chat-time-divider';
+            el.setAttribute('role', 'separator');
+            el.textContent = formatCommunityChatTimeDivider(iso);
+            return el;
+        }
+
+        function communityChatPinPreviewText(m) {
+            if (!m) return '置顶消息';
+            const t = String(m.text != null ? m.text : '')
+                .trim()
+                .replace(/\s+/g, ' ');
+            if (t) return t;
+            if (Array.isArray(m.images) && m.images.length) return '[图片]';
+            return '置顶消息';
+        }
+
+        function renderCommunityChatPinBar(pinned) {
+            const bar = document.getElementById('communityChatPinBar');
+            const textEl = document.getElementById('communityChatPinBarText');
+            const unpinBtn = document.getElementById('communityChatPinUnpinBtn');
+            if (!bar || !textEl) return;
+            communityChatPinned = pinned || null;
+            if (communityChatKind !== 'fleet' || !pinned || !pinned.message) {
+                bar.hidden = true;
+                if (unpinBtn) unpinBtn.hidden = true;
+                return;
+            }
+            const msg = pinned.message;
+            const who = msg.bindingId ? String(msg.bindingId) + '：' : '';
+            textEl.textContent = who + communityChatPinPreviewText(msg);
+            bar.hidden = false;
+            if (unpinBtn) unpinBtn.hidden = !sessionIsCommunityStaff();
+        }
+
+        function scrollToCommunityChatMessage(messageId) {
+            if (!messageId) return;
+            const line = document.querySelector(
+                '.community-chat-line[data-id="' + String(messageId) + '"][data-chat-kind="fleet"]'
+            );
+            if (!line) {
+                setCommunityChatHint('原消息已不存在或不在当前列表中');
+                return;
+            }
+            clearCommunityChatHint();
+            line.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            line.classList.add('community-chat-line--highlight');
+            window.setTimeout(function () {
+                line.classList.remove('community-chat-line--highlight');
+            }, 2200);
+        }
+
+        async function handleCommunityChatUnpin(chatKind) {
+            if (chatKind !== 'fleet' || !window.UssAuthApi) return;
+            if (!sessionIsCommunityStaff()) return;
+            const sess = loadAuthSession();
+            if (!sess || !sess.token) {
+                setCommunityChatHint('请先登录。');
+                return;
+            }
+            clearCommunityChatHint();
+            try {
+                const data = await window.UssAuthApi.communityChatPin(sess.token, null);
+                renderCommunityChatPinBar(data.pinned || null);
+            } catch (e) {
+                setCommunityChatHint(e && e.message ? e.message : '取消置顶失败');
+            }
+        }
+
+        async function handleCommunityChatPin(messageId, chatKind) {
+            if (chatKind !== 'fleet' || !window.UssAuthApi) return;
+            if (!sessionIsCommunityStaff()) return;
+            const sess = loadAuthSession();
+            if (!sess || !sess.token) {
+                setCommunityChatHint('请先登录。');
+                return;
+            }
+            if (!messageId) return;
+            clearCommunityChatHint();
+            try {
+                const data = await window.UssAuthApi.communityChatPin(sess.token, messageId);
+                renderCommunityChatPinBar(data.pinned || null);
+            } catch (e) {
+                setCommunityChatHint(e && e.message ? e.message : '置顶失败');
+            }
+        }
+
         function communityAuthorInitial(bindingId) {
             const s = String(bindingId || '').trim();
             if (!s) return '?';
@@ -1865,36 +2061,122 @@
             return Date.now() - created <= COMMUNITY_CHAT_RECALL_MS;
         }
 
-        function buildCommunityChatActions(m, chatKind) {
-            const wrap = document.createElement('span');
-            wrap.className = 'community-chat-actions';
-            const kind = chatKind || 'fleet';
-            let has = false;
-            if (sessionIsCommunityStaff()) {
-                has = true;
-                const del = document.createElement('button');
-                del.type = 'button';
-                del.className = 'community-chat-action community-chat-action-delete';
-                del.textContent = '删除';
-                del.addEventListener('click', function (ev) {
-                    ev.stopPropagation();
-                    handleCommunityChatDelete(m.id, '确定删除这条消息？', kind, { danger: true });
-                });
-                wrap.appendChild(del);
+        function getCommunityChatContextOptions(m, chatKind) {
+            const staff = sessionIsCommunityStaff();
+            const kind = chatKind != null ? chatKind : communityChatKind;
+            const canRecall = staff || communityChatCanRecall(m);
+            const canDelete = staff;
+            const canPin = staff && kind === 'fleet';
+            return { canRecall: canRecall, canDelete: canDelete, canPin: canPin };
+        }
+
+        function communityChatHasContextActions(m, chatKind) {
+            if (!m || !m.id || !isLoggedIn()) return false;
+            const opts = getCommunityChatContextOptions(m, chatKind);
+            return opts.canRecall || opts.canDelete || opts.canPin;
+        }
+
+        let communityChatContextMenuState = null;
+
+        function closeCommunityChatContextMenu() {
+            const menu = document.getElementById('communityChatContextMenu');
+            if (!menu) return;
+            menu.hidden = true;
+            communityChatContextMenuState = null;
+        }
+
+        function positionCommunityChatContextMenu(menu, clientX, clientY) {
+            const pad = 8;
+            menu.style.left = clientX + 'px';
+            menu.style.top = clientY + 'px';
+            const rect = menu.getBoundingClientRect();
+            let left = clientX;
+            let top = clientY;
+            if (rect.right > window.innerWidth - pad) {
+                left = Math.max(pad, window.innerWidth - rect.width - pad);
             }
-            if (communityChatCanRecall(m)) {
-                has = true;
-                const recall = document.createElement('button');
-                recall.type = 'button';
-                recall.className = 'community-chat-action community-chat-action-recall';
-                recall.textContent = '撤回';
-                recall.addEventListener('click', function (ev) {
-                    ev.stopPropagation();
-                    handleCommunityChatDelete(m.id, '确定撤回这条消息？', kind, { danger: false });
-                });
-                wrap.appendChild(recall);
+            if (rect.bottom > window.innerHeight - pad) {
+                top = Math.max(pad, window.innerHeight - rect.height - pad);
             }
-            return has ? wrap : null;
+            menu.style.left = left + 'px';
+            menu.style.top = top + 'px';
+        }
+
+        function showCommunityChatContextMenu(ev, m, chatKind) {
+            if (!m || !m.id) return;
+            const opts = getCommunityChatContextOptions(m, chatKind);
+            if (!opts.canRecall && !opts.canDelete && !opts.canPin) return;
+            const menu = document.getElementById('communityChatContextMenu');
+            if (!menu) return;
+            const recallBtn = menu.querySelector('[data-action="recall"]');
+            const deleteBtn = menu.querySelector('[data-action="delete"]');
+            const pinBtn = menu.querySelector('[data-action="pin"]');
+            const unpinBtn = menu.querySelector('[data-action="unpin"]');
+            if (recallBtn) recallBtn.hidden = !opts.canRecall;
+            if (deleteBtn) deleteBtn.hidden = !opts.canDelete;
+            const isThisPinned =
+                communityChatPinned &&
+                communityChatPinned.messageId &&
+                String(communityChatPinned.messageId) === String(m.id);
+            if (pinBtn) {
+                pinBtn.hidden = !opts.canPin || isThisPinned;
+            }
+            if (unpinBtn) {
+                unpinBtn.hidden = !opts.canPin || !isThisPinned;
+            }
+            ev.preventDefault();
+            ev.stopPropagation();
+            communityChatContextMenuState = { m: m, chatKind: chatKind || 'fleet' };
+            menu.hidden = false;
+            positionCommunityChatContextMenu(menu, ev.clientX, ev.clientY);
+        }
+
+        function installCommunityChatContextMenu() {
+            const menu = document.getElementById('communityChatContextMenu');
+            if (!menu || menu.dataset.wired === '1') return;
+            menu.dataset.wired = '1';
+            menu.querySelectorAll('[data-action]').forEach(function (btn) {
+                btn.addEventListener('click', function (ev) {
+                    ev.stopPropagation();
+                    const state = communityChatContextMenuState;
+                    const action = btn.getAttribute('data-action');
+                    closeCommunityChatContextMenu();
+                    if (!state || !state.m || !state.m.id) return;
+                    if (action === 'delete' || action === 'recall') {
+                        handleCommunityChatDelete(state.m.id, state.chatKind);
+                    } else if (action === 'pin') {
+                        handleCommunityChatPin(state.m.id, state.chatKind);
+                    } else if (action === 'unpin') {
+                        handleCommunityChatUnpin(state.chatKind);
+                    }
+                });
+            });
+            document.addEventListener('click', closeCommunityChatContextMenu);
+            document.addEventListener('contextmenu', function (ev) {
+                if (!menu.contains(ev.target)) closeCommunityChatContextMenu();
+            });
+            window.addEventListener('scroll', closeCommunityChatContextMenu, true);
+            window.addEventListener('resize', closeCommunityChatContextMenu);
+        }
+
+        function installCommunityChatPinBar() {
+            const btn = document.getElementById('communityChatPinBarBtn');
+            const unpinBtn = document.getElementById('communityChatPinUnpinBtn');
+            if (btn && btn.dataset.wired !== '1') {
+                btn.dataset.wired = '1';
+                btn.addEventListener('click', function () {
+                    if (communityChatPinned && communityChatPinned.messageId) {
+                        scrollToCommunityChatMessage(communityChatPinned.messageId);
+                    }
+                });
+            }
+            if (unpinBtn && unpinBtn.dataset.wired !== '1') {
+                unpinBtn.dataset.wired = '1';
+                unpinBtn.addEventListener('click', function (ev) {
+                    ev.stopPropagation();
+                    handleCommunityChatUnpin('fleet');
+                });
+            }
         }
 
         function showCommunityConfirm(message, options) {
@@ -1952,7 +2234,7 @@
             });
         }
 
-        async function handleCommunityChatDelete(messageId, confirmMsg, chatKind, confirmOpts) {
+        async function handleCommunityChatDelete(messageId, chatKind) {
             if (!messageId || !window.UssAuthApi) return;
             const sess = loadAuthSession();
             if (!sess || !sess.token) {
@@ -1966,8 +2248,6 @@
                 );
                 kind = line0 && line0.dataset.chatKind ? line0.dataset.chatKind : 'fleet';
             }
-            const ok = await showCommunityConfirm(confirmMsg || '确定删除？', confirmOpts || {});
-            if (!ok) return;
             clearCommunityChatHint();
             try {
                 const data =
@@ -1991,6 +2271,9 @@
                 if (data && typeof data.maxSeq === 'number') {
                     if (kind === 'dm') communityDmMaxSeq = data.maxSeq;
                     else communityChatMaxSeq = data.maxSeq;
+                }
+                if (kind === 'fleet' && data && 'pinned' in data) {
+                    renderCommunityChatPinBar(data.pinned || null);
                 }
             } catch (e) {
                 setCommunityChatHint(e && e.message ? e.message : '操作失败');
@@ -2050,6 +2333,7 @@
             }
             line.setAttribute('data-seq', String(m.seq));
             if (m.id) line.setAttribute('data-id', String(m.id));
+            if (m.createdAt) line.setAttribute('data-created-at', String(m.createdAt));
 
             const bodyText = String(m.text != null ? m.text : '').trim();
             const imgs = Array.isArray(m.images) ? m.images : [];
@@ -2082,17 +2366,6 @@
                 const shell = document.createElement('div');
                 shell.className = 'community-chat-line-mine-shell';
 
-                const actions = buildCommunityChatActions(m, kind);
-                const metaRow = document.createElement('div');
-                metaRow.className = 'community-chat-mine-meta-row';
-                const timeEl = document.createElement('time');
-                timeEl.className = 'community-author-time';
-                timeEl.dateTime = m.createdAt || '';
-                timeEl.textContent = formatCommunityTime(m.createdAt);
-                metaRow.appendChild(timeEl);
-                if (actions) metaRow.appendChild(actions);
-                shell.appendChild(metaRow);
-
                 const mainRow = document.createElement('div');
                 mainRow.className = 'community-chat-line-mine-main';
 
@@ -2109,10 +2382,9 @@
                 line.appendChild(shell);
                 appendChatImages(line);
             } else {
-                const actions = buildCommunityChatActions(m, kind);
                 const avatarRsiHref = communityRsiCitizenProfileUrl(m.bindingId);
                 line.appendChild(
-                    buildCommunityAuthorRow(m.bindingId, m.avatarUrl, m.createdAt, actions, avatarRsiHref)
+                    buildCommunityAuthorRow(m.bindingId, m.avatarUrl, m.createdAt, null, avatarRsiHref)
                 );
                 if (bodyText) {
                     const txt = document.createElement('div');
@@ -2123,17 +2395,34 @@
                 appendChatImages(line);
             }
 
-            line.addEventListener('click', function (ev) {
-                if (ev.target.closest('.community-chat-actions')) return;
-                const log = document.getElementById('communityChatLog');
-                if (log) {
-                    log.querySelectorAll('.community-chat-line.community-chat-line--time-open').forEach(function (ln) {
-                        if (ln !== line) ln.classList.remove('community-chat-line--time-open');
-                    });
-                }
-                line.classList.toggle('community-chat-line--time-open');
-            });
+            if (communityChatHasContextActions(m, kind)) {
+                line.addEventListener('contextmenu', function (ev) {
+                    showCommunityChatContextMenu(ev, m, kind);
+                });
+            }
+
             return line;
+        }
+
+        function getLastCommunityChatMessageCreatedAt(log) {
+            if (!log) return null;
+            const lines = log.querySelectorAll('.community-chat-line[data-created-at]');
+            if (!lines.length) return null;
+            return lines[lines.length - 1].getAttribute('data-created-at');
+        }
+
+        function renderCommunityChatMessagesToLog(log, list, lineKind) {
+            if (!log) return;
+            log.innerHTML = '';
+            let prev = null;
+            (list || []).forEach(function (m) {
+                if (!m || m.seq == null) return;
+                if (shouldShowCommunityChatTimeDivider(prev, m.createdAt)) {
+                    log.appendChild(buildCommunityChatTimeDivider(m.createdAt));
+                }
+                log.appendChild(buildCommunityChatLine(m, lineKind));
+                prev = m.createdAt;
+            });
         }
 
         function syncCommunityFeedLayout(hasPosts) {
@@ -2173,6 +2462,7 @@
                     card.addEventListener('click', function (ev) {
                         if (ev.target.closest('.community-post-delete')) return;
                         if (ev.target.closest('.community-reply-delete')) return;
+                        if (ev.target.closest('a.community-text-link')) return;
                         if (ev.target.closest('.community-reply-item')) return;
                         if (ev.target.closest('.community-reply-form')) return;
                         const feedEl = document.getElementById('communityFeed');
@@ -2217,7 +2507,7 @@
                 const body = document.createElement('div');
                 body.className = 'community-post-body';
                 if (p.content) {
-                    body.textContent = p.content;
+                    applyCommunityPlainTextWithLinks(body, p.content);
                 }
 
                 main.appendChild(head);
@@ -2263,6 +2553,7 @@
                         if (sessionIsCommunityStaff() || communityReplyIsMine(r)) {
                             item.addEventListener('click', function (ev) {
                                 if (ev.target.closest('.community-reply-delete')) return;
+                                if (ev.target.closest('a.community-text-link')) return;
                                 if (ev.target.closest('a.community-author-avatar-link')) return;
                                 const feedEl = document.getElementById('communityFeed');
                                 if (feedEl) {
@@ -2305,7 +2596,7 @@
                         item.appendChild(buildCommunityAuthorRow(r.bindingId, r.avatarUrl, r.createdAt, replyDelBtn));
                         const replyBody = document.createElement('div');
                         replyBody.className = 'community-reply-body';
-                        replyBody.textContent = String(r.content != null ? r.content : '');
+                        applyCommunityPlainTextWithLinks(replyBody, String(r.content != null ? r.content : ''));
                         item.appendChild(replyBody);
                         repliesBlock.appendChild(item);
                     });
@@ -2394,6 +2685,10 @@
             if (log.querySelector('.community-chat-line[data-seq="' + seqKey + '"][data-chat-kind="' + lk + '"]')) return;
             const empty = log.querySelector('.community-empty');
             if (empty) empty.remove();
+            const prev = getLastCommunityChatMessageCreatedAt(log);
+            if (shouldShowCommunityChatTimeDivider(prev, m.createdAt)) {
+                log.appendChild(buildCommunityChatTimeDivider(m.createdAt));
+            }
             log.appendChild(buildCommunityChatLine(m, lk));
         }
 
@@ -2431,20 +2726,20 @@
                 communityChatMaxSeq =
                     typeof data.maxSeq === 'number' && data.maxSeq > 0 ? data.maxSeq : 0;
                 const list = data.messages || [];
+                renderCommunityChatPinBar(data.pinned || null);
                 if (!list.length) {
                     const empty = document.createElement('div');
                     empty.className = 'community-empty';
                     empty.textContent = '暂无聊天消息，可发文字或图片。';
                     log.appendChild(empty);
                 } else {
-                    list.forEach(function (m) {
-                        appendCommunityChatLine(m, 'fleet');
-                    });
+                    renderCommunityChatMessagesToLog(log, list, 'fleet');
                 }
                 scrollCommunityChatToBottom(true);
                 markCommunityFleetRead(communityChatMaxSeq);
             } catch (e) {
                 log.innerHTML = '';
+                renderCommunityChatPinBar(null);
                 const err = document.createElement('div');
                 err.className = 'community-feed-error';
                 err.textContent = e && e.message ? e.message : '聊天加载失败';
@@ -2473,6 +2768,7 @@
                 log.innerHTML = '';
                 communityDmMaxSeq =
                     typeof data.maxSeq === 'number' && data.maxSeq > 0 ? data.maxSeq : 0;
+                renderCommunityChatPinBar(null);
                 const list = data.messages || [];
                 if (!list.length) {
                     const empty = document.createElement('div');
@@ -2480,9 +2776,7 @@
                     empty.textContent = '暂无私信，可发文字或图片。';
                     log.appendChild(empty);
                 } else {
-                    list.forEach(function (m) {
-                        appendCommunityChatLine(m, 'dm');
-                    });
+                    renderCommunityChatMessagesToLog(log, list, 'dm');
                 }
                 scrollCommunityChatToBottom(true);
                 if (communityChatDmPeer) {
@@ -2760,6 +3054,7 @@
                     communityChatMaxSeq = fleetData.maxSeq;
                 }
                 if (communityChatKind === 'fleet') {
+                    if ('pinned' in fleetData) renderCommunityChatPinBar(fleetData.pinned || null);
                     markCommunityFleetRead(communityChatMaxSeq);
                 }
 
@@ -3189,6 +3484,8 @@
             installCommunitySendMenus();
 
             installCommunityChatScrollGuard();
+            installCommunityChatContextMenu();
+            installCommunityChatPinBar();
             wireCommunityChatRoster();
             refreshCommunitySessionUi();
             refreshCommunityAll();

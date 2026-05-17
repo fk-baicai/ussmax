@@ -342,6 +342,20 @@
             return data;
         },
 
+        async communityChatPin(token, messageId) {
+            var r = await fetch(joinUrl('/api/community/chat/pin'), {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: 'Bearer ' + token,
+                },
+                body: JSON.stringify({ messageId: messageId || null }),
+            });
+            var data = await parseJson(r);
+            if (!r.ok) throw new Error(data.message || '置顶失败');
+            return data;
+        },
+
         async communityRoster(token) {
             var r = await fetch(joinUrl('/api/community/roster'), {
                 headers: { Authorization: 'Bearer ' + token },

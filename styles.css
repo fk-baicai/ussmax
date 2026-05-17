@@ -2120,6 +2120,17 @@ a.community-author-avatar-link:focus-visible {
     padding-left: 50px;
 }
 
+.community-text-link {
+    color: #6ec8ff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    word-break: break-all;
+}
+
+.community-text-link:hover {
+    color: #9fe0ff;
+}
+
 .community-post-images {
     display: flex;
     flex-wrap: wrap;
@@ -2251,6 +2262,111 @@ a.community-author-avatar-link:focus-visible {
     overscroll-behavior: auto;
 }
 
+.community-chat-pin-bar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px 12px 0;
+    box-sizing: border-box;
+}
+
+.community-chat-pin-bar[hidden] {
+    display: none !important;
+}
+
+.community-chat-pin-bar__btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(84, 173, 247, 0.28);
+    background: rgba(84, 173, 247, 0.1);
+    color: rgba(220, 240, 255, 0.92);
+    font-size: 14px;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.community-chat-pin-bar__btn:hover {
+    background: rgba(84, 173, 247, 0.18);
+    border-color: rgba(84, 173, 247, 0.45);
+}
+
+.community-chat-pin-bar__tag {
+    flex-shrink: 0;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(84, 173, 247, 0.22);
+    color: #9fd8ff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+}
+
+.community-chat-pin-bar__text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.community-chat-pin-bar__unpin {
+    flex-shrink: 0;
+    align-self: center;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(180, 210, 230, 0.28);
+    background: rgba(8, 20, 32, 0.5);
+    color: rgba(200, 220, 235, 0.88);
+    font-size: 13px;
+    font-family: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.community-chat-pin-bar__unpin:hover {
+    background: rgba(255, 107, 107, 0.12);
+    border-color: rgba(255, 107, 107, 0.35);
+    color: #ffb4b4;
+}
+
+.community-chat-pin-bar__unpin[hidden] {
+    display: none !important;
+}
+
+.community-chat-time-divider {
+    align-self: center;
+    margin: 10px 0 6px;
+    padding: 0 10px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: rgba(180, 210, 230, 0.55);
+    text-align: center;
+    user-select: none;
+}
+
+.community-chat-line--highlight {
+    animation: community-chat-line-highlight 2.2s ease;
+}
+
+@keyframes community-chat-line-highlight {
+    0% {
+        background: rgba(84, 173, 247, 0.22);
+    }
+    100% {
+        background: transparent;
+    }
+}
+
 .community-chat-scroll {
     flex: 1;
     min-height: 0;
@@ -2366,10 +2482,6 @@ a.community-author-avatar-link:focus-visible {
     width: 100%;
 }
 
-.community-chat-mine-meta-row .community-chat-actions {
-    margin-left: 0;
-}
-
 .community-chat-line .community-author-row {
     margin-bottom: 4px;
     gap: 8px 10px;
@@ -2452,48 +2564,53 @@ a.community-author-avatar-link:focus-visible {
     cursor: pointer;
 }
 
-.community-chat-line .community-chat-actions {
-    display: none;
+.community-chat-context-menu {
+    position: fixed;
+    z-index: 4500;
+    min-width: 132px;
+    padding: 6px;
+    border-radius: 10px;
+    border: 1px solid rgba(84, 173, 247, 0.35);
+    background: rgba(8, 22, 38, 0.97);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+    box-sizing: border-box;
 }
 
-.community-chat-line.community-chat-line--time-open .community-chat-actions {
-    display: inline-flex;
+.community-chat-context-menu[hidden] {
+    display: none !important;
 }
 
-.community-chat-actions {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-    margin-left: 8px;
-}
-
-.community-chat-action {
-    padding: 2px 8px;
-    border-radius: 5px;
-    border: 1px solid rgba(255, 107, 107, 0.4);
-    background: rgba(255, 107, 107, 0.1);
-    color: #ffb4b4;
-    font-size: 12px;
-    line-height: 1.3;
-    cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease;
-}
-
-.community-chat-action:hover {
-    background: #ff6b6b;
-    color: #fff;
-}
-
-.community-chat-action-recall {
-    border-color: rgba(84, 173, 247, 0.45);
-    background: rgba(84, 173, 247, 0.12);
+.community-chat-context-menu__item {
+    display: block;
+    width: 100%;
+    padding: 9px 14px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
     color: #9fd8ff;
+    font-size: 15px;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
 }
 
-.community-chat-action-recall:hover {
-    background: rgb(84, 173, 247);
-    color: #fff;
+.community-chat-context-menu__item:hover {
+    background: rgba(84, 173, 247, 0.18);
+    color: #dff6ff;
+}
+
+.community-chat-context-menu__item--danger {
+    color: #ffb4b4;
+}
+
+.community-chat-context-menu__item--danger:hover {
+    background: rgba(255, 107, 107, 0.18);
+    color: #ffe0e0;
+}
+
+.community-chat-context-menu__item[hidden] {
+    display: none !important;
 }
 
 /* 舰员交流区：撤回 / 删除确认 — 与签到中心 USS 网格主题一致 */
