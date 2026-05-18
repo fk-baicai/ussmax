@@ -1143,9 +1143,11 @@
             word-break: break-word;
         }
         .audit-log-table td:nth-child(4) {
-            white-space: nowrap;
+            max-width: 11rem;
+            word-break: break-all;
             color: rgba(232, 244, 250, 0.55);
             font-size: 0.78rem;
+            line-height: 1.35;
         }
         #auditLogMeta {
             margin-left: 0.75rem;
@@ -1164,7 +1166,9 @@
         <div id="app" style="display: none;">
             <section id="secAuditLog">
                 <h2>操作日志</h2>
-                <p class="hint">记录管理员在后台的写操作（补签、调分、改用户、保存签到表、白名单等），最近保留约 5000 条。</p>
+                <p class="hint">
+                    记录管理员在后台的写操作（补签、调分、改用户、保存签到表、白名单等），最近保留约 5000 条。访问 IP 为操作当时网络地址；若为一长串带冒号（如 240e:…），是 <strong>IPv6</strong>，不是显示错误。
+                </p>
                 <div class="row">
                     <button type="button" id="btnReloadAuditLog">刷新</button>
                     <span id="auditLogMeta" class="hint"></span>
@@ -1176,7 +1180,7 @@
                                 <th>时间（北京）</th>
                                 <th>操作者</th>
                                 <th>说明</th>
-                                <th>IP</th>
+                                <th>访问 IP</th>
                             </tr>
                         </thead>
                         <tbody id="auditLogBody"></tbody>
@@ -1665,6 +1669,18 @@
                 }
             }
 
+            function formatAuditIpCell(ip) {
+                var raw = ip != null ? String(ip).trim() : '';
+                if (!raw || raw === 'unknown') return { text: '—', title: '' };
+                if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(raw)) {
+                    return { text: raw, title: 'IPv4' };
+                }
+                if (raw.indexOf(':') >= 0) {
+                    return { text: raw, title: 'IPv6 地址（正常，非错误）\n' + raw };
+                }
+                return { text: raw, title: raw };
+            }
+
             async function loadAuditLog() {
                 var errEl = document.getElementById('auditLogErr');
                 var bodyEl = document.getElementById('auditLogBody');
@@ -1689,6 +1705,7 @@
                     }
                     entries.forEach(function (row) {
                         var tr = document.createElement('tr');
+                        var ipInfo = formatAuditIpCell(row.ip);
                         tr.innerHTML =
                             '<td>' +
                             esc(formatAuditAt(row.at)) +
@@ -1696,9 +1713,11 @@
                             esc(row.actorBindingId || '—') +
                             '</td><td>' +
                             esc(row.summary || row.action || '—') +
-                            '</td><td>' +
-                            esc(row.ip || '—') +
                             '</td>';
+                        var tdIp = document.createElement('td');
+                        tdIp.textContent = ipInfo.text;
+                        if (ipInfo.title) tdIp.title = ipInfo.title;
+                        tr.appendChild(tdIp);
                         bodyEl.appendChild(tr);
                     });
                 } catch (eLoad) {
