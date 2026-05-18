@@ -251,9 +251,13 @@
         }
         /* 签到整表：固定列宽铺满容器，避免底部横向滚动条 */
         .grid-sched {
+            --sched-branch-bg: rgba(0, 0, 0, 0.2);
             overflow-x: hidden;
             width: 100%;
             max-width: 100%;
+        }
+        .grid-sched .sched-grid-table > tbody > tr:hover {
+            background: transparent;
         }
         .grid-sched table.sched-grid-table {
             table-layout: fixed;
@@ -277,19 +281,26 @@
             white-space: normal;
             word-break: keep-all;
         }
-        /* 分部名单独一行，下方再排各日格子 */
+        /* 分部块：标题行 + 日程行同一底色；块间仅留白 + 细线分隔 */
+        .grid-sched .sched-branch-title-tr > td.sched-branch-head-banner,
+        .grid-sched .sched-branch-data-tr > td {
+            background: var(--sched-branch-bg);
+        }
         .grid-sched .sched-branch-title-tr > td.sched-branch-head-banner {
-            padding: 0.42rem 0.35rem 0.35rem;
+            padding: 0.5rem 0.45rem 0.4rem;
             font-size: 0.82rem;
             font-weight: 700;
             letter-spacing: 0.04em;
             color: var(--txt);
             vertical-align: middle;
-            border-top: 1px solid rgba(95, 184, 255, 0.22);
-            background: rgba(8, 20, 38, 0.55);
-        }
-        .grid-sched .sched-branch-title-tr:first-child > td.sched-branch-head-banner {
             border-top: none;
+            border-left: none;
+            box-shadow: none;
+        }
+        .grid-sched .sched-branch-data-tr + .sched-branch-title-tr > td.sched-branch-head-banner {
+            border-top: 1.35rem solid var(--card);
+            padding-top: 0.55rem;
+            box-shadow: none;
         }
         .sched-branch-head-banner .sched-branch-title {
             display: flex;
@@ -330,17 +341,21 @@
         .grid-sched .sched-branch-spacer {
             width: 4.75rem;
             max-width: 4.75rem;
-            padding: 0.15rem;
+            padding: 0.35rem 0.15rem 0.85rem;
             vertical-align: top;
             border: none;
-            background: transparent;
+            border-left: none;
             box-shadow: none;
+        }
+        .grid-sched .sched-branch-data-tr > td {
+            border-top: none;
+            border-left: none;
+            padding-bottom: 0.85rem;
+            border-bottom: 1px solid rgba(95, 184, 255, 0.16);
         }
         .grid-sched .sched-branch-data-tr > td.sched-cell {
             border-top: none;
-        }
-        .grid-sched .sched-branch-data-tr {
-            border-bottom: 1px solid rgba(95, 184, 255, 0.12);
+            border-left: none;
         }
         .grid-sched .sched-grid-table > tbody > tr > td.sched-cell {
             min-width: 0;

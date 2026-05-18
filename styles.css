@@ -1437,7 +1437,7 @@ a.drawer-checkin-textlink:hover {
     margin-bottom: 4px;
     flex: 1;
     min-height: 0;
-    max-height: 1200px;
+    max-height: 900px;
 }
 
 .community-chat-split {
@@ -1661,6 +1661,8 @@ a.drawer-checkin-textlink:hover {
 .community-panel-forum {
     margin-top: 4px;
     box-shadow: none;
+    max-height: 1200px;
+    min-height: 0;
 }
 
 .community-panel {
@@ -1766,14 +1768,15 @@ a.drawer-checkin-textlink:hover {
     min-height: 0;
 }
 
-.community-scroller.community-scroller-feed {
-    max-height: 1000px;
-    height: auto;
+.community-panel-forum .community-scroller.community-scroller-feed {
+    flex: 1;
     min-height: 0;
+    height: auto;
+    max-height: none;
 }
 
 .community-scroller.community-scroller-feed.community-feed--has-posts {
-    min-height: min(50vh, 480px);
+    min-height: 0;
 }
 
 .community-col {
@@ -1803,6 +1806,7 @@ a.drawer-checkin-textlink:hover {
 }
 
 .community-panel-forum .community-composer {
+    flex-shrink: 0;
     padding: 10px 12px;
 }
 
