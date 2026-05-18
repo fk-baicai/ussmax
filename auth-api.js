@@ -282,6 +282,13 @@
                 body: JSON.stringify(body || {}),
             });
         },
+        async adminAuditLog(token, limit, offset) {
+            var q = '/api/admin/audit-log?limit=' + encodeURIComponent(limit != null ? limit : 80);
+            if (offset != null && offset !== '') {
+                q += '&offset=' + encodeURIComponent(offset);
+            }
+            return adminJson(token, q);
+        },
 
         /** 首页舰员交流区：帖子列表（无需登录） */
         async communityListPosts(limit) {

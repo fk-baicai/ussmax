@@ -8,6 +8,7 @@
     <link rel="icon" type="image/jpeg" href="fleet-logo.jpg">
     <link rel="apple-touch-icon" href="fleet-logo.jpg">
     <script src="auth-config.js"></script>
+    <script src="nav-dropdown.js" defer></script>
     <script>
         (function () {
             try {
@@ -25,8 +26,30 @@
 </head>
 <body class="home-page-body">
     <nav class="navbar">
+        <div class="navbar-start">
         <div class="logo">
-            <img src="fleet-logo.jpg" alt="舰队 LOGO" decoding="async">
+            <a href="index.html" aria-label="首页"><img src="fleet-logo.jpg" alt="舰队 LOGO" decoding="async"></a>
+        </div>
+        <div class="nav-links" role="navigation" aria-label="站点导航">
+            <div class="nav-dropdown">
+                <button
+                    type="button"
+                    class="nav-dropdown-toggle"
+                    id="navPointsMallToggle"
+                    aria-expanded="false"
+                    aria-haspopup="true"
+                    aria-controls="navPointsMallMenu"
+                >
+                    积分系统
+                    <span class="nav-dropdown-caret" aria-hidden="true"></span>
+                </button>
+                <ul class="nav-dropdown-menu" id="navPointsMallMenu" role="menu" aria-labelledby="navPointsMallToggle">
+                    <li role="none"><a href="points-mall.html" class="nav-dropdown-item" role="menuitem">积分商城</a></li>
+                    <li role="none"><a href="points-exchange.html" class="nav-dropdown-item" role="menuitem">积分兑换</a></li>
+                    <li role="none"><a href="points-lottery.html" class="nav-dropdown-item" role="menuitem">积分抽奖</a></li>
+                </ul>
+            </div>
+        </div>
         </div>
         <div class="nav-right">
             <button type="button" class="nav-login-trigger" id="navLoginBtn" onclick="openLoginDrawer()" aria-label="登录或注册">

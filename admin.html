@@ -710,10 +710,12 @@
             font-size: 0.76em;
         }
 
-        #secBranch .branch-help-details {
+        #secBranch .branch-help-details,
+        #secSchedule .branch-help-details {
             margin: 0.2rem 0 0.45rem;
         }
-        #secBranch .branch-help-details summary {
+        #secBranch .branch-help-details summary,
+        #secSchedule .branch-help-details summary {
             list-style: none;
             display: inline-flex;
             align-items: center;
@@ -724,13 +726,16 @@
             color: var(--muted);
             padding: 0.2rem 0;
         }
-        #secBranch .branch-help-details summary::-webkit-details-marker {
+        #secBranch .branch-help-details summary::-webkit-details-marker,
+        #secSchedule .branch-help-details summary::-webkit-details-marker {
             display: none;
         }
-        #secBranch .branch-help-details summary::marker {
+        #secBranch .branch-help-details summary::marker,
+        #secSchedule .branch-help-details summary::marker {
             content: '';
         }
-        #secBranch .branch-help-caret {
+        #secBranch .branch-help-caret,
+        #secSchedule .branch-help-caret {
             display: inline-block;
             width: 0;
             height: 0;
@@ -740,20 +745,25 @@
             transition: transform 0.18s ease;
             flex-shrink: 0;
         }
-        #secBranch .branch-help-details[open] .branch-help-caret {
+        #secBranch .branch-help-details[open] .branch-help-caret,
+        #secSchedule .branch-help-details[open] .branch-help-caret {
             transform: rotate(90deg);
         }
-        #secBranch .branch-help-details summary:hover {
+        #secBranch .branch-help-details summary:hover,
+        #secSchedule .branch-help-details summary:hover {
             color: var(--accent-hot);
         }
-        #secBranch .branch-help-details summary:hover .branch-help-caret {
+        #secBranch .branch-help-details summary:hover .branch-help-caret,
+        #secSchedule .branch-help-details summary:hover .branch-help-caret {
             border-left-color: var(--accent-hot);
         }
-        #secBranch .branch-help-body {
+        #secBranch .branch-help-body,
+        #secSchedule .branch-help-body {
             margin-top: 0.35rem;
             padding-left: 0.15rem;
         }
-        #secBranch .branch-help-body .hint {
+        #secBranch .branch-help-body .hint,
+        #secSchedule .branch-help-body .hint {
             margin: 0.15rem 0;
             line-height: 1.55;
         }
@@ -1090,6 +1100,56 @@
                 opacity: 0.9;
             }
         }
+
+        #secAuditLog .audit-log-wrap {
+            margin-top: 0.65rem;
+            max-height: 22rem;
+            overflow: auto;
+            border: 1px solid rgba(95, 184, 255, 0.2);
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.22);
+        }
+        .audit-log-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+        .audit-log-table th,
+        .audit-log-table td {
+            padding: 0.45rem 0.65rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(95, 184, 255, 0.1);
+            vertical-align: top;
+        }
+        .audit-log-table th {
+            position: sticky;
+            top: 0;
+            background: rgb(18, 48, 66);
+            color: #a8d8e8;
+            font-weight: 600;
+            z-index: 1;
+        }
+        .audit-log-table tbody tr:hover td {
+            background: rgba(95, 184, 255, 0.06);
+        }
+        .audit-log-table td:nth-child(1) {
+            white-space: nowrap;
+            color: rgba(232, 244, 250, 0.75);
+        }
+        .audit-log-table td:nth-child(2) {
+            white-space: nowrap;
+        }
+        .audit-log-table td:nth-child(3) {
+            word-break: break-word;
+        }
+        .audit-log-table td:nth-child(4) {
+            white-space: nowrap;
+            color: rgba(232, 244, 250, 0.55);
+            font-size: 0.78rem;
+        }
+        #auditLogMeta {
+            margin-left: 0.75rem;
+        }
     </style>
 </head>
 <body>
@@ -1102,14 +1162,45 @@
     <main>
         <p id="gateMsg" class="err"></p>
         <div id="app" style="display: none;">
+            <section id="secAuditLog">
+                <h2>操作日志</h2>
+                <p class="hint">记录管理员在后台的写操作（补签、调分、改用户、保存签到表、白名单等），最近保留约 5000 条。</p>
+                <div class="row">
+                    <button type="button" id="btnReloadAuditLog">刷新</button>
+                    <span id="auditLogMeta" class="hint"></span>
+                </div>
+                <div class="audit-log-wrap">
+                    <table class="audit-log-table">
+                        <thead>
+                            <tr>
+                                <th>时间（北京）</th>
+                                <th>操作者</th>
+                                <th>说明</th>
+                                <th>IP</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditLogBody"></tbody>
+                    </table>
+                </div>
+                <div id="auditLogErr" class="err" hidden></div>
+            </section>
+
             <section id="secSchedule">
                 <h2>分部签到开放窗口（北京时间）</h2>
-                <p class="hint">
-                    默认规则：未配置日期禁止签到。<br />
-                    勾选全天开放：当日随时可签；<br />
-                    不勾选：需设置开始时间与开放时长，仅规定时段内可签。<br />
-                    各分部签到积分可在分部标题旁单独设置，默认 1 分，签到成功自动加分。
-                </p>
+                <details class="branch-help-details">
+                    <summary>
+                        <span class="branch-help-caret" aria-hidden="true"></span>
+                        使用说明
+                    </summary>
+                    <div class="branch-help-body">
+                        <p class="hint">
+                            默认规则：未配置日期禁止签到。<br />
+                            勾选全天开放：当日随时可签；<br />
+                            不勾选：需设置开始时间与开放时长，仅规定时段内可签。<br />
+                            各分部签到积分可在分部标题旁单独设置，默认 1 分，签到成功自动加分。
+                        </p>
+                    </div>
+                </details>
                 <datalist id="adminSchedDurOpts">
                     <option value="1"></option>
                     <option value="2"></option>
@@ -1550,8 +1641,72 @@
                 document.getElementById('btnSaveSchedule').onclick = saveSchedule;
                 document.getElementById('btnSaveWhitelist').onclick = saveWhitelist;
                 document.getElementById('btnReloadWhitelist').onclick = loadWhitelist;
+                document.getElementById('btnReloadAuditLog').onclick = loadAuditLog;
                 loadScheduleUi();
                 loadWhitelist();
+                loadAuditLog();
+            }
+
+            function formatAuditAt(iso) {
+                if (!iso) return '—';
+                try {
+                    return new Intl.DateTimeFormat('zh-CN', {
+                        timeZone: 'Asia/Shanghai',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false,
+                    }).format(new Date(iso));
+                } catch (eFmt) {
+                    return String(iso);
+                }
+            }
+
+            async function loadAuditLog() {
+                var errEl = document.getElementById('auditLogErr');
+                var bodyEl = document.getElementById('auditLogBody');
+                var metaEl = document.getElementById('auditLogMeta');
+                if (!bodyEl) return;
+                if (errEl) errEl.hidden = true;
+                try {
+                    var s = loadSess();
+                    var data = await window.UssAuthApi.adminAuditLog(s.token, 120, 0);
+                    var entries = data.entries || [];
+                    if (metaEl) {
+                        metaEl.textContent =
+                            '共 ' + (data.total != null ? data.total : entries.length) + ' 条，显示最近 ' + entries.length + ' 条';
+                    }
+                    bodyEl.innerHTML = '';
+                    if (!entries.length) {
+                        var tr0 = document.createElement('tr');
+                        tr0.innerHTML =
+                            '<td colspan="4" style="text-align:center;color:rgba(232,244,250,0.55)">暂无记录</td>';
+                        bodyEl.appendChild(tr0);
+                        return;
+                    }
+                    entries.forEach(function (row) {
+                        var tr = document.createElement('tr');
+                        tr.innerHTML =
+                            '<td>' +
+                            esc(formatAuditAt(row.at)) +
+                            '</td><td>' +
+                            esc(row.actorBindingId || '—') +
+                            '</td><td>' +
+                            esc(row.summary || row.action || '—') +
+                            '</td><td>' +
+                            esc(row.ip || '—') +
+                            '</td>';
+                        bodyEl.appendChild(tr);
+                    });
+                } catch (eLoad) {
+                    if (errEl) {
+                        errEl.textContent = (eLoad && eLoad.message) || '加载操作日志失败';
+                        errEl.hidden = false;
+                    }
+                }
             }
 
             function wireUsersUiOnce() {
@@ -1716,9 +1871,6 @@
                     var data = await window.UssAuthApi.adminListAdmins(s.token);
                     var ul = document.getElementById('adminList');
                     ul.innerHTML = '';
-                    var li0 = document.createElement('li');
-                    li0.textContent = '超级管理员（内置）：' + data.superAdminBindingId;
-                    ul.appendChild(li0);
                     (data.adminBindingIds || []).forEach(function (bid) {
                         var li = document.createElement('li');
                         li.style.margin = '0.35rem 0';
