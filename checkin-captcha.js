@@ -9,8 +9,8 @@
     var PUZZLE_H = 150;
     var PIECE = 44;
     var SLIDER_PAD = 8;
-    var MIN_DRAG_MS = 120;
-    var MIN_MOVE_COUNT = 3;
+    var MIN_DRAG_MS = 60;
+    var MIN_MOVE_COUNT = 2;
 
     function ensureModal() {
         var el = document.getElementById('checkinCaptchaBackdrop');
@@ -185,7 +185,7 @@
                 var meta = state.dragMeta;
                 meta.durationMs = state.dragStart ? Date.now() - state.dragStart : 0;
                 pushSample();
-                if (state.sliderX < 6) {
+                if (state.sliderX < 4) {
                     showErr('请先拖动滑块，将拼图对齐缺口');
                     return;
                 }

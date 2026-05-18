@@ -35,4 +35,7 @@
     if (!window.USS_RSI_REQUIRED_ORG_HREF) {
         window.USS_RSI_REQUIRED_ORG_HREF = '/orgs/5000';
     }
+    if (!window.USS_DEFAULT_AVATAR) {
+        window.USS_DEFAULT_AVATAR = 'default-avatar.png';
+    }
 })();

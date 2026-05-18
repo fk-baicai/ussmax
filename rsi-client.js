@@ -207,20 +207,105 @@
         };
     }
 
-    function parseCitizenAvatarUrl(doc) {
-        var img =
-            doc.querySelector('.profile.left-col .thumb img') ||
-            doc.querySelector('div.profile.left-col .thumb img');
-        return img ? resolveRsiUrl(img.getAttribute('src')) : null;
+    function isLikelyCitizenAvatarUrl(url) {
+        var u = String(url || '').toLowerCase();
+        if (!u || u.indexOf('data:') === 0) return false;
+        if (/\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i.test(u)) return true;
+        return /\/media\/|citizen|avatar|thumb|profile|heap_infobox|cloudfront/i.test(u);
     }
 
-    function parseCitizenHtml(html) {
+    function collectCitizenAvatarCandidates(doc, normalizedHandle) {
+        var seen = {};
+        var out = [];
+        function push(raw) {
+            var url = resolveRsiUrl(raw);
+            if (!url || seen[url] || !isLikelyCitizenAvatarUrl(url)) return;
+            seen[url] = true;
+            out.push(url);
+        }
+        var thumbSels = [
+            '.profile.left-col .thumb img',
+            '.left-col.profile .thumb img',
+            '.profile .thumb img',
+            '.citizen-profile .thumb img',
+            '#citizen-profile .thumb img',
+            '.profile.left-col img',
+        ];
+        for (var ti = 0; ti < thumbSels.length; ti++) {
+            var img = doc.querySelector(thumbSels[ti]);
+            if (!img) continue;
+            push(img.getAttribute('src'));
+            push(img.getAttribute('data-src'));
+        }
+        var metas = doc.querySelectorAll(
+            'meta[property="og:image"], meta[property="og:image:url"], meta[name="twitter:image"]'
+        );
+        for (var mi = 0; mi < metas.length; mi++) {
+            push(metas[mi].getAttribute('content'));
+        }
+        var links = doc.querySelectorAll('link[rel="image_src"]');
+        for (var li = 0; li < links.length; li++) {
+            push(links[li].getAttribute('href'));
+        }
+        var imgs = doc.querySelectorAll('img[src*="citizen"], img[src*="/media/"], img[data-src*="citizen"]');
+        for (var ii = 0; ii < imgs.length; ii++) {
+            push(imgs[ii].getAttribute('src'));
+            push(imgs[ii].getAttribute('data-src'));
+        }
+        var scripts = doc.querySelectorAll('script[type="application/ld+json"]');
+        for (var si = 0; si < scripts.length; si++) {
+            try {
+                var data = JSON.parse(scripts[si].textContent || '');
+                var stack = Array.isArray(data) ? data.slice() : [data];
+                while (stack.length) {
+                    var node = stack.pop();
+                    if (!node || typeof node !== 'object') continue;
+                    if (typeof node.image === 'string') push(node.image);
+                    else if (node.image && node.image.url) push(node.image.url);
+                    for (var k in node) {
+                        if (node.hasOwnProperty(k) && node[k] && typeof node[k] === 'object') {
+                            stack.push(node[k]);
+                        }
+                    }
+                }
+            } catch (eJson) {
+                /* ignore */
+            }
+        }
+        var handle = String(normalizedHandle || '').trim().toLowerCase();
+        if (handle && doc.documentElement && doc.documentElement.innerHTML) {
+            var re = /https?:\/\/[^"'\\\s]+/gi;
+            var m;
+            var html = doc.documentElement.innerHTML;
+            while ((m = re.exec(html))) {
+                var u = m[0];
+                if (!/citizen|\/media\/|avatar|thumb/i.test(u)) continue;
+                if (u.toLowerCase().indexOf(handle) < 0 && !/heap_infobox|profile|thumb/i.test(u)) continue;
+                push(u);
+            }
+        }
+        return out;
+    }
+
+    function parseCitizenAvatarUrl(doc, normalizedHandle) {
+        var list = collectCitizenAvatarCandidates(doc, normalizedHandle);
+        return list.length ? list[0] : null;
+    }
+
+    function parseCitizenHtml(html, normalizedHandle) {
         var parser = new DOMParser();
         var doc = parser.parseFromString(html, 'text/html');
-        var citizenAvatarUrl = parseCitizenAvatarUrl(doc);
+        var handle =
+            normalizedHandle ||
+            (doc.querySelector('.profile.left-col .info strong.value') &&
+                doc.querySelector('.profile.left-col .info strong.value').textContent.trim().toLowerCase()) ||
+            '';
+        var citizenAvatarUrls = collectCitizenAvatarCandidates(doc, handle);
+        var citizenAvatarUrl = citizenAvatarUrls.length ? citizenAvatarUrls[0] : null;
         var extras = extractProfileExtras(doc);
         return {
             citizenAvatarUrl: citizenAvatarUrl,
+            citizenAvatarUrls: citizenAvatarUrls,
             rsiProfileHandle: extras.rsiProfileHandle,
             rsiRankIconUrl: extras.rsiRankIconUrl,
             rsiRankLabel: extras.rsiRankLabel,
@@ -272,8 +357,11 @@
     }
 
     async function scrapeCitizenPublicProfile(handle) {
-        var html = await loadCitizenHtml(handle);
-        return parseCitizenHtml(html);
+        var normalized = String(handle || '')
+            .trim()
+            .toLowerCase();
+        var html = await loadCitizenHtml(normalized);
+        return parseCitizenHtml(html, normalized);
     }
 
     global.UssRsiClient = {

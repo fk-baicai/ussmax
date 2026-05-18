@@ -288,6 +288,66 @@
         });
     }
 
+    function memberDisplayName(row) {
+        if (!row) return '—';
+        if (row.oopzDisplay) return String(row.oopzDisplay);
+        if (row.oopzName && row.bindingId) {
+            return String(row.oopzName) + '（' + String(row.bindingId) + '）';
+        }
+        if (row.oopzName) return String(row.oopzName);
+        if (row.bindingId != null && String(row.bindingId).trim() !== '') return String(row.bindingId);
+        return '—';
+    }
+
+    var CHECKIN_AVATAR_FALLBACK =
+        (typeof window !== 'undefined' && window.USS_DEFAULT_AVATAR) || 'default-avatar.png';
+
+    function checkinAvatarSrc(avatarUrl) {
+        if (avatarUrl && window.UssAuthApi && typeof window.UssAuthApi.resolveAssetUrl === 'function') {
+            var resolved = window.UssAuthApi.resolveAssetUrl(avatarUrl);
+            if (resolved) return resolved;
+        }
+        return CHECKIN_AVATAR_FALLBACK;
+    }
+
+    function formatSignedAtLabel(row) {
+        if (row && row.signedAtLabel) return String(row.signedAtLabel);
+        var iso = row && row.signedAt ? String(row.signedAt) : '';
+        if (!iso) return '—';
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return '—';
+        return new Intl.DateTimeFormat('zh-CN', {
+            timeZone: 'Asia/Shanghai',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        }).format(d);
+    }
+
+    function memberBindingId(row) {
+        if (row.bindingId != null && String(row.bindingId).trim() !== '') {
+            return String(row.bindingId).trim();
+        }
+        return memberDisplayName(row);
+    }
+
+    function memberRoleLabel(row) {
+        return row.rsiOrgRoleLabel != null && String(row.rsiOrgRoleLabel).trim() !== ''
+            ? String(row.rsiOrgRoleLabel).trim()
+            : '—';
+    }
+
+    function memberAvatarImgHtml(row) {
+        var avSrc = checkinAvatarSrc(row.avatarUrl);
+        return (
+            '<img class="checkin-member-avatar" src="' +
+            esc(avSrc) +
+            '" alt="" width="44" height="44" decoding="async" onerror="this.onerror=null;this.src=\'' +
+            CHECKIN_AVATAR_FALLBACK +
+            '\';" />'
+        );
+    }
+
     function renderTodayList(list) {
         var ul = document.getElementById('checkinTodayList');
         var cnt = document.getElementById('checkinTodayCount');
@@ -299,42 +359,60 @@
         }
         ul.innerHTML = list
             .map(function (row) {
-                var id =
-                    row.oopzDisplay ||
-                    (row.oopzName && row.bindingId
-                        ? String(row.oopzName) + '（' + String(row.bindingId) + '）'
-                        : row.oopzName
-                          ? String(row.oopzName)
-                          : row.bindingId != null
-                            ? String(row.bindingId)
-                            : '—');
-                var role =
-                    row.rsiOrgRoleLabel != null && String(row.rsiOrgRoleLabel).trim() !== ''
-                        ? String(row.rsiOrgRoleLabel).trim()
-                        : '—';
-                var metaInner = rankIconsHtml(row.rsiOrgRankSlots);
+                var bid = memberBindingId(row);
+                var role = memberRoleLabel(row);
                 var pts =
                     typeof row.branchPoints === 'number' && !isNaN(row.branchPoints)
                         ? row.branchPoints
                         : 0;
                 return (
-                    '<li class="checkin-today-row">' +
-                    '<div class="checkin-today-left">' +
+                    '<li class="checkin-today-row checkin-member-row checkin-rank-row">' +
+                    memberAvatarImgHtml(row) +
+                    '<div class="checkin-member-main">' +
                     '<span class="checkin-today-id">' +
-                    esc(id) +
+                    esc(bid) +
                     '</span>' +
-                    '<div class="checkin-today-meta">' +
-                    metaInner +
-                    '</div>' +
-                    '</div>' +
-                    '<div class="checkin-today-rightcol">' +
                     '<span class="checkin-today-duty">' +
                     esc(role) +
                     '</span>' +
+                    '</div>' +
                     '<span class="checkin-today-points">总积分 ' +
                     esc(String(pts)) +
                     '</span>' +
+                    '</li>'
+                );
+            })
+            .join('');
+    }
+
+    function renderTodaySignedList(list) {
+        var ul = document.getElementById('checkinTodaySignedList');
+        var cnt = document.getElementById('checkinTodaySignedCount');
+        if (cnt) cnt.textContent = String(Array.isArray(list) ? list.length : 0);
+        if (!ul) return;
+        if (!list || !list.length) {
+            ul.innerHTML = '<li class="checkin-today-empty">今日暂无签到</li>';
+            return;
+        }
+        ul.innerHTML = list
+            .map(function (row) {
+                var bid = memberBindingId(row);
+                var role = memberRoleLabel(row);
+                var timeTxt = formatSignedAtLabel(row);
+                return (
+                    '<li class="checkin-today-row checkin-member-row checkin-today-signed-row">' +
+                    memberAvatarImgHtml(row) +
+                    '<div class="checkin-member-main">' +
+                    '<span class="checkin-today-id">' +
+                    esc(bid) +
+                    '</span>' +
+                    '<span class="checkin-today-duty">' +
+                    esc(role) +
+                    '</span>' +
                     '</div>' +
+                    '<span class="checkin-today-time">' +
+                    esc(timeTxt) +
+                    ' 签到</span>' +
                     '</li>'
                 );
             })
@@ -663,6 +741,10 @@
         var cntSk = document.getElementById('checkinTodayCount');
         if (cntSk) cntSk.textContent = '0';
         if (ulSk) ulSk.innerHTML = '<li class="checkin-today-empty">加载中…</li>';
+        var ulSignedSk = document.getElementById('checkinTodaySignedList');
+        var cntSignedSk = document.getElementById('checkinTodaySignedCount');
+        if (cntSignedSk) cntSignedSk.textContent = '0';
+        if (ulSignedSk) ulSignedSk.innerHTML = '<li class="checkin-today-empty">加载中…</li>';
         renderMyHistory([], '加载中…');
         updateUnitStats(null);
     }
@@ -680,6 +762,10 @@
             }
             var cnt0 = document.getElementById('checkinTodayCount');
             if (cnt0) cnt0.textContent = '0';
+            var ulSigned0 = document.getElementById('checkinTodaySignedList');
+            var cntSigned0 = document.getElementById('checkinTodaySignedCount');
+            if (cntSigned0) cntSigned0.textContent = '0';
+            if (ulSigned0) ulSigned0.innerHTML = '<li class="checkin-today-empty">请刷新页面。</li>';
             renderMyHistory([], '请刷新页面。');
             updateUnitStats(null);
             applyPrimaryBtnFromSummary(null);
@@ -701,6 +787,9 @@
             renderCalendar(y, mo, signed, data.today || today);
             var rankList = data.memberRanking || data.todayList || [];
             renderTodayList(sortTodayList(rankList));
+            renderTodaySignedList(
+                Array.isArray(data.todaySignedMembers) ? data.todaySignedMembers : []
+            );
             updateUnitStats(data);
             renderMyHistory(Array.isArray(data.myHistoryDates) ? data.myHistoryDates : []);
             applyPrimaryBtnFromSummary(data);
@@ -717,6 +806,15 @@
             }
             var cnt = document.getElementById('checkinTodayCount');
             if (cnt) cnt.textContent = '0';
+            var ulSigned = document.getElementById('checkinTodaySignedList');
+            var cntSigned = document.getElementById('checkinTodaySignedCount');
+            if (cntSigned) cntSigned.textContent = '0';
+            if (ulSigned) {
+                ulSigned.innerHTML =
+                    '<li class="checkin-today-empty">' +
+                    (isLikelyNetworkError(e && e.message) ? '连不上服务' : '加载失败') +
+                    '</li>';
+            }
             updateUnitStats(null);
             renderMyHistory([], isLikelyNetworkError(e && e.message) ? '连不上服务' : '加载失败');
             applyPrimaryBtnFromSummary(null, true);

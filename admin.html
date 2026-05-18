@@ -621,6 +621,63 @@
             gap: 0.5rem;
             margin-top: 0.5rem;
         }
+        .admin-makeup-confirm-panel {
+            width: min(100%, 400px);
+            text-align: center;
+            overflow: hidden;
+        }
+        .admin-makeup-confirm-panel .modal-head {
+            justify-content: center;
+            margin-bottom: 0.15rem;
+        }
+        .admin-makeup-confirm-lead {
+            margin: 0 0 0.85rem;
+            font-size: 0.86rem;
+            color: var(--muted);
+        }
+        .admin-makeup-confirm-facts {
+            list-style: none;
+            margin: 0 0 0.75rem;
+            padding: 0.65rem 0.85rem;
+            border-radius: 12px;
+            border: 1px solid rgba(95, 184, 255, 0.22);
+            background: rgba(0, 0, 0, 0.28);
+            text-align: left;
+        }
+        .admin-makeup-confirm-facts li {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.35rem 0;
+            font-size: 0.82rem;
+        }
+        .admin-makeup-confirm-facts li + li {
+            border-top: 1px solid rgba(95, 184, 255, 0.1);
+        }
+        .admin-makeup-confirm-facts span {
+            color: var(--muted);
+            flex-shrink: 0;
+        }
+        .admin-makeup-confirm-facts strong {
+            color: var(--accent-hot);
+            font-weight: 700;
+            font-size: 0.92rem;
+            word-break: break-all;
+            text-align: right;
+        }
+        .admin-makeup-confirm-note {
+            margin: 0 0 0.35rem;
+            font-size: 0.76rem;
+            line-height: 1.45;
+        }
+        .admin-makeup-confirm-panel .modal-actions {
+            justify-content: center;
+            margin-top: 0.85rem;
+        }
+        .admin-makeup-confirm-panel .modal-actions button {
+            min-width: 6.5rem;
+        }
 
         #adminList {
             list-style: none;
@@ -653,6 +710,53 @@
             font-size: 0.76em;
         }
 
+        #secBranch .branch-help-details {
+            margin: 0.2rem 0 0.45rem;
+        }
+        #secBranch .branch-help-details summary {
+            list-style: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            user-select: none;
+            font-size: 0.82rem;
+            color: var(--muted);
+            padding: 0.2rem 0;
+        }
+        #secBranch .branch-help-details summary::-webkit-details-marker {
+            display: none;
+        }
+        #secBranch .branch-help-details summary::marker {
+            content: '';
+        }
+        #secBranch .branch-help-caret {
+            display: inline-block;
+            width: 0;
+            height: 0;
+            border-top: 0.32rem solid transparent;
+            border-bottom: 0.32rem solid transparent;
+            border-left: 0.48rem solid rgba(95, 212, 255, 0.75);
+            transition: transform 0.18s ease;
+            flex-shrink: 0;
+        }
+        #secBranch .branch-help-details[open] .branch-help-caret {
+            transform: rotate(90deg);
+        }
+        #secBranch .branch-help-details summary:hover {
+            color: var(--accent-hot);
+        }
+        #secBranch .branch-help-details summary:hover .branch-help-caret {
+            border-left-color: var(--accent-hot);
+        }
+        #secBranch .branch-help-body {
+            margin-top: 0.35rem;
+            padding-left: 0.15rem;
+        }
+        #secBranch .branch-help-body .hint {
+            margin: 0.15rem 0;
+            line-height: 1.55;
+        }
         #secBranch .branch-toolbar {
             display: flex;
             flex-wrap: wrap;
@@ -706,6 +810,8 @@
             --branch-row-h: 2.62rem;
             --branch-thead-h: 2.95rem;
             --branch-visible-rows: 20;
+            --branch-sticky-bg: #0c1a2c;
+            position: relative;
             overflow-x: auto;
             overflow-y: auto;
             max-width: 100%;
@@ -749,34 +855,108 @@
             user-select: none;
         }
         #secBranch .branch-grid-table {
+            --branch-sticky-id-w: 9rem;
+            --branch-sticky-adj-w: 12.5rem;
             width: max(100%, 1020px);
             border-collapse: separate;
             border-spacing: 0;
+            /* 覆盖全局 table { overflow: hidden }，否则 sticky 失效 */
+            overflow: visible;
+            border-radius: 0;
         }
         #secBranch .branch-grid-table th.branch-day-col,
         #secBranch .branch-grid-table td.branch-day-cell {
-            min-width: 1.55rem;
-            max-width: 2rem;
+            width: 1.7rem;
+            min-width: 1.7rem;
+            max-width: 1.7rem;
+            box-sizing: border-box;
             text-align: center;
             font-size: 0.68rem;
-            padding: 0.35rem 0.12rem;
+            padding: 0.35rem 0;
             font-variant-numeric: tabular-nums;
+            border-right: 1px dashed rgba(95, 184, 255, 0.2);
         }
+        #secBranch .branch-grid-table th.branch-day-grid-start,
+        #secBranch .branch-grid-table td.branch-day-grid-start {
+            border-left: 1px dashed rgba(95, 184, 255, 0.28);
+        }
+        #secBranch .branch-grid-table thead th.branch-day-col {
+            color: rgba(170, 210, 240, 0.92);
+            font-weight: 600;
+            letter-spacing: 0;
+        }
+        #secBranch .branch-grid-table th.branch-day-col-active,
+        #secBranch .branch-grid-table td.branch-day-cell-active {
+            background: rgba(95, 212, 255, 0.14) !important;
+        }
+        #secBranch .branch-grid-table tbody tr:hover td.branch-day-cell-active {
+            background: rgba(95, 212, 255, 0.22) !important;
+        }
+        #secBranch .branch-grid-table td.branch-day-makeupable {
+            cursor: pointer;
+        }
+        #secBranch .branch-grid-table td.branch-day-makeupable:hover {
+            background: rgba(95, 212, 255, 0.18);
+            color: var(--accent-hot);
+        }
+        #secBranch .branch-grid-table td.branch-day-signed {
+            color: var(--ok);
+        }
+        #secBranch .branch-grid-table td.branch-day-pending {
+            opacity: 0.45;
+            pointer-events: none;
+        }
+        /* 表头纵向滚动置顶；「绑定 ID」「调整值」两列横向钉在左侧 */
         #secBranch .branch-grid-table thead th {
             position: sticky;
             top: 0;
-            z-index: 5;
-            background: rgba(12, 26, 44, 0.99);
-            box-shadow: 0 1px 0 rgba(95, 184, 255, 0.16);
+            z-index: 8;
+            background: var(--branch-sticky-bg);
+            box-shadow: 0 1px 0 rgba(95, 184, 255, 0.2);
         }
-        #secBranch .branch-grid-table thead th:nth-child(1) {
-            z-index: 7;
+        #secBranch .branch-grid-table .branch-col-sticky-id {
+            position: sticky;
+            left: 0;
+            z-index: 12;
+            width: var(--branch-sticky-id-w);
+            min-width: var(--branch-sticky-id-w);
+            max-width: var(--branch-sticky-id-w);
+            background: var(--branch-sticky-bg);
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        #secBranch .branch-grid-table thead th:nth-child(2) {
-            z-index: 6;
+        #secBranch .branch-grid-table .branch-col-sticky-adj {
+            position: sticky;
+            left: var(--branch-sticky-id-w);
+            z-index: 11;
+            width: var(--branch-sticky-adj-w);
+            min-width: var(--branch-sticky-adj-w);
+            max-width: var(--branch-sticky-adj-w);
+            background: var(--branch-sticky-bg);
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.45);
         }
-        #secBranch .branch-grid-table thead th:nth-child(3) {
-            z-index: 6;
+        #secBranch .branch-grid-table thead .branch-col-sticky-id {
+            z-index: 22;
+            box-shadow:
+                0 1px 0 rgba(95, 184, 255, 0.2),
+                2px 0 12px rgba(0, 0, 0, 0.5);
+        }
+        #secBranch .branch-grid-table thead .branch-col-sticky-adj {
+            z-index: 21;
+            box-shadow:
+                0 1px 0 rgba(95, 184, 255, 0.2),
+                2px 0 12px rgba(0, 0, 0, 0.45);
+        }
+        #secBranch .branch-grid-table tbody tr:hover {
+            background: transparent;
+        }
+        #secBranch .branch-grid-table tbody tr:hover td:not(.branch-col-sticky-id):not(.branch-col-sticky-adj) {
+            background: rgba(95, 212, 255, 0.07);
+        }
+        #secBranch .branch-grid-table tbody tr:hover td.branch-col-sticky-id,
+        #secBranch .branch-grid-table tbody tr:hover td.branch-col-sticky-adj {
+            background: var(--branch-sticky-bg);
         }
         #secBranch .branch-grid-table th,
         #secBranch .branch-grid-table td {
@@ -784,35 +964,9 @@
             padding: 0.45rem 0.55rem;
             vertical-align: middle;
         }
-        #secBranch .branch-grid-table th:nth-child(1),
-        #secBranch .branch-grid-table td:nth-child(1) {
-            position: sticky;
-            left: 0;
-            z-index: 4;
-            min-width: 12rem;
-            background: rgba(8, 18, 36, 0.98);
-            box-shadow: 1px 0 0 rgba(95, 184, 255, 0.12);
-        }
-        #secBranch .branch-grid-table th:nth-child(2),
-        #secBranch .branch-grid-table td:nth-child(2) {
-            position: sticky;
-            left: 12rem;
-            z-index: 3;
-            min-width: 7.5rem;
-            background: rgba(8, 18, 36, 0.98);
-            box-shadow: 1px 0 0 rgba(95, 184, 255, 0.12);
-        }
-        #secBranch .branch-grid-table th:nth-child(3),
-        #secBranch .branch-grid-table td:nth-child(3) {
-            position: sticky;
-            left: calc(12rem + 7.5rem);
-            z-index: 2;
-            min-width: 11rem;
-            max-width: 14rem;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            background: rgba(8, 18, 36, 0.98);
-            box-shadow: 1px 0 0 rgba(95, 184, 255, 0.12);
+        #secBranch .branch-grid-table td.branch-col-sticky-adj {
+            display: table-cell;
+            vertical-align: middle;
         }
         #secBranch .branch-adj-cell {
             display: inline-flex;
@@ -821,7 +975,16 @@
             gap: 0.35rem;
         }
         #secBranch .branch-grid-table th.branch-adj-th {
-            min-width: 12rem;
+            min-width: var(--branch-sticky-adj-w);
+        }
+        #secBranch .branch-sticky-toolbar {
+            position: sticky;
+            top: 3.65rem;
+            z-index: 35;
+            margin: 0 -0.15rem;
+            padding: 0.35rem 0.15rem 0.5rem;
+            background: linear-gradient(180deg, rgba(12, 24, 46, 0.97) 0%, rgba(12, 24, 46, 0.92) 85%, rgba(12, 24, 46, 0) 100%);
+            backdrop-filter: blur(10px);
         }
         #secBranch .branch-export-panel {
             margin-top: 0.75rem;
@@ -1029,6 +1192,7 @@
 
             <section id="secBranch">
                 <h2>分部积分</h2>
+                <div class="branch-sticky-toolbar">
                 <div class="branch-toolbar">
                     <label>分部 <select id="branchSel">
                         <option value="hq">总部</option>
@@ -1051,21 +1215,31 @@
                     />
                     <span id="branchFilterCount"></span>
                 </div>
-                <p id="branchWindowHint" class="hint"></p>
-                <p class="hint" style="margin-top: 0.15rem">
-                    本表按总积分降序排列。<br />
-                    本月签到、积分、未签为北京时间当月汇总；后面日期为每日签到状态，√代表已签。<br />
-                    列表默认显示约 20 行，更多成员用右侧青蓝滚动条上下滑动；表头固定置顶。<br />
-                    表格过宽时，在空白处按住左键可左右拖拽平移。<br />
-                    最左三列固定：调整、绑定 ID、邮箱。<br />
-                    「下载当前月 xlsx」包含全部列（需先刷新）；下方可多选月份批量导出，每月单独一个工作表。
-                </p>
+                </div>
+                <details class="branch-help-details">
+                    <summary>
+                        <span class="branch-help-caret" aria-hidden="true"></span>
+                        使用说明
+                    </summary>
+                    <div class="branch-help-body">
+                        <p id="branchWindowHint" class="hint"></p>
+                        <p class="hint">
+                            本表按总积分降序排列。<br />
+                            本月签到、积分、未签为北京时间当月汇总；后面日期为每日签到状态，√代表已签。<br />
+                            未签日期格可<strong>点击补签</strong>（仅限今日及以前；积分与当日实际签到一致，无记录时按分部当前设置）。<br />
+                            列表默认显示约 20 行，更多成员用右侧青蓝滚动条上下滑动；表头固定置顶。<br />
+                            表格过宽时，在空白处按住左键可左右拖拽平移。<br />
+                            横向滚动时<strong>「绑定 ID」与「调整值」</strong>两列始终钉在左侧；日期列有浅色虚线，鼠标悬停可高亮整列便于上下对照补签。<br />
+                            「下载当前月 xlsx」包含全部列（需先刷新）；下方可多选月份批量导出，每月单独一个工作表。
+                        </p>
+                    </div>
+                </details>
                 <div class="branch-table-wrap" id="branchTableScrollWrap">
                     <table class="branch-grid-table">
                         <thead>
                             <tr id="branchTheadRow">
-                                <th class="branch-adj-th">调整值（可负）</th>
-                                <th>绑定 ID</th>
+                                <th class="branch-col-sticky-id">绑定 ID</th>
+                                <th class="branch-adj-th branch-col-sticky-adj">调整值（可负）</th>
                                 <th>邮箱</th>
                                 <th>基础分</th>
                                 <th>调整</th>
@@ -1078,12 +1252,9 @@
                         <tbody id="branchTbody"></tbody>
                     </table>
                 </div>
-                <p class="hint">在<strong>最左列「调整值」</strong>：先在输入框填写整数，再点左侧「应用」；每行已对应到具体用户。上方搜索在已加载列表上即时筛选；<strong>下载 xlsx 仍为该分部全部成员</strong>（不受搜索影响）。</p>
+                <p class="hint">在<strong>「调整值」列</strong>（绑定 ID 右侧）：先填整数再点「应用」。上方搜索在已加载列表上即时筛选；<strong>下载 xlsx 仍为该分部全部成员</strong>（不受搜索影响）。</p>
                 <div class="branch-export-panel">
-                    <p class="hint">
-                        批量导出：在下方勾选要导出的月份；月份较多时可在<strong>浅蓝色条带</strong>上<strong>点击偏左/偏右</strong>横向翻阅（不再使用底部细滚动条拖拽）。点按钮生成一个
-                        xlsx，<strong>每个勾选月份单独工作表</strong>（列与上表一致）。
-                    </p>
+                    <p class="hint">勾选月份后导出 xlsx，每月一表；月份多时点浅蓝条左右翻页。</p>
                     <div class="branch-export-months-outer">
                         <div id="branchExportMonths" aria-label="选择要导出的月份"></div>
                         <div
@@ -1156,6 +1327,35 @@
         </div>
     </div>
 
+    <div
+        id="makeupConfirmModal"
+        class="modal-backdrop"
+        hidden
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="makeupConfirmTitle"
+    >
+        <div class="modal-panel admin-makeup-confirm-panel" role="document">
+            <div class="modal-head">
+                <h3 id="makeupConfirmTitle">补签确认</h3>
+            </div>
+            <p class="admin-makeup-confirm-lead">将为该成员写入签到记录</p>
+            <ul class="admin-makeup-confirm-facts">
+                <li><span>绑定 ID</span><strong id="makeupConfirmBid"></strong></li>
+                <li><span>日期</span><strong id="makeupConfirmDate"></strong></li>
+                <li><span>分部</span><strong id="makeupConfirmBranch"></strong></li>
+                <li><span>补签积分</span><strong id="makeupConfirmPoints">—</strong></li>
+            </ul>
+            <p class="hint admin-makeup-confirm-note" id="makeupConfirmPointsHint">
+                若该日已有他人签到，按当日实际签到积分；否则按当前分部签到积分设置。补签后不可在此界面撤销。
+            </p>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" id="makeupConfirmCancel">取消</button>
+                <button type="button" id="makeupConfirmOk">确认补签</button>
+            </div>
+        </div>
+    </div>
+
     <script src="auth-api.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script>
@@ -1207,6 +1407,9 @@
             var branchExportPanWired = false;
             var branchFilterWired = false;
             var branchTableDragWired = false;
+            var branchDayColHighlightWired = false;
+            var makeupConfirmWired = false;
+            var makeupConfirmResolver = null;
 
             function esc(s) {
                 return String(s == null ? '' : s)
@@ -1223,6 +1426,73 @@
                     el.textContent = msg;
                     el.hidden = false;
                 } else el.hidden = true;
+            }
+
+            function closeMakeupConfirmModal(confirmed) {
+                var modal = document.getElementById('makeupConfirmModal');
+                if (modal) modal.hidden = true;
+                if (makeupConfirmResolver) {
+                    var resolve = makeupConfirmResolver;
+                    makeupConfirmResolver = null;
+                    resolve(!!confirmed);
+                }
+            }
+
+            function wireMakeupConfirmModalOnce() {
+                if (makeupConfirmWired) return;
+                makeupConfirmWired = true;
+                var modal = document.getElementById('makeupConfirmModal');
+                var btnOk = document.getElementById('makeupConfirmOk');
+                var btnCancel = document.getElementById('makeupConfirmCancel');
+                if (!modal || !btnOk || !btnCancel) return;
+                btnOk.addEventListener('click', function () {
+                    closeMakeupConfirmModal(true);
+                });
+                btnCancel.addEventListener('click', function () {
+                    closeMakeupConfirmModal(false);
+                });
+                modal.addEventListener('click', function (e) {
+                    if (e.target === modal) closeMakeupConfirmModal(false);
+                });
+                document.addEventListener('keydown', function (e) {
+                    if (e.key !== 'Escape' || modal.hidden) return;
+                    closeMakeupConfirmModal(false);
+                });
+            }
+
+            function openMakeupConfirmModal(opts) {
+                wireMakeupConfirmModalOnce();
+                var modal = document.getElementById('makeupConfirmModal');
+                var bidEl = document.getElementById('makeupConfirmBid');
+                var dateEl = document.getElementById('makeupConfirmDate');
+                var branchEl = document.getElementById('makeupConfirmBranch');
+                if (!modal || !bidEl || !dateEl || !branchEl) {
+                    return Promise.resolve(false);
+                }
+                bidEl.textContent = opts.bindingId || '—';
+                dateEl.textContent = opts.date || '—';
+                branchEl.textContent = opts.branchLabel || opts.branch || '—';
+                var ptsEl = document.getElementById('makeupConfirmPoints');
+                var ptsHint = document.getElementById('makeupConfirmPointsHint');
+                if (ptsEl) {
+                    if (opts.points != null && Number.isFinite(Number(opts.points))) {
+                        ptsEl.textContent = String(opts.points);
+                    } else {
+                        ptsEl.textContent = '…';
+                    }
+                }
+                if (ptsHint) {
+                    ptsHint.textContent =
+                        opts.pointsSource === 'same_day'
+                            ? '该日已有签到记录，补签积分与当日他人签到一致。补签后不可在此界面撤销。'
+                            : '该日尚无签到记录，按当前分部签到积分设置计分。补签后不可在此界面撤销。';
+                }
+                modal.hidden = false;
+                var btnFocus = document.getElementById('makeupConfirmOk');
+                if (btnFocus && typeof btnFocus.focus === 'function') btnFocus.focus();
+                return new Promise(function (resolve) {
+                    makeupConfirmResolver = resolve;
+                });
             }
 
             async function init() {
@@ -1274,6 +1544,7 @@
                 renderBranchMonthExportChoices();
                 wireBranchExportPanOnce();
                 wireBranchFilterOnce();
+                wireBranchDayColumnHighlightOnce();
                 wireBranchTableDragScrollOnce();
                 document.getElementById('btnAddAdmin').onclick = addAdmin;
                 document.getElementById('btnSaveSchedule').onclick = saveSchedule;
@@ -1555,6 +1826,19 @@
                 return y + '-' + m;
             }
 
+            function shanghaiTodayDateKey() {
+                var p = new Intl.DateTimeFormat('en-CA', {
+                    timeZone: 'Asia/Shanghai',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                }).formatToParts(new Date());
+                var y = p.find(function (x) { return x.type === 'year'; }).value;
+                var m = p.find(function (x) { return x.type === 'month'; }).value;
+                var day = p.find(function (x) { return x.type === 'day'; }).value;
+                return y + '-' + m + '-' + day;
+            }
+
             function shiftMonth(y, m, delta) {
                 var nm = m + delta;
                 var ny = y;
@@ -1653,12 +1937,17 @@
                 if (!Number.isFinite(lastD) || lastD < 28) lastD = 31;
                 if (lastD > 31) lastD = 31;
                 var fixed = ['绑定 ID', '邮箱', '基础分', '调整', '总积分', '本月签到（天）', '本月签到积分', '本月未签（天）'];
-                var html = '<th class="branch-adj-th">调整值（可负）</th>';
-                for (var i = 0; i < fixed.length; i++) html += '<th>' + fixed[i] + '</th>';
-                for (var d = 1; d <= lastD; d++) html += '<th class="branch-day-col">' + d + '</th>';
+                var html =
+                    '<th class="branch-col-sticky-id">绑定 ID</th>' +
+                    '<th class="branch-adj-th branch-col-sticky-adj">调整值（可负）</th>';
+                for (var i = 1; i < fixed.length; i++) html += '<th>' + fixed[i] + '</th>';
+                for (var d = 1; d <= lastD; d++) {
+                    var thCls = 'branch-day-col' + (d === 1 ? ' branch-day-grid-start' : '');
+                    html += '<th class="' + thCls + '">' + d + '</th>';
+                }
                 tr.innerHTML = html;
                 var tbl = document.querySelector('#secBranch .branch-grid-table');
-                if (tbl) tbl.style.minWidth = Math.max(960, 720 + lastD * 28) + 'px';
+                if (tbl) tbl.style.minWidth = Math.max(960, 720 + lastD * 30) + 'px';
             }
 
             /** 分部积分导出为二维数组：固定列在前，1～当月最后一天在最右侧（避免 json 键 "1" 等被排至最前）。 */
@@ -1804,23 +2093,53 @@
                 return bid.indexOf(t) >= 0 || em.indexOf(t) >= 0;
             }
 
-            function buildBranchRankingRowElement(r, lastD, branch, token) {
+            function branchPad2(n) {
+                return String(n).padStart(2, '0');
+            }
+
+            function buildBranchRankingRowElement(r, lastD, branch, token, statsYear, statsMonth, branchLabel) {
                 var uid = r.userId || '';
                 var miss = r.monthMissedDays;
                 var missTxt = miss == null ? '—' : String(miss);
                 var daily = r.monthDailySigns;
+                var todayKey = shanghaiTodayDateKey();
                 var dayHtml = '';
                 for (var di = 1; di <= lastD; di++) {
                     var signed = daily && Number(daily[di - 1]) === 1;
-                    dayHtml += '<td class="branch-day-cell">' + (signed ? '√' : '') + '</td>';
+                    var dateKey =
+                        String(statsYear) + '-' + branchPad2(statsMonth) + '-' + branchPad2(di);
+                    var canMakeup = !signed && dateKey <= todayKey;
+                    var cellCls =
+                        'branch-day-cell' +
+                        (di === 1 ? ' branch-day-grid-start' : '') +
+                        (signed ? ' branch-day-signed' : canMakeup ? ' branch-day-makeupable' : '');
+                    var title = signed
+                        ? '已签'
+                        : canMakeup
+                          ? '点击补签 ' + dateKey
+                          : dateKey > todayKey
+                            ? '未到日期'
+                            : '';
+                    dayHtml +=
+                        '<td class="' +
+                        cellCls +
+                        '" data-date="' +
+                        esc(dateKey) +
+                        '" data-uid="' +
+                        esc(uid) +
+                        '" title="' +
+                        esc(title) +
+                        '">' +
+                        (signed ? '√' : '') +
+                        '</td>';
                 }
                 var tr = document.createElement('tr');
                 tr.innerHTML =
-                    '<td class="branch-adj-cell"><button type="button" class="adj-go">应用</button> <input type="number" class="adj-delta" style="width:4.5rem" step="1" /><input type="hidden" class="adj-uid" value="' +
+                    '<td class="branch-col-sticky-id">' +
+                    esc(r.bindingId) +
+                    '</td><td class="branch-adj-cell branch-col-sticky-adj"><button type="button" class="adj-go">应用</button> <input type="number" class="adj-delta" style="width:4.5rem" step="1" /><input type="hidden" class="adj-uid" value="' +
                     esc(uid) +
                     '" /></td><td>' +
-                    esc(r.bindingId) +
-                    '</td><td>' +
                     esc(r.email || '') +
                     '</td><td>' +
                     (r.branchPointsBase != null ? r.branchPointsBase : '') +
@@ -1854,6 +2173,55 @@
                             showErr('branchErr', (e && e.message) || '调整失败');
                         });
                 };
+                tr.querySelectorAll('.branch-day-makeupable').forEach(function (td) {
+                    td.addEventListener('click', function (ev) {
+                        ev.stopPropagation();
+                        if (!token) {
+                            alert('请先登录');
+                            return;
+                        }
+                        var hid = td.getAttribute('data-uid') || '';
+                        var dateKey = td.getAttribute('data-date') || '';
+                        if (!hid || !dateKey) {
+                            alert('无法识别该格，请刷新列表后重试。');
+                            return;
+                        }
+                        var bid = r.bindingId || hid;
+                        var previewPromise = window.UssAuthApi.adminCheckinMakeupPoints
+                            ? window.UssAuthApi.adminCheckinMakeupPoints(token, branch, dateKey).catch(
+                                  function () {
+                                      return { points: null, source: null };
+                                  }
+                              )
+                            : Promise.resolve({ points: null, source: null });
+                        previewPromise.then(function (prev) {
+                            return openMakeupConfirmModal({
+                                bindingId: bid,
+                                date: dateKey,
+                                branch: branch,
+                                branchLabel: branchLabel,
+                                points: prev && prev.points != null ? prev.points : null,
+                                pointsSource: prev && prev.source ? prev.source : null,
+                            });
+                        }).then(function (ok) {
+                            if (!ok) return;
+                            td.classList.add('branch-day-pending');
+                            window.UssAuthApi
+                                .adminCheckinMakeup(token, {
+                                    userId: hid,
+                                    branch: branch,
+                                    date: dateKey,
+                                })
+                                .then(function () {
+                                    return loadBranch();
+                                })
+                                .catch(function (e) {
+                                    td.classList.remove('branch-day-pending');
+                                    showErr('branchErr', (e && e.message) || '补签失败');
+                                });
+                        });
+                    });
+                });
                 return tr;
             }
 
@@ -1869,6 +2237,9 @@
                 var q = filtEl && filtEl.value ? String(filtEl.value) : '';
                 var lastD = snap.statsMonthLastDay;
                 var branch = snap.branch;
+                var branchLabel = snap.branchLabel || branch;
+                var statsYear = snap.statsYear;
+                var statsMonth = snap.statsMonth;
                 var s = loadSess();
                 var token = s && s.token ? s.token : '';
                 var all = snap.rows;
@@ -1876,7 +2247,17 @@
                     return branchRankingRowMatchesFilter(row, q);
                 });
                 rows.forEach(function (r) {
-                    tb.appendChild(buildBranchRankingRowElement(r, lastD, branch, token));
+                    tb.appendChild(
+                        buildBranchRankingRowElement(
+                            r,
+                            lastD,
+                            branch,
+                            token,
+                            statsYear,
+                            statsMonth,
+                            branchLabel
+                        )
+                    );
                 });
                 if (countEl) {
                     var trimmed = String(q || '').trim();
@@ -1902,6 +2283,53 @@
                 });
             }
 
+            function wireBranchDayColumnHighlightOnce() {
+                if (branchDayColHighlightWired) return;
+                var wrap = document.getElementById('branchTableScrollWrap');
+                if (!wrap) return;
+                branchDayColHighlightWired = true;
+                var activeCol = -1;
+                function clearDayColHighlight() {
+                    if (activeCol < 0) return;
+                    var tbl = wrap.querySelector('.branch-grid-table');
+                    if (tbl) {
+                        tbl.querySelectorAll('.branch-day-col-active, .branch-day-cell-active').forEach(
+                            function (el) {
+                                el.classList.remove('branch-day-col-active', 'branch-day-cell-active');
+                            }
+                        );
+                    }
+                    activeCol = -1;
+                }
+                function setDayColHighlight(colIdx) {
+                    if (colIdx === activeCol) return;
+                    clearDayColHighlight();
+                    activeCol = colIdx;
+                    var tbl = wrap.querySelector('.branch-grid-table');
+                    if (!tbl) return;
+                    tbl.querySelectorAll('thead tr, tbody tr').forEach(function (tr) {
+                        var cell = tr.children[colIdx];
+                        if (!cell) return;
+                        if (cell.classList.contains('branch-day-col')) {
+                            cell.classList.add('branch-day-col-active');
+                        } else if (cell.classList.contains('branch-day-cell')) {
+                            cell.classList.add('branch-day-cell-active');
+                        }
+                    });
+                }
+                wrap.addEventListener('mouseover', function (e) {
+                    var cell = e.target.closest('.branch-day-cell, .branch-day-col');
+                    if (!cell) {
+                        clearDayColHighlight();
+                        return;
+                    }
+                    setDayColHighlight(cell.cellIndex);
+                });
+                wrap.addEventListener('mouseleave', function (e) {
+                    if (!e.relatedTarget || !wrap.contains(e.relatedTarget)) clearDayColHighlight();
+                });
+            }
+
             function wireBranchTableDragScrollOnce() {
                 if (branchTableDragWired) return;
                 var el = document.getElementById('branchTableScrollWrap');
@@ -1913,7 +2341,9 @@
                 var scrollAtDown = 0;
                 function isInteractiveTarget(t) {
                     if (!t || typeof t.closest !== 'function') return false;
-                    return !!t.closest('input, textarea, button, select, a, label');
+                    return !!t.closest(
+                        'input, textarea, button, select, a, label, .branch-day-makeupable'
+                    );
                 }
                 function onPointerMove(e) {
                     if (!pressed) return;

@@ -463,13 +463,91 @@
     margin: 0;
 }
 
+.checkin-unit-today-section {
+    margin-bottom: 1.35rem;
+}
+
+.checkin-unit-today-section .checkin-stats-title,
+.checkin-unit-rank-section .checkin-stats-title {
+    margin-top: 0.5rem;
+}
+
 .checkin-unit-rank-section {
     margin-top: 0;
 }
 
-.checkin-unit-rank-section .checkin-stats-title {
-    margin-top: 0.5rem;
+.checkin-today-signed-list {
+    max-height: min(40vh, 20rem);
 }
+
+.checkin-member-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.checkin-today-signed-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.checkin-member-avatar {
+    width: 2.75rem;
+    height: 2.75rem;
+    flex-shrink: 0;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid rgba(95, 184, 255, 0.28);
+    background: rgba(0, 0, 0, 0.35);
+    box-shadow: 0 0 12px rgba(95, 184, 255, 0.12);
+}
+
+.checkin-member-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+}
+
+.checkin-today-signed-row .checkin-today-time,
+.checkin-rank-row .checkin-today-points {
+    margin-left: auto;
+    align-self: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.checkin-rank-row .checkin-today-points {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: rgba(150, 230, 200, 0.98);
+    letter-spacing: 0.03em;
+}
+
+.checkin-member-row .checkin-today-id,
+.checkin-today-signed-row .checkin-today-id {
+    font-size: 0.98rem;
+    line-height: 1.25;
+}
+
+.checkin-member-row .checkin-today-duty,
+.checkin-today-signed-row .checkin-today-duty {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: rgba(200, 225, 245, 0.88);
+}
+
+.checkin-today-time {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: rgba(158, 232, 200, 0.98);
+    letter-spacing: 0.04em;
+    line-height: 1.25;
+}
+
 
 .checkin-calendar-scope-hint {
     margin: 0 0 1rem;

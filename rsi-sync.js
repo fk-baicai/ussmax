@@ -1,5 +1,5 @@
 /**
- * 浏览器抓取 RSI 后提交本站后端保存（不经过服务器访问 RSI HTML）。
+ * 浏览器抓取 RSI 公民页后提交本站后端保存（不拉 HTML；头像 URL 由服务器下载落盘）。
  */
 (function (global) {
     'use strict';

@@ -247,6 +247,21 @@
                 body: JSON.stringify(body || {}),
             });
         },
+        async adminCheckinMakeup(token, body) {
+            return adminJson(token, '/api/admin/checkin/makeup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body || {}),
+            });
+        },
+        async adminCheckinMakeupPoints(token, branch, date) {
+            var q =
+                '/api/admin/checkin/makeup-points?branch=' +
+                encodeURIComponent(branch) +
+                '&date=' +
+                encodeURIComponent(date);
+            return adminJson(token, q);
+        },
         async adminGetSchedule(token) {
             return adminJson(token, '/api/admin/checkin/schedule');
         },

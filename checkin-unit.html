@@ -67,7 +67,7 @@
                         <button type="button" id="checkinPrimaryBtn" class="checkin-primary-btn">今日签到</button>
                     </div>
 
-                    <details class="checkin-my-history-box checkin-panel">
+                    <details class="checkin-my-history-box checkin-panel" open>
                         <summary class="checkin-my-history-summary">签到历史</summary>
                         <div id="checkinMyHistoryNav" class="checkin-my-history-nav" aria-label="签到月份">
                             <div class="checkin-history-month-wrap">
@@ -97,9 +97,16 @@
                 </aside>
             </div>
 
+            <section class="checkin-unit-today-section checkin-panel" aria-labelledby="checkinTodaySignedTitle">
+                <h2 id="checkinTodaySignedTitle" class="checkin-panel-title checkin-rank-block-title">今日签到成员</h2>
+                <p class="checkin-stats-hint">北京时间当日已签成员：头像、绑定 ID、职务；右侧为签到时间。</p>
+                <p class="checkin-stats-title">共 <span id="checkinTodaySignedCount">0</span> 人</p>
+                <ul id="checkinTodaySignedList" class="checkin-today-list checkin-today-signed-list"></ul>
+            </section>
+
             <section class="checkin-unit-rank-section checkin-panel" aria-labelledby="checkinRankSectionTitle">
                 <h2 id="checkinRankSectionTitle" class="checkin-panel-title checkin-rank-block-title">分部成员总积分排行</h2>
-                <p class="checkin-stats-hint">凡在本分部有过签到的成员均在下表；按总积分从高到低。各分部数据独立。</p>
+                <p class="checkin-stats-hint">凡在本分部有过签到的成员；展示头像、绑定 ID、职务，右侧为总积分（从高到低）。</p>
                 <p class="checkin-stats-title">共 <span id="checkinTodayCount">0</span> 人</p>
                 <ul id="checkinTodayList" class="checkin-today-list"></ul>
             </section>
