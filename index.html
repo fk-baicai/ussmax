@@ -1160,13 +1160,13 @@
             return payload;
         }
 
-        /** 用户浏览器访问 RSI 公民页并同步到本站（走用户 IP） */
-        async function syncRsiProfileViaBrowser(token, bindingId, options) {
-            if (!window.UssRsiSync || !token || !bindingId) return null;
+        /** 服务端重新抓取 RSI 并覆盖用户资料（登录接口已执行一次，此处可作兜底） */
+        async function refreshUserRsiFromServer(token) {
+            if (!window.UssRsiSync || !token) return null;
             try {
-                return await window.UssRsiSync.syncUserRsiFromBrowser(token, bindingId, options || {});
+                return await window.UssRsiSync.refreshUserRsiOnAuth(token);
             } catch (e) {
-                console.warn('[rsi] 浏览器同步失败', e && e.message ? e.message : e);
+                console.warn('[rsi] 服务端同步失败', e && e.message ? e.message : e);
                 return null;
             }
         }
@@ -4182,10 +4182,6 @@
                     remember,
                     { loginAt: new Date().toISOString() }
                 );
-                const synced = await syncRsiProfileViaBrowser(res.token, res.user, { force: true });
-                if (synced) {
-                    saveAuthSessionFromUser(res.token, synced, remember);
-                }
                 refreshNavLoginState();
                 loadCommunityChatFull();
                 if (loginBtn) {

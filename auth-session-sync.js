@@ -1,5 +1,5 @@
 /**
- * 各页面载入时刷新 /api/me 会话字段（不抓取 RSI；RSI 仅在登录时同步）。
+ * 各页面载入时刷新 /api/me 会话字段（不抓取 RSI；RSI 在登录/注册时由服务端抓取并覆盖写库）。
  */
 (function (global) {
     'use strict';

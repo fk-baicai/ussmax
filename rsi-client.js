@@ -87,7 +87,9 @@
         if (!rsiOrgLogoUrl) {
             var heaps = doc.querySelectorAll('img[src*="heap_infobox"]');
             for (var hj = 0; hj < heaps.length; hj++) {
-                var hs = String(heaps[hj].getAttribute('src') || '');
+                var imgEl = heaps[hj];
+                if (imgEl.closest('.profile.left-col .thumb, .left-col.profile .thumb, .profile .thumb')) continue;
+                var hs = String(imgEl.getAttribute('src') || '');
                 if (!rsiOrgSid || hs.indexOf(rsiOrgSid) !== -1) {
                     rsiOrgLogoUrl = resolveRsiUrl(hs);
                     break;
@@ -127,10 +129,20 @@
                 ent.querySelector('span.label') ? ent.querySelector('span.label').textContent : ''
             );
             if (!labN) continue;
-            if (/organization\s+rank|组织.*职|舰队职务|职务/i.test(labN)) {
-                var roleEl = ent.querySelector('strong.value');
-                var t = roleEl ? roleEl.textContent.trim() : '';
-                if (t) rsiOrgRoleLabel = t;
+            if (/organization\s+rank|组织.*职|舰队职务|组织等级|职务/i.test(labN)) {
+                var roleVals = ent.querySelectorAll('strong.value');
+                for (var rv = 0; rv < roleVals.length; rv++) {
+                    var t = roleVals[rv].textContent.trim();
+                    if (t && t !== rsiOrgName && !/^\d+$/.test(t)) rsiOrgRoleLabel = t;
+                }
+            }
+        }
+
+        if (!rsiOrgRoleLabel && container) {
+            var data7 = container.querySelector('strong.value.data7');
+            if (data7) {
+                var d7 = data7.textContent.trim();
+                if (d7 && d7 !== rsiOrgName && !/^\d+$/.test(d7)) rsiOrgRoleLabel = d7;
             }
         }
 
@@ -207,22 +219,84 @@
         };
     }
 
+    /** RSI 公民头像：profile 卡片内 .thumb img（URL 可能为 heap_infobox 或 heap_thumb） */
+    function extractProfileThumbAvatarUrl(doc) {
+        var profileCol = doc.querySelector('.profile.left-col') || doc.querySelector('.left-col.profile');
+        if (!profileCol) return null;
+        var thumb = profileCol.querySelector('.thumb img');
+        if (!thumb) return null;
+        return resolveRsiUrl(thumb.getAttribute('src') || thumb.getAttribute('data-src'));
+    }
+
+    function isOrgLogoAssetUrl(url) {
+        var u = String(url || '').toLowerCase();
+        if (!u) return true;
+        if (/-logo\.|\/orgs\/|orglogo|organizationlogo|5000-logo/i.test(u)) return true;
+        if (/\/en\/citizens\/[a-z0-9_-]+\/?$/i.test(u)) return true;
+        return false;
+    }
+
+    function scoreCitizenAvatarUrl(url) {
+        if (isOrgLogoAssetUrl(url)) return 0;
+        var u = String(url || '').toLowerCase();
+        if (/heap_thumb/.test(u)) return 100;
+        if (/heap_infobox/.test(u)) return 95;
+        if (/\.thumb\.|\/thumb\/|\/thumb\./.test(u)) return 90;
+        if (/avatar|profile/.test(u)) return 70;
+        if (/\.(jpe?g|png|webp|gif|avif)(\?|#|$)/.test(u)) return 50;
+        return 20;
+    }
+
+    function rankCitizenAvatarCandidates(list) {
+        var uniq = [];
+        var seen = {};
+        for (var i = 0; i < list.length; i++) {
+            var u = list[i];
+            if (!u || seen[u]) continue;
+            seen[u] = true;
+            if (scoreCitizenAvatarUrl(u) <= 0) continue;
+            uniq.push(u);
+        }
+        uniq.sort(function (a, b) {
+            return scoreCitizenAvatarUrl(b) - scoreCitizenAvatarUrl(a);
+        });
+        return uniq;
+    }
+
     function isLikelyCitizenAvatarUrl(url) {
         var u = String(url || '').toLowerCase();
         if (!u || u.indexOf('data:') === 0) return false;
+        if (isOrgLogoAssetUrl(url)) return false;
         if (/\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i.test(u)) return true;
-        return /\/media\/|citizen|avatar|thumb|profile|heap_infobox|cloudfront/i.test(u);
+        return /\/media\/|citizen|avatar|thumb|profile|heap_thumb|heap_infobox|cloudfront|theverse\./i.test(u);
+    }
+
+    function pushImgAttrs(pushFn, img) {
+        if (!img) return;
+        pushFn(img.getAttribute('src'));
+        pushFn(img.getAttribute('data-src'));
+        var srcset = img.getAttribute('srcset') || img.getAttribute('data-srcset');
+        if (srcset) {
+            var parts = String(srcset).split(',');
+            for (var si = 0; si < parts.length; si++) {
+                var piece = parts[si].trim().split(/\s+/)[0];
+                pushFn(piece);
+            }
+        }
     }
 
     function collectCitizenAvatarCandidates(doc, normalizedHandle) {
+        var primary = extractProfileThumbAvatarUrl(doc);
         var seen = {};
         var out = [];
-        function push(raw) {
+        function push(raw, force) {
             var url = resolveRsiUrl(raw);
-            if (!url || seen[url] || !isLikelyCitizenAvatarUrl(url)) return;
+            if (!url || seen[url]) return;
+            if (!force && !isLikelyCitizenAvatarUrl(url)) return;
             seen[url] = true;
             out.push(url);
         }
+        if (primary) push(primary, true);
         var thumbSels = [
             '.profile.left-col .thumb img',
             '.left-col.profile .thumb img',
@@ -232,25 +306,34 @@
             '.profile.left-col img',
         ];
         for (var ti = 0; ti < thumbSels.length; ti++) {
-            var img = doc.querySelector(thumbSels[ti]);
-            if (!img) continue;
-            push(img.getAttribute('src'));
-            push(img.getAttribute('data-src'));
+            pushImgAttrs(function (raw) {
+                push(raw, false);
+            }, doc.querySelector(thumbSels[ti]));
+        }
+        var profileCol = doc.querySelector('.profile.left-col') || doc.querySelector('.left-col.profile');
+        if (profileCol) {
+            var thumbWrap = profileCol.querySelector('.thumb');
+            if (thumbWrap) {
+                pushImgAttrs(function (raw) {
+                    push(raw, true);
+                }, thumbWrap.querySelector('img'));
+            }
         }
         var metas = doc.querySelectorAll(
             'meta[property="og:image"], meta[property="og:image:url"], meta[name="twitter:image"]'
         );
         for (var mi = 0; mi < metas.length; mi++) {
-            push(metas[mi].getAttribute('content'));
+            push(metas[mi].getAttribute('content'), false);
         }
         var links = doc.querySelectorAll('link[rel="image_src"]');
         for (var li = 0; li < links.length; li++) {
-            push(links[li].getAttribute('href'));
+            push(links[li].getAttribute('href'), false);
         }
         var imgs = doc.querySelectorAll('img[src*="citizen"], img[src*="/media/"], img[data-src*="citizen"]');
         for (var ii = 0; ii < imgs.length; ii++) {
-            push(imgs[ii].getAttribute('src'));
-            push(imgs[ii].getAttribute('data-src'));
+            if (imgs[ii].closest('.profile.left-col .thumb, .left-col.profile .thumb, .profile .thumb')) continue;
+            push(imgs[ii].getAttribute('src'), false);
+            push(imgs[ii].getAttribute('data-src'), false);
         }
         var scripts = doc.querySelectorAll('script[type="application/ld+json"]');
         for (var si = 0; si < scripts.length; si++) {
@@ -260,8 +343,8 @@
                 while (stack.length) {
                     var node = stack.pop();
                     if (!node || typeof node !== 'object') continue;
-                    if (typeof node.image === 'string') push(node.image);
-                    else if (node.image && node.image.url) push(node.image.url);
+                    if (typeof node.image === 'string') push(node.image, false);
+                    else if (node.image && node.image.url) push(node.image.url, false);
                     for (var k in node) {
                         if (node.hasOwnProperty(k) && node[k] && typeof node[k] === 'object') {
                             stack.push(node[k]);
@@ -280,11 +363,18 @@
             while ((m = re.exec(html))) {
                 var u = m[0];
                 if (!/citizen|\/media\/|avatar|thumb/i.test(u)) continue;
-                if (u.toLowerCase().indexOf(handle) < 0 && !/heap_infobox|profile|thumb/i.test(u)) continue;
-                push(u);
+                if (u.toLowerCase().indexOf(handle) < 0 && !/heap_thumb|profile|thumb/i.test(u)) continue;
+                push(u, false);
             }
         }
-        return out;
+        var ranked = rankCitizenAvatarCandidates(out);
+        if (primary) {
+            ranked = ranked.filter(function (u) {
+                return u !== primary;
+            });
+            ranked.unshift(primary);
+        }
+        return ranked;
     }
 
     function parseCitizenAvatarUrl(doc, normalizedHandle) {

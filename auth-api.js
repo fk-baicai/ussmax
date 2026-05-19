@@ -89,7 +89,11 @@
             return data;
         },
 
-        /** 提交浏览器抓取的 RSI 公民页资料（服务器不再主动访问 RSI HTML） */
+        /** 服务端重新抓取 RSI 公民页并全量覆盖用户资料（登录/注册与手动刷新） */
+        async refreshRsiProfile(token) {
+            return this.syncRsiProfile(token, { refreshFromWeb: true, forceLoginSync: true });
+        },
+
         async syncRsiProfile(token, payload) {
             var r = await fetch(joinUrl('/api/me/rsi-sync'), {
                 method: 'POST',
@@ -97,7 +101,7 @@
                     'Content-Type': 'application/json',
                     Authorization: 'Bearer ' + token,
                 },
-                body: JSON.stringify(payload || {}),
+                body: JSON.stringify(payload || { refreshFromWeb: true }),
             });
             var data = await parseJson(r);
             if (!r.ok) throw new Error(data.message || '同步 RSI 资料失败');
