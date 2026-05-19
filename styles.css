@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300&display=swap');
+
 * {
     margin: 0;
     padding: 0;
@@ -42,33 +44,68 @@ body.home-page-body::before {
     z-index: 0;
 }
 
-body.home-page-body .navbar {
+body.home-page-body .site-header {
     background: rgb(15, 44, 62);
-    border-bottom: 1px solid rgba(95, 184, 255, 0.22);
 }
 
-/* 侧栏抽屉从顶栏下方开始，避免挡住导航（与 .navbar 实际高度对齐） */
+/* 顶栏 + 主导航随页面滚动（非 fixed）；--navbar-height 供抽屉等布局参考 */
 :root {
-    --navbar-height: 4rem;
+    --navbar-top-height: 37px;
+    --navbar-main-height: 4rem;
+    --navbar-height: calc(var(--navbar-top-height) + var(--navbar-main-height));
+    --navbar-pad-x: 2rem;
+  /* 与 .navbar-start 左边距一致，顶栏英文与下方 LOGO 左缘对齐 */
+    --navbar-logo-offset: calc(2.75rem + 50px);
     --home-content-max: 1400px;
-    --home-content-pad-x: 40px;
+    --home-content-pad-x: 40px; /* 首页内容区域左右内边距 */                
+}
+
+.site-header {
+    position: relative;
+    z-index: 1100;
+    width: 100%;
+    background: rgb(15, 44, 62);
+}
+
+.navbar-top {
+    position: static;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: var(--navbar-top-height);
+    padding: 0 var(--navbar-pad-x);
+    padding-left: calc(var(--navbar-pad-x) + var(--navbar-logo-offset));
+    box-sizing: border-box;
+    background: transparent;
+    border-bottom: none;
+}
+
+.navbar-top-brand {
+    font-family: 'Raleway', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 0.88rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    word-spacing: 0.55em;
+    text-transform: uppercase;
+    color: rgba(200, 220, 235, 0.72);
+    line-height: 1;
+    white-space: nowrap;
 }
 
 .navbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
+    position: static;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.44rem 2rem;
-    min-height: var(--navbar-height);
+    width: 100%;
+    padding: 0.44rem var(--navbar-pad-x);
+    min-height: var(--navbar-main-height);
     box-sizing: border-box;
-    background: rgb(15, 44, 62);
+    background: transparent;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    z-index: 1001;
+    border-top: 1px solid rgba(95, 184, 255, 0.12);
+    border-bottom: 1px solid rgba(95, 184, 255, 0.22);
 }
 
 .logo {
@@ -92,7 +129,7 @@ body.home-page-body .navbar {
     gap: 2rem;
     flex-shrink: 0;
     min-width: 0;
-    margin-left: calc(2.75rem + 50px);
+    margin-left: var(--navbar-logo-offset);
 }
 
 .nav-links {
@@ -112,6 +149,7 @@ body.home-page-body .navbar {
     position: relative;
 }
 
+/* 顶栏「积分系统」：与侧栏个人信息/职务同色（#8ee0ff 系列） */
 .nav-dropdown-toggle {
     display: inline-flex;
     align-items: center;
@@ -122,18 +160,20 @@ body.home-page-body .navbar {
     border: none;
     cursor: pointer;
     font-family: inherit;
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: #ffffff;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #8ee0ff;
+    text-shadow: none;
     transition: color 0.2s ease;
 }
 
 .nav-dropdown-toggle:hover {
-    color: #a8d8e8;
+    color: #9ee8ff;
 }
 
 .nav-dropdown.is-open .nav-dropdown-toggle {
-    color: #a8d8e8;
+    color: #9ee8ff;
 }
 
 .nav-dropdown-caret {
@@ -142,8 +182,13 @@ body.home-page-body .navbar {
     height: 0;
     border-left: 0.32rem solid transparent;
     border-right: 0.32rem solid transparent;
-    border-top: 0.38rem solid rgba(168, 216, 232, 0.9);
-    transition: transform 0.18s ease;
+    border-top: 0.38rem solid rgba(142, 224, 255, 0.92);
+    transition: transform 0.18s ease, border-top-color 0.2s ease;
+}
+
+.nav-dropdown-toggle:hover .nav-dropdown-caret,
+.nav-dropdown.is-open .nav-dropdown-caret {
+    border-top-color: #9ee8ff;
 }
 
 .nav-dropdown.is-open .nav-dropdown-caret {
@@ -220,7 +265,7 @@ body.points-subpage-body {
 .points-subpage-main {
     max-width: 42rem;
     margin: 0 auto;
-    padding: calc(var(--navbar-height) + 2rem) 1.5rem 3rem;
+    padding: 2rem 1.5rem 3rem;
     box-sizing: border-box;
 }
 
@@ -595,12 +640,16 @@ html.auth-session-cached #navLoginBtn {
 
 /* —— 登录抽屉：RSI 风格（深色面板、描边输入、斜切主按钮）—— */
 .login-drawer.sidebar-modal {
+    top: var(--navbar-height);
+    height: calc(100vh - var(--navbar-height));
+    height: calc(100dvh - var(--navbar-height));
     background: linear-gradient(165deg, #0c151c 0%, #101f2c 42%, #0a1218 100%);
     border-left: 1px solid rgba(95, 184, 255, 0.14);
     box-shadow: -8px 0 40px rgba(0, 0, 0, 0.55);
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
+    z-index: 1000;
 }
 
 .login-drawer .modal-content.login-drawer-content {
@@ -3414,14 +3463,14 @@ a.community-author-avatar-link:focus-visible {
     z-index: 2;
 }
 
-/* 侧边弹出框样式（顶缘对齐顶栏底部，不遮盖导航） */
+/* 侧边弹出框（全高；顶栏随页滚动后从视口顶部展开） */
 .sidebar-modal {
     position: fixed;
-    top: var(--navbar-height);
+    top: 0;
     right: -400px;
     width: 400px;
-    height: calc(100vh - var(--navbar-height));
-    height: calc(100dvh - var(--navbar-height));
+    height: 100vh;
+    height: 100dvh;
     background-color: rgb(20, 58, 82);
     z-index: 1000;
     transition: right 0.3s ease-in-out;
@@ -3491,14 +3540,13 @@ a.community-author-avatar-link:focus-visible {
     background: #1E88E5;
 }
 
-/* 遮罩层：与侧栏同区域，不压暗顶栏 */
 .overlay {
     position: fixed;
-    top: var(--navbar-height);
+    top: 0;
     left: 0;
     width: 100%;
-    height: calc(100vh - var(--navbar-height));
-    height: calc(100dvh - var(--navbar-height));
+    height: 100vh;
+    height: 100dvh;
     background: rgba(0, 0, 0, 0.5);
     z-index: 999;
     display: none;
@@ -3508,8 +3556,11 @@ a.community-author-avatar-link:focus-visible {
     display: block;
 }
 
-/* 账户侧栏：仅拦截点击，不压暗主页面（避免礼品区 rgba 卡片发灰/偏色） */
+/* 账户侧栏：仅拦截点击，不压暗主页面；自顶栏下缘起，不遮挡导航头像 */
 .overlay.overlay--login-only {
+    top: var(--navbar-height);
+    height: calc(100vh - var(--navbar-height));
+    height: calc(100dvh - var(--navbar-height));
     background: transparent;
 }
 
@@ -3705,16 +3756,30 @@ a.community-author-avatar-link:focus-visible {
 
 @media (max-width: 600px) {
   :root {
-    --navbar-height: 6rem;
+    --navbar-top-height: 37px;
+    --navbar-main-height: 6rem;
+    --navbar-height: calc(var(--navbar-top-height) + var(--navbar-main-height));
     --home-content-pad-x: 5px;
   }
   body {
     font-size: 15px;
   }
+  :root {
+    --navbar-pad-x: 1rem;
+  }
+  .navbar-top {
+    padding: 0 var(--navbar-pad-x);
+    padding-left: calc(var(--navbar-pad-x) + var(--navbar-logo-offset));
+  }
+  .navbar-top-brand {
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    word-spacing: 0.45em;
+  }
   .navbar {
     flex-direction: column;
     padding: 0.52rem 1rem;
-    min-height: var(--navbar-height);
+    min-height: var(--navbar-main-height);
   }
   .nav-right {
     margin-top: 8px;
