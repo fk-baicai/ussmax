@@ -1269,6 +1269,7 @@
     border-radius: 8px;
     overflow: hidden;
     border: 1px solid rgba(95, 184, 255, 0.2);
+    flex-shrink: 0;
 }
 .checkin-captcha-bg {
     display: block;
@@ -1279,6 +1280,8 @@
     position: absolute;
     left: 8px;
     top: 30px;
+    width: 44px;
+    height: 44px;
     pointer-events: none;
     filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
 }

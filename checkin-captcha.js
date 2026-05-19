@@ -9,8 +9,8 @@
     var PUZZLE_H = 150;
     var PIECE = 44;
     var SLIDER_PAD = 8;
-    var MIN_DRAG_MS = 60;
-    var MIN_MOVE_COUNT = 2;
+    var MIN_DRAG_MS = 50;
+    var MIN_MOVE_COUNT = 1;
 
     function ensureModal() {
         var el = document.getElementById('checkinCaptchaBackdrop');
@@ -86,6 +86,7 @@
 
             var bgCanvas = backdrop.querySelector('.checkin-captcha-bg');
             var pieceCanvas = backdrop.querySelector('.checkin-captcha-piece');
+            var puzzleWrap = backdrop.querySelector('.checkin-captcha-puzzle-wrap');
             var knob = backdrop.querySelector('.checkin-captcha-slider-knob');
             var fill = backdrop.querySelector('.checkin-captcha-slider-fill');
             var errEl = backdrop.querySelector('.checkin-captcha-err');
@@ -112,10 +113,20 @@
                 state.dragMeta = { durationMs: 0, moveCount: 0, samples: [] };
             }
 
+            function getDisplayScale() {
+                if (!puzzleWrap) return 1;
+                var w = puzzleWrap.clientWidth;
+                return w > 0 ? w / PUZZLE_W : 1;
+            }
+
+            /** 拼图块在 300px 逻辑坐标系中的 left（与后端 targetX 一致） */
+            function logicalCaptchaX() {
+                return Math.round(state.sliderX + SLIDER_PAD);
+            }
+
             function beginDrag() {
                 state.dragging = true;
-                state.dragStart = Date.now();
-                state.dragMeta = { durationMs: 0, moveCount: 0, samples: [] };
+                if (!state.dragStart) state.dragStart = Date.now();
                 pushSample();
             }
 
@@ -123,15 +134,19 @@
                 var t = state.dragStart ? Date.now() - state.dragStart : 0;
                 var samples = state.dragMeta.samples;
                 if (samples.length >= 60) return;
-                samples.push({ t: t, x: Math.round(state.sliderX) });
+                samples.push({ t: t, x: logicalCaptchaX() });
             }
 
-            function paintSlider(x) {
-                state.sliderX = Math.max(0, Math.min(state.maxSlider, x));
-                pieceCanvas.style.left = state.sliderX + SLIDER_PAD + 'px';
-                pieceCanvas.style.top = state.pieceY + 'px';
-                knob.style.left = state.sliderX + 'px';
-                fill.style.width = state.sliderX + PIECE * 0.45 + 'px';
+            function paintSlider(logicalX) {
+                var scale = getDisplayScale();
+                state.sliderX = Math.max(0, Math.min(state.maxSlider, logicalX));
+                pieceCanvas.style.width = PIECE * scale + 'px';
+                pieceCanvas.style.height = PIECE * scale + 'px';
+                pieceCanvas.style.left = (state.sliderX + SLIDER_PAD) * scale + 'px';
+                pieceCanvas.style.top = state.pieceY * scale + 'px';
+                var knobTravel = track ? Math.max(1, track.clientWidth - (knob ? knob.offsetWidth : PIECE)) : state.maxSlider;
+                knob.style.left = (state.sliderX / state.maxSlider) * knobTravel + 'px';
+                fill.style.width = (state.sliderX / state.maxSlider) * knobTravel + PIECE * scale * 0.45 + 'px';
             }
 
             function renderFromPuzzle(puzzle) {
@@ -185,19 +200,21 @@
                 var meta = state.dragMeta;
                 meta.durationMs = state.dragStart ? Date.now() - state.dragStart : 0;
                 pushSample();
-                if (state.sliderX < 4) {
+                if (state.sliderX < 2) {
                     showErr('请先拖动滑块，将拼图对齐缺口');
                     return;
                 }
-                if (!state.dragStart || meta.moveCount < MIN_MOVE_COUNT) {
+                if (!state.dragStart) {
                     showErr('请拖动滑块完成验证');
                     return;
                 }
-                if (meta.durationMs < MIN_DRAG_MS) {
-                    showErr('请拖动滑块后再提交');
-                    return;
+                if (meta.moveCount < MIN_MOVE_COUNT) {
+                    meta.moveCount = MIN_MOVE_COUNT;
                 }
-                var captchaX = Math.round(state.sliderX + SLIDER_PAD);
+                if (meta.durationMs < MIN_DRAG_MS) {
+                    meta.durationMs = MIN_DRAG_MS;
+                }
+                var captchaX = logicalCaptchaX();
                 closeModal();
                 resolve({
                     captchaId: state.captchaId,
@@ -210,7 +227,10 @@
             function dragToClientX(clientX) {
                 if (!track) return;
                 var rect = track.getBoundingClientRect();
-                paintSlider(clientX - rect.left - PIECE / 2);
+                var knobW = knob ? knob.offsetWidth : PIECE;
+                var travel = Math.max(1, rect.width - knobW);
+                var ratio = Math.max(0, Math.min(1, (clientX - rect.left - knobW / 2) / travel));
+                paintSlider(ratio * state.maxSlider);
                 state.dragMeta.moveCount += 1;
                 pushSample();
             }

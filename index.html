@@ -666,6 +666,7 @@
     <script src="script.js"></script>
     <script src="rsi-client.js"></script>
     <script src="rsi-sync.js"></script>
+    <script src="auth-session-sync.js"></script>
     <script src="auth-api.js"></script>
     <script>
         const DEFAULT_AVATAR_DATA_URI = 'data:image/svg+xml,' + encodeURIComponent(
@@ -1127,6 +1128,10 @@
                 email: u.email != null ? u.email : p.email,
                 loginAt: p.loginAt || new Date().toISOString(),
                 avatarUrl: u.avatarUrl != null ? u.avatarUrl : p.avatarUrl,
+                rsiCitizenAvatarSourceUrl:
+                    u.rsiCitizenAvatarSourceUrl !== undefined
+                        ? u.rsiCitizenAvatarSourceUrl
+                        : p.rsiCitizenAvatarSourceUrl,
                 rsiProfileHandle: u.rsiProfileHandle !== undefined ? u.rsiProfileHandle : p.rsiProfileHandle,
                 rsiRankIconUrl: u.rsiRankIconUrl !== undefined ? u.rsiRankIconUrl : p.rsiRankIconUrl,
                 rsiRankLabel: u.rsiRankLabel !== undefined ? u.rsiRankLabel : p.rsiRankLabel,
@@ -1170,10 +1175,17 @@
             const s = loadAuthSession();
             if (!s || !s.token) return;
             try {
+                if (window.UssAuthSessionSync && typeof window.UssAuthSessionSync.refreshAuthSessionFromServer === 'function') {
+                    await window.UssAuthSessionSync.refreshAuthSessionFromServer({
+                        onUpdated: function () {
+                            refreshNavLoginState();
+                            syncLoginDrawerPanel();
+                        },
+                    });
+                    return;
+                }
                 const me = await window.UssAuthApi.me(s.token);
                 saveAuthSessionFromUser(s.token, me, undefined, s);
-                const synced = await syncRsiProfileViaBrowser(s.token, me.bindingId || s.bindingId, {});
-                if (synced) saveAuthSessionFromUser(s.token, synced, undefined, s);
             } catch (e) {
                 clearAuthSession();
             }
@@ -4170,7 +4182,7 @@
                     remember,
                     { loginAt: new Date().toISOString() }
                 );
-                const synced = await syncRsiProfileViaBrowser(res.token, res.user.bindingId, { force: true });
+                const synced = await syncRsiProfileViaBrowser(res.token, res.user, { force: true });
                 if (synced) {
                     saveAuthSessionFromUser(res.token, synced, remember);
                 }
