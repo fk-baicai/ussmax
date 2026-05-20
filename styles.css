@@ -126,7 +126,7 @@ body.home-page-body .site-header {
 .navbar-start {
     display: flex;
     align-items: center;
-    gap: 2rem;
+    gap: 2.25rem;
     flex-shrink: 0;
     min-width: 0;
     margin-left: var(--navbar-logo-offset);
@@ -135,7 +135,7 @@ body.home-page-body .site-header {
 .nav-links {
     display: flex;
     align-items: center;
-    gap: 1.25rem;
+    gap: 1.15rem;
     flex-shrink: 0;
 }
 
@@ -149,13 +149,98 @@ body.home-page-body .site-header {
     position: relative;
 }
 
+/* —— 顶栏 Mega 子菜单（全宽面板，参考 RSI COMMUNITY 下拉）—— */
+.site-header.is-mega-open .navbar {
+    border-bottom-color: transparent;
+}
+
+.nav-mega-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    z-index: 1090;
+    box-sizing: border-box;
+    background: linear-gradient(180deg, rgb(14, 40, 58) 0%, rgb(11, 32, 48) 100%);
+    border-top: 1px solid rgba(95, 184, 255, 0.22);
+    border-bottom: 1px solid rgba(95, 184, 255, 0.14);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+.nav-mega-panel[hidden] {
+    display: none !important;
+}
+
+.nav-mega-inner {
+    margin: 0;
+    max-width: none;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 1.75rem var(--navbar-pad-x) 2rem;
+    padding-left: var(--nav-mega-content-left, calc(var(--navbar-pad-x) + var(--navbar-logo-offset) + 40px + 2.25rem));
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 2rem 3rem;
+}
+
+.nav-mega-heading {
+    margin: 0 0 1rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(148, 186, 212, 0.78);
+}
+
+.nav-mega-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+}
+
+.nav-mega-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: opacity 0.15s ease;
+}
+
+.nav-mega-link:hover {
+    opacity: 0.88;
+}
+
+.nav-mega-link-title {
+    display: block;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #f0f8fc;
+    line-height: 1.3;
+    margin-bottom: 0.35rem;
+}
+
+.nav-mega-link-desc {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 400;
+    line-height: 1.45;
+    color: rgba(168, 198, 218, 0.72);
+    max-width: 28rem;
+}
+
+.nav-mega-link.is-current .nav-mega-link-title {
+    color: #8ee0ff;
+}
+
 /* 顶栏「积分系统」：与侧栏个人信息/职务同色（#8ee0ff 系列） */
 .nav-dropdown-toggle {
     display: inline-flex;
     align-items: center;
     gap: 0.55rem;
     margin: 0;
-    padding: 0.35rem 0.65rem;
+    padding: 0.35rem 0.45rem 0.35rem 0;
     background: none;
     border: none;
     cursor: pointer;
@@ -174,6 +259,7 @@ body.home-page-body .site-header {
 
 .nav-dropdown.is-open .nav-dropdown-toggle {
     color: #9ee8ff;
+    background: none;
 }
 
 .nav-dropdown-caret {
@@ -195,52 +281,9 @@ body.home-page-body .site-header {
     transform: rotate(180deg);
 }
 
+/* 旧版小下拉（已由 .nav-mega-panel 替代） */
 .nav-dropdown-menu {
-    position: absolute;
-    top: calc(100% + 0.35rem);
-    left: 0;
-    transform: none;
-    width: max-content;
-    min-width: 100%;
-    max-width: 12rem;
-    margin: 0;
-    padding: 0.2rem 0;
-    box-sizing: border-box;
-    list-style: none;
-    background: rgb(18, 52, 72);
-    border: 1px solid rgba(95, 184, 255, 0.35);
-    border-radius: 8px;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition: opacity 0.18s ease, visibility 0.18s ease;
-    z-index: 1002;
-}
-
-.nav-dropdown.is-open .nav-dropdown-menu {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-}
-
-.nav-dropdown-item {
-    display: block;
-    padding: 0.4rem 0.65rem;
-    color: #e8f4fa;
-    text-decoration: none;
-    font-size: 0.88rem;
-    font-weight: 500;
-    white-space: nowrap;
-    line-height: 1.35;
-    transition: background 0.15s ease, color 0.15s ease;
-}
-
-.nav-dropdown-item:hover,
-.nav-dropdown-item:focus-visible {
-    background: rgba(95, 184, 255, 0.18);
-    color: #ffffff;
-    outline: none;
+    display: none !important;
 }
 
 .nav-item {
