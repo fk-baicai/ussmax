@@ -237,8 +237,36 @@
         }
     }
 
+    function initPhaseInfoCards() {
+        var cards = document.querySelectorAll('.exec-phase-info-card');
+        if (!cards.length) return;
+
+        cards.forEach(function (card) {
+            card.addEventListener('click', function () {
+                var phase = card.getAttribute('data-phase');
+                var wasPicked = card.classList.contains('is-picked');
+
+                cards.forEach(function (c) {
+                    c.classList.remove('is-picked');
+                    c.setAttribute('aria-pressed', 'false');
+                });
+                document.querySelectorAll('.exec-phase-node').forEach(function (n) {
+                    n.classList.remove('is-picked');
+                });
+
+                if (!wasPicked && phase) {
+                    card.classList.add('is-picked');
+                    card.setAttribute('aria-pressed', 'true');
+                    var node = document.querySelector('.exec-phase-node[data-phase="' + phase + '"]');
+                    if (node) node.classList.add('is-picked');
+                }
+            });
+        });
+    }
+
     function start() {
         initLeds();
+        initPhaseInfoCards();
         fetchState();
         if (tickTimer) clearInterval(tickTimer);
         tickTimer = setInterval(tick, 1000);
