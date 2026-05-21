@@ -1,5 +1,5 @@
-﻿# 放在 frontend 目录：Netlify Base directory = frontend
-# HTTPS 站点不能直连 http://公网IP；由 Netlify 反代到阿里云 backend :3789
+# Netlify base directory: frontend
+# Proxy API requests to backend (HTTPS site cannot call http://IP directly)
 
 [build]
   publish = "."
