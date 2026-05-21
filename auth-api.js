@@ -89,6 +89,18 @@
             return data;
         },
 
+        async getClientPublicIp(token) {
+            var r = await fetch(joinUrl('/api/client-public-ip'), {
+                headers: { Authorization: 'Bearer ' + token },
+            });
+            var data = await parseJson(r);
+            if (r.status === 404) {
+                return { ok: false, message: (data && data.message) || '尚未上报公网 IP' };
+            }
+            if (!r.ok) throw new Error((data && data.message) || '加载服务器 IP 失败');
+            return data;
+        },
+
         /** 服务端重新抓取 RSI 公民页并全量覆盖用户资料（登录/注册与手动刷新） */
         async refreshRsiProfile(token) {
             return this.syncRsiProfile(token, { refreshFromWeb: true, forceLoginSync: true });
@@ -294,6 +306,14 @@
             return adminJson(token, q);
         },
 
+        /** 首页 RSI 服务器状态（无需登录） */
+        async rsiServerStatus() {
+            var r = await fetch(joinUrl('/api/rsi-server-status'));
+            var data = await parseJson(r);
+            if (!r.ok) throw new Error((data && data.message) || '获取 RSI 状态失败');
+            return data;
+        },
+
         /** 首页舰员交流区：帖子列表（无需登录） */
         async communityListPosts(limit) {
             var q = '';
@@ -303,6 +323,15 @@
             var r = await fetch(joinUrl('/api/community/posts') + q);
             var data = await parseJson(r);
             if (!r.ok) throw new Error(data.message || '加载帖子失败');
+            return data;
+        },
+
+        /** 单帖详情（无需登录） */
+        async communityGetPost(postId) {
+            var r = await fetch(joinUrl('/api/community/posts/' + encodeURIComponent(postId)));
+            var data = await parseJson(r);
+            if (r.status === 404) throw new Error((data && data.message) || '帖子不存在');
+            if (!r.ok) throw new Error((data && data.message) || '加载帖子失败');
             return data;
         },
 

@@ -9,6 +9,7 @@
     <link rel="apple-touch-icon" href="fleet-logo.jpg">
     <script src="auth-config.js"></script>
     <script src="nav-dropdown.js" defer></script>
+    <script src="nav-auth-tools.js" defer></script>
     <script>
         (function () {
             try {
@@ -39,20 +40,6 @@
                 <button
                     type="button"
                     class="nav-dropdown-toggle"
-                    id="navPointsMallToggle"
-                    aria-expanded="false"
-                    aria-haspopup="true"
-                    data-mega-target="navMegaPoints"
-                    aria-controls="navMegaPoints"
-                >
-                    积分系统
-                    <span class="nav-dropdown-caret" aria-hidden="true"></span>
-                </button>
-            </div>
-            <div class="nav-dropdown">
-                <button
-                    type="button"
-                    class="nav-dropdown-toggle"
                     id="navExecHangarToggle"
                     aria-expanded="false"
                     aria-haspopup="true"
@@ -60,6 +47,19 @@
                     aria-controls="navMegaHangar"
                 >
                     行政机库
+                    <span class="nav-dropdown-caret" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="nav-dropdown nav-tools-gated" id="navToolsWrap" hidden>
+                <button
+                    type="button"
+                    class="nav-dropdown-toggle"
+                    aria-expanded="false"
+                    aria-haspopup="true"
+                    data-mega-target="navMegaTools"
+                    aria-controls="navMegaTools"
+                >
+                    工具
                     <span class="nav-dropdown-caret" aria-hidden="true"></span>
                 </button>
             </div>
@@ -76,33 +76,6 @@
             </button>
         </div>
     </nav>
-    <div id="navMegaPoints" class="nav-mega-panel" role="region" aria-label="积分系统" hidden>
-        <div class="nav-mega-inner">
-            <div class="nav-mega-col">
-                <p class="nav-mega-heading">积分服务</p>
-                <ul class="nav-mega-list">
-                    <li>
-                        <a href="points-mall.html" class="nav-mega-link">
-                            <span class="nav-mega-link-title">积分商城</span>
-                            <span class="nav-mega-link-desc">浏览可兑换商品与舰队奖励</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="points-exchange.html" class="nav-mega-link">
-                            <span class="nav-mega-link-title">积分兑换</span>
-                            <span class="nav-mega-link-desc">使用签到积分兑换指定奖励</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="points-lottery.html" class="nav-mega-link">
-                            <span class="nav-mega-link-title">积分抽奖</span>
-                            <span class="nav-mega-link-desc">消耗积分参与舰队抽奖活动</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
     <div id="navMegaHangar" class="nav-mega-panel" role="region" aria-label="行政机库" hidden>
         <div class="nav-mega-inner">
             <div class="nav-mega-col">
@@ -112,6 +85,21 @@
                         <a href="executive-hangar.html" class="nav-mega-link">
                             <span class="nav-mega-link-title">进入行政机库</span>
                             <span class="nav-mega-link-desc">舰队行政与机库管理统一入口</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div id="navMegaTools" class="nav-mega-panel" role="region" aria-label="工具" hidden>
+        <div class="nav-mega-inner">
+            <div class="nav-mega-col">
+                <p class="nav-mega-heading">工具</p>
+                <ul class="nav-mega-list">
+                    <li>
+                        <a href="server-ip.html" class="nav-mega-link">
+                            <span class="nav-mega-link-title">服务器 IP</span>
+                            <span class="nav-mega-link-desc">查看本机上报的公网 IP</span>
                         </a>
                     </li>
                 </ul>
@@ -166,6 +154,20 @@
             <video id="myVideo2" class="video-player" autoplay muted playsinline>
                 <source src="sp/a2.mp4" type="video/mp4">
             </video>
+            <div class="progress-container">
+                <div class="progress-controls-row">
+                    <div class="progress-bar-wrap" aria-hidden="true">
+                        <div class="progress-bar">
+                            <div class="progress-fill"></div>
+                        </div>
+                    </div>
+                    <button type="button" class="next-video" aria-label="切换舰船宣传视频" title="下一段视频">
+                        <svg class="next-video-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                            <path fill="currentColor" d="M6 18l8.5-6L6 6v12zm10-12v12h2V6h-2z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
         </div>
         
         <!-- 添加左下角信息 -->
@@ -173,39 +175,38 @@
             <div class="ship-info-inner">
                 <div class="ship-details">
                     <p class="ship-hero-copy">
-                        <strong class="ship-hero-name">USS-保护伞舰队　</strong>
+                        <strong class="ship-hero-name">USS XC　</strong>
                         <span class="ship-hero-tagline">欢迎每一位星际公民成员的加入，平等尊重每一位公民。</span>
                     </p>
                 </div>
                 <button
                     type="button"
                     class="ticket-btn"
-                    onclick="window.open('https://robertsspaceindustries.com/orgs/5000', '_blank', 'noopener,noreferrer')"
+                    onclick="window.open('https://robertsspaceindustries.com/en/', '_blank', 'noopener,noreferrer')"
                 >
                     立即登舰
                 </button>
             </div>
         </div>
-        
-        <!-- 添加进度条 -->
-        <div class="progress-container">
-            <div class="progress-bar">
-                <div class="progress-fill"></div>
-            </div>
-            <div class="video-controls">
-                <span class="current-video">登舰成功</span>
-                <button class="next-video">欢迎登舰</button>
-            </div>
-        </div>
     </div>
 
-    <section class="community-section" id="community-section" aria-labelledby="community-section-title">
-        <div class="community-wrap">
-            <header class="community-head">
-                <div class="community-head-text">
-                    <h2 id="community-section-title" class="community-title">舰员交流区</h2>
+    <section class="rsi-status-section" id="rsi-status-section" aria-label="RSI 服务器状态">
+        <div class="rsi-status-wrap">
+            <header class="rsi-status-head">
+                <div class="rsi-status-head-text">
+                    <h2 class="rsi-status-title">服务器状态</h2>
+                    <p class="rsi-status-lead">星际公民官方服务 · 数据来自 Roberts Space Industries</p>
                 </div>
             </header>
+            <div class="rsi-status-grid" id="rsiServerStatusGrid">
+                <div class="rsi-status-loading" role="status">正在获取 RSI 服务器状态…</div>
+            </div>
+            <p class="rsi-status-updated" id="rsiServerStatusUpdated" hidden></p>
+        </div>
+    </section>
+
+    <section class="community-section" id="community-section" aria-label="社区">
+        <div class="community-wrap">
 
             <div class="community-stack">
                 <div class="community-panel community-panel-chat">
@@ -381,111 +382,6 @@
         <button type="button" class="community-chat-context-menu__item" data-action="unpin" role="menuitem">取消置顶</button>
         <button type="button" class="community-chat-context-menu__item community-chat-context-menu__item--danger" data-action="delete" role="menuitem">删除</button>
     </div>
-
-    <section class="games-section" id="tickets-section">
-        <h1 class="section-title">Welcome aboard</h1>
-        <div class="games-container">
-            <!-- 左边游戏卡片 -->
-            <div class="game-card">
-                <img class="age-rating" src="sp/png/18.png" alt="Age Rating">
-                <button class="refund-btn card-refund-btn" onclick="verifyRefund()">退票</button>
-                <img src="sp/png/巴奴.png" alt="巴奴门票">
-                <div class="game-info">
-                    <h2>巴奴门票</h2>
-                    <p>Banu ticket</p>
-                    <div class="game-buttons">
-                        <button class="primary-btn" onclick="showTicketPurchaseClosedNotice()">购买</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 右边游戏卡片 -->
-            <div class="game-card">
-                <button class="refund-btn card-refund-btn" onclick="verifyRefund()">退票</button>
-                <img src="sp/png/UEE海军.png" alt="UEE海军门票">
-                <div class="game-info">
-                    <h2>UEE海军门票</h2>
-                    <p>UEE Navy ticket</p>
-                    <div class="game-buttons">
-                        <button class="primary-btn" onclick="showTicketPurchaseClosedNotice()">购买</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 活动礼品区域 -->
-    <section class="gifts-section">
-        <h1 class="section-title">活动礼品  Event gifts</h1>
-        <div class="gifts-container">
-            <div class="gift-item">
-                <div class="gift-icon">
-                    <span class="material-icons-outlined">shopping_bag</span>
-                </div>
-                <div class="gift-name">帆布袋</div>
-            </div>
-            <div class="gift-item">
-                <div class="gift-icon">
-                    <span class="material-icons-outlined">confirmation_number</span>
-                </div>
-                <div class="gift-name">亚克力门票</div>
-            </div>
-            <div class="gift-item">
-                <div class="gift-icon">
-                    <span class="material-icons-outlined">mouse</span>
-                </div>
-                <div class="gift-name">鼠标垫（CIG认证社区限定）</div>
-            </div>
-            <div class="gift-item">
-                <div class="gift-icon">
-                    <span class="material-icons-outlined">pets</span>
-                </div>
-                <div class="gift-name">神秘"鲸"玩偶</div>
-            </div>
-            <div class="gift-item">
-                <div class="gift-icon">
-                    <span class="material-icons-outlined">architecture</span>
-                </div>
-                <div class="gift-name">亚克力飞船蓝图（蓝图随机发放）</div>
-            </div>
-            <div class="gift-item">
-                <div class="gift-icon">
-                    <span class="material-icons-outlined">local_drink</span>
-                </div>
-                <div class="gift-name">同款游戏内快乐水</div>
-            </div>
-            <div class="gift-item special">
-                <div class="gift-icon">
-                    <span class="material-icons-outlined">rocket_launch</span>
-                </div>
-                <div class="gift-name">CIG-G佬赞助飞船CDK（抽奖名额）</div>
-            </div>
-            <div class="gift-item special">
-                <div class="gift-icon">
-                    <span class="material-icons-outlined">card_giftcard</span>
-                </div>
-                <div class="gift-name">社区大佬赞助礼品（抽奖）</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 活动信息和地图区域 -->
-    <section class="event-info-section">
-        <h1 class="section-title">活动信息   Activity information</h1>
-        <div class="event-info-text">
-            <div>时间：2955.6.7</div>
-            <div>U.S.S 杭州 BARCITIZEN</div>
-            <div>地址：杭州市滨江区西兴街道莲荷里C18号漆轰趴</div>
-        </div>
-        <div class="event-map">
-            
-            
-        </div>
-        <div class="event-venue-images">
-            <img class="venue-img" src="sp/png/B1.jpg" alt="轰趴馆1">
-            <img class="venue-img" src="sp/png/B2.jpg" alt="轰趴馆2">
-        </div>
-    </section>
 
     <!-- 遮罩层 -->
     <div class="overlay" id="overlay"></div>
@@ -1261,6 +1157,9 @@
             const avatarWrap = document.getElementById('navLoginAvatarWrap');
             const img = document.getElementById('navUserAvatarImg');
             if (!btn || !guestWrap || !avatarWrap || !img) {
+                if (window.UssNavTools && typeof window.UssNavTools.refresh === 'function') {
+                    window.UssNavTools.refresh();
+                }
                 refreshCommunitySessionUi();
                 return;
             }
@@ -1278,6 +1177,9 @@
                 btn.setAttribute('aria-label', '登录或注册');
                 img.src = DEFAULT_AVATAR_DATA_URI;
                 img.alt = '默认头像';
+            }
+            if (window.UssNavTools && typeof window.UssNavTools.refresh === 'function') {
+                window.UssNavTools.refresh();
             }
             refreshCommunitySessionUi();
         }
@@ -2622,6 +2524,37 @@
             feed.classList.toggle('community-feed--empty', !hasPosts);
         }
 
+        function communityPostStableId(p) {
+            if (!p || typeof p !== 'object') return '';
+            const raw = p.id != null ? p.id : p.postId != null ? p.postId : '';
+            return String(raw != null ? raw : '')
+                .trim();
+        }
+
+        /** 同时使用查询参数与 hash，避免部分宿主环境丢弃 ?id= */
+        function communityPostDetailHref(postId) {
+            const id = String(postId != null ? postId : '').trim();
+            if (!id) return 'community-post.html';
+            const enc = encodeURIComponent(id);
+            return 'community-post.html?id=' + enc + '#id=' + enc;
+        }
+
+        function truncateCommunityPostExcerpt(text, maxLen) {
+            const s = String(text || '')
+                .trim()
+                .replace(/\s+/g, ' ');
+            if (!s) return '';
+            if (s.length <= maxLen) return s;
+            return s.slice(0, maxLen) + '…';
+        }
+
+        function resolveCommunityAssetUrl(rel) {
+            if (window.UssAuthApi && typeof window.UssAuthApi.resolveAssetUrl === 'function') {
+                return window.UssAuthApi.resolveAssetUrl(rel);
+            }
+            return rel;
+        }
+
         function renderCommunityPosts(posts) {
             const feed = document.getElementById('communityFeed');
             const loading = document.getElementById('communityFeedLoading');
@@ -2638,210 +2571,61 @@
                 return;
             }
             posts.forEach(function (p) {
-                const card = document.createElement('article');
-                card.className = 'community-post-card';
+                const pid = communityPostStableId(p);
+                if (!pid) return;
 
-                const main = document.createElement('div');
-                main.className = 'community-post-main';
+                const card = document.createElement('a');
+                card.className = 'community-post-card community-post-card--compact';
+                card.href = communityPostDetailHref(pid);
 
-                const head = document.createElement('header');
-                head.className = 'community-post-head';
-                head.appendChild(buildCommunityAuthorRow(p.bindingId, p.avatarUrl, p.createdAt));
+                const inner = document.createElement('div');
+                inner.className = 'community-post-compact-inner';
 
-                if (sessionIsCommunityStaff() || communityPostIsMine(p)) {
-                    card.addEventListener('click', function (ev) {
-                        if (ev.target.closest('.community-post-delete')) return;
-                        if (ev.target.closest('.community-reply-delete')) return;
-                        if (ev.target.closest('a.community-text-link')) return;
-                        if (ev.target.closest('.community-reply-item')) return;
-                        if (ev.target.closest('.community-reply-form')) return;
-                        const feedEl = document.getElementById('communityFeed');
-                        if (feedEl) {
-                            feedEl
-                                .querySelectorAll('.community-reply-item.community-reply-item--actions-open')
-                                .forEach(function (it) {
-                                    it.classList.remove('community-reply-item--actions-open');
-                                });
-                            feedEl
-                                .querySelectorAll('.community-post-card.community-post-card--actions-open')
-                                .forEach(function (c) {
-                                    if (c !== card) c.classList.remove('community-post-card--actions-open');
-                                });
-                        }
-                        card.classList.toggle('community-post-card--actions-open');
-                    });
-                    const del = document.createElement('button');
-                    del.type = 'button';
-                    del.className = 'community-post-delete';
-                    del.textContent = '删除';
-                    del.addEventListener('click', async function (ev) {
-                        ev.stopPropagation();
-                        if (!sessionIsCommunityStaff() && !communityPostIsMine(p)) return;
-                        const sure = await showCommunityConfirm('确定删除该帖子？', { danger: true });
-                        if (!sure) return;
-                        const sess = loadAuthSession();
-                        if (!sess || !sess.token) return;
-                        del.disabled = true;
-                        try {
-                            await window.UssAuthApi.communityDeletePost(sess.token, p.id);
-                            await loadCommunityPosts();
-                        } catch (err) {
-                            showAlert(err && err.message ? err.message : '删除失败');
-                        } finally {
-                            del.disabled = false;
-                        }
-                    });
-                    head.appendChild(del);
-                }
+                inner.appendChild(buildCommunityAuthorRow(p.bindingId, p.avatarUrl, p.createdAt));
 
-                const body = document.createElement('div');
-                body.className = 'community-post-body';
-                if (p.content) {
-                    applyCommunityPlainTextWithLinks(body, p.content);
-                }
-
-                main.appendChild(head);
-                if (p.content) main.appendChild(body);
-
+                const content = String(p.content || '').trim();
                 const imgs = Array.isArray(p.images) ? p.images : [];
-                if (imgs.length) {
-                    const grid = document.createElement('div');
-                    grid.className = 'community-post-images';
-                    imgs.forEach(function (rel) {
-                        if (typeof rel !== 'string' || rel.indexOf('/community-uploads/') !== 0) return;
-                        const im = document.createElement('img');
-                        im.className = 'community-post-img';
-                        im.loading = 'lazy';
-                        im.alt = '帖子配图';
-                        im.style.cursor = 'pointer';
-                        im.src =
-                            window.UssAuthApi && typeof window.UssAuthApi.resolveAssetUrl === 'function'
-                                ? window.UssAuthApi.resolveAssetUrl(rel)
-                                : rel;
-                        im.addEventListener('click', function (e) {
-                            e.stopPropagation();
-                            openCommunityImageLightbox(im.src);
-                        });
-                        grid.appendChild(im);
-                    });
-                    if (grid.childNodes.length) main.appendChild(grid);
-                }
-
                 const replies = Array.isArray(p.replies) ? p.replies : [];
-                const repliesBlock = document.createElement('div');
-                repliesBlock.className = 'community-replies';
 
-                if (replies.length) {
-                    const repliesHead = document.createElement('div');
-                    repliesHead.className = 'community-replies-head';
-                    repliesHead.textContent = replies.length + ' 条回复';
-                    repliesBlock.appendChild(repliesHead);
-                    replies.forEach(function (r) {
-                        const item = document.createElement('div');
-                        item.className = 'community-reply-item';
-                        let replyDelBtn = null;
-                        if (sessionIsCommunityStaff() || communityReplyIsMine(r)) {
-                            item.addEventListener('click', function (ev) {
-                                if (ev.target.closest('.community-reply-delete')) return;
-                                if (ev.target.closest('a.community-text-link')) return;
-                                if (ev.target.closest('a.community-author-avatar-link')) return;
-                                const feedEl = document.getElementById('communityFeed');
-                                if (feedEl) {
-                                    feedEl
-                                        .querySelectorAll('.community-post-card.community-post-card--actions-open')
-                                        .forEach(function (c) {
-                                            c.classList.remove('community-post-card--actions-open');
-                                        });
-                                    feedEl
-                                        .querySelectorAll('.community-reply-item.community-reply-item--actions-open')
-                                        .forEach(function (it) {
-                                            if (it !== item) it.classList.remove('community-reply-item--actions-open');
-                                        });
-                                }
-                                item.classList.toggle('community-reply-item--actions-open');
-                                ev.stopPropagation();
-                            });
-                            replyDelBtn = document.createElement('button');
-                            replyDelBtn.type = 'button';
-                            replyDelBtn.className = 'community-reply-delete';
-                            replyDelBtn.textContent = '删除';
-                            replyDelBtn.addEventListener('click', async function (ev) {
-                                ev.stopPropagation();
-                                if (!sessionIsCommunityStaff() && !communityReplyIsMine(r)) return;
-                                const sure = await showCommunityConfirm('确定删除该条回复？', { danger: true });
-                                if (!sure) return;
-                                const sess = loadAuthSession();
-                                if (!sess || !sess.token || !r.id) return;
-                                replyDelBtn.disabled = true;
-                                try {
-                                    await window.UssAuthApi.communityDeleteReply(sess.token, p.id, r.id);
-                                    await loadCommunityPosts();
-                                } catch (err) {
-                                    showAlert(err && err.message ? err.message : '删除失败');
-                                } finally {
-                                    replyDelBtn.disabled = false;
-                                }
-                            });
-                        }
-                        item.appendChild(buildCommunityAuthorRow(r.bindingId, r.avatarUrl, r.createdAt, replyDelBtn));
-                        const replyBody = document.createElement('div');
-                        replyBody.className = 'community-reply-body';
-                        applyCommunityPlainTextWithLinks(replyBody, String(r.content != null ? r.content : ''));
-                        item.appendChild(replyBody);
-                        repliesBlock.appendChild(item);
-                    });
+                if (content) {
+                    const excerpt = document.createElement('p');
+                    excerpt.className = 'community-post-compact-excerpt';
+                    excerpt.textContent = truncateCommunityPostExcerpt(content, 120);
+                    inner.appendChild(excerpt);
+                } else if (imgs.length) {
+                    const excerpt = document.createElement('p');
+                    excerpt.className = 'community-post-compact-excerpt community-post-compact-excerpt--media';
+                    excerpt.textContent = '[图片帖子]';
+                    inner.appendChild(excerpt);
                 }
 
-                const replyForm = document.createElement('div');
-                replyForm.className = 'community-reply-form';
-                const replyTa = document.createElement('textarea');
-                replyTa.className = 'community-reply-input';
-                replyTa.rows = 1;
-                replyTa.maxLength = 2000;
-                replyTa.placeholder = isLoggedIn() ? '写下你的回复…' : '登录后可回复';
-                replyTa.disabled = !isLoggedIn();
-                const replyActions = document.createElement('div');
-                replyActions.className = 'community-reply-actions';
-                const replyHint = document.createElement('p');
-                replyHint.className = 'community-reply-hint';
-                const replyBtn = document.createElement('button');
-                replyBtn.type = 'button';
-                replyBtn.className = 'primary-btn community-reply-btn';
-                replyBtn.textContent = '回复';
-                replyBtn.disabled = !isLoggedIn();
-                replyBtn.addEventListener('click', async function () {
-                    const sess = loadAuthSession();
-                    if (!sess || !sess.token) {
-                        replyHint.textContent = '请先登录。';
-                        return;
-                    }
-                    const content = String(replyTa.value || '').trim();
-                    if (!content) {
-                        replyHint.textContent = '回复内容不能为空。';
-                        return;
-                    }
-                    replyHint.textContent = '';
-                    replyBtn.disabled = true;
-                    replyBtn.textContent = '发送中…';
-                    try {
-                        await window.UssAuthApi.communityReplyPost(sess.token, p.id, content);
-                        replyTa.value = '';
-                        await loadCommunityPosts();
-                    } catch (err) {
-                        replyHint.textContent = err && err.message ? err.message : '回复失败';
-                    } finally {
-                        replyBtn.disabled = !isLoggedIn();
-                        replyBtn.textContent = '回复';
-                    }
-                });
-                replyActions.appendChild(replyBtn);
-                replyForm.appendChild(replyTa);
-                replyForm.appendChild(replyActions);
-                replyForm.appendChild(replyHint);
-                repliesBlock.appendChild(replyForm);
-                main.appendChild(repliesBlock);
+                const footer = document.createElement('div');
+                footer.className = 'community-post-compact-footer';
 
-                card.appendChild(main);
+                const replyBadge = document.createElement('span');
+                replyBadge.className = 'community-post-compact-replies';
+                replyBadge.textContent = replies.length + ' 条回复';
+                footer.appendChild(replyBadge);
+
+                if (imgs.length) {
+                    const rel = imgs[0];
+                    if (typeof rel === 'string' && rel.indexOf('/community-uploads/') === 0) {
+                        const thumb = document.createElement('img');
+                        thumb.className = 'community-post-compact-thumb';
+                        thumb.loading = 'lazy';
+                        thumb.alt = '帖子配图';
+                        thumb.src = resolveCommunityAssetUrl(rel);
+                        footer.appendChild(thumb);
+                    }
+                }
+
+                const enter = document.createElement('span');
+                enter.className = 'community-post-compact-enter';
+                enter.textContent = '查看帖子 →';
+                footer.appendChild(enter);
+
+                inner.appendChild(footer);
+                card.appendChild(inner);
                 feed.appendChild(card);
             });
         }
@@ -4289,5 +4073,8 @@
             if (isLoggedIn()) loadCommunityChatFull();
         });
     </script>
+    <script src="auth-api.js"></script>
+    <script src="rsi-server-status.js"></script>
+    <script src="site-footer.js"></script>
 </body>
 </html> 

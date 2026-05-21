@@ -62,7 +62,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const video1 = document.getElementById('myVideo1');
     const video2 = document.getElementById('myVideo2');
     const progressFill = document.querySelector('.progress-fill');
-    const currentVideoText = document.querySelector('.current-video');
     const nextVideoBtn = document.querySelector('.next-video');
     
     let currentVideo = video1;
@@ -82,19 +81,12 @@ document.addEventListener('DOMContentLoaded', () => {
         currentVideo.currentTime = 0;
         currentVideo.play();
         
-        // 修改这里的逻辑，确保第一个视频对应"欢迎登舰"
-        const titles = ['欢迎登舰', '登舰成功'];
-        nextVideoBtn.textContent = currentVideo === video1 ? '欢迎登舰' : '登舰成功';
     }
     
-    // 初始设置时也要确保显示正确的文字
     function initializeVideos() {
         video1.classList.add('active');
         video1.muted = true;
         video2.muted = true;
-        
-        // 设置初始文字为"登舰成功"，因为当前是第一个视频在播放"欢迎登舰"
-        nextVideoBtn.textContent = '登舰成功';
         
         // 设置自动播放
         const playPromise1 = video1.play();
@@ -119,9 +111,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 更新进度条
     function updateProgress() {
-        // 使用 requestAnimationFrame 使动画更流畅
         requestAnimationFrame(() => {
-            const progress = (currentVideo.currentTime / currentVideo.duration) * 100;
+            if (!currentVideo || !progressFill || !currentVideo.duration) return;
+            const progress = Math.min(
+                100,
+                Math.max(0, (currentVideo.currentTime / currentVideo.duration) * 100)
+            );
             progressFill.style.width = `${progress}%`;
             
             if (currentVideo.ended) {
@@ -140,7 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 应用到两个视频
-    addProgressListener(video1);
-    addProgressListener(video2);
-    nextVideoBtn.addEventListener('click', switchVideos);
+    if (progressFill && video1 && video2) {
+        addProgressListener(video1);
+        addProgressListener(video2);
+        if (nextVideoBtn) nextVideoBtn.addEventListener('click', switchVideos);
+    }
 }); 
