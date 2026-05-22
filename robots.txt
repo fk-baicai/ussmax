@@ -1,0 +1,9 @@
+# robots.txt for ussxc.org
+# 允许所有搜索引擎抓取
+User-agent: *
+
+# 禁止抓取的目录/文件（这里没有需要隐藏的，所以可以不写）
+# Disallow: /admin/
+
+# 告诉搜索引擎你的站点地图地址
+Sitemap: https://ussxc.org/sitemap.xml
