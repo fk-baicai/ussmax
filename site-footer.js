@@ -28,13 +28,6 @@
         '</a>' +
         '</div>' +
         '<div class="uss-site-footer-col">' +
-        '<a class="uss-footer-link-card uss-footer-link-card--bili" href="https://space.bilibili.com/494887429?spm_id_from=333.1007.0.0" target="_blank" rel="noopener noreferrer">' +
-        '<span class="uss-footer-icon-slot"><span class="uss-footer-bili-badge" aria-hidden="true">哔哩</span></span>' +
-        '<span class="uss-footer-link-title">白菜up</span>' +
-        '<span class="uss-footer-link-desc">哔哩哔哩主页</span>' +
-        '</a>' +
-        '</div>' +
-        '<div class="uss-site-footer-col">' +
         '<a class="uss-footer-link-card" href="https://apps.microsoft.com/detail/9nf3swfwnkl1?launch=false&amp;mode=mini&amp;hl=zh-CN&amp;gl=CN" target="_blank" rel="noopener noreferrer">' +
         '<span class="uss-footer-icon-slot"><img class="uss-footer-hanghua-logo" src="sp/png/hanghua.png" alt="SC汉化盒子" width="40" height="40" decoding="async"></span>' +
         '<span class="uss-footer-link-title">SC汉化盒子</span>' +
