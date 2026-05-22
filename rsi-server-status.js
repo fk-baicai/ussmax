@@ -29,7 +29,7 @@
         try {
             var d = new Date(iso);
             if (isNaN(d.getTime())) return '';
-            return new Intl.DateTimeFormat('zh-CN', { dateStyle: 'short', timeStyle: 'medium' }).format(d);
+            return d.toLocaleString('zh-CN', { hour12: false });
         } catch (e) {
             return '';
         }
@@ -74,12 +74,6 @@
         } catch (e) {
             /* quota / private mode */
         }
-    }
-
-    function cacheSuffix(data) {
-        if (data && data.stale) return '（缓存·可能滞后）';
-        if ((data && data.cacheLayer === 'local') || (data && data.cached)) return '（缓存）';
-        return '';
     }
 
     function renderLoading() {
@@ -151,8 +145,7 @@
 
         if (updatedEl && data.fetchedAt) {
             var when = formatFetchedAt(data.fetchedAt);
-            var suffix = cacheSuffix(data);
-            updatedEl.textContent = when ? '更新于 ' + when + suffix : '';
+            updatedEl.textContent = when || '';
             updatedEl.hidden = !when;
         }
     }
