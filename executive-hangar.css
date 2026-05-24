@@ -1,11 +1,7 @@
 /* 行政机库计时器 — 大号科幻 HUD */
 body.exec-hangar-body {
-    background:
-        radial-gradient(ellipse 100% 60% at 50% -15%, rgba(56, 140, 210, 0.28), transparent 58%),
-        radial-gradient(ellipse 50% 40% at 100% 50%, rgba(30, 90, 140, 0.12), transparent 50%),
-        radial-gradient(ellipse 50% 40% at 0% 80%, rgba(20, 70, 110, 0.1), transparent 45%),
-        rgb(15, 44, 62);
-    color: #e8f4fa;
+    background: var(--home-page-bg-light);
+    color: #e8f4ff;
 }
 
 body.exec-hangar-body::before {
