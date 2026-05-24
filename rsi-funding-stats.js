@@ -1,12 +1,12 @@
 /**
  * 首页 RSI 众筹资金统计（Funds / Star Citizens + 时间线）
- * 经本站 /api/rsi-funding-stats 读取；localStorage 15 分钟缓存。
+ * 经本站 /api/rsi-funding-stats 读取；localStorage 1 小时缓存。
  */
 (function () {
     'use strict';
 
-    var REFRESH_MS = 15 * 60 * 1000;
-    var LOCAL_CACHE_MS = 15 * 60 * 1000;
+    var REFRESH_MS = 60 * 60 * 1000;
+    var LOCAL_CACHE_MS = 60 * 60 * 1000;
     var LOCAL_CACHE_KEY = 'ussRsiFundingCache';
     var PERIODS = [
         { id: 'hour', label: '小时' },

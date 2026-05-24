@@ -15,6 +15,7 @@
     footer.id = 'ussSiteFooter';
     footer.className = 'uss-site-footer';
     footer.setAttribute('role', 'contentinfo');
+    footer.setAttribute('data-nosnippet', '');
     footer.innerHTML =
         '<div class="uss-site-footer-main">' +
         '<div class="uss-site-footer-inner">' +

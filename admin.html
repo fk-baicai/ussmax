@@ -4,8 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>管理系统</title>
-    <link rel="icon" type="image/jpeg" href="fleet-logo.jpg">
-    <link rel="apple-touch-icon" href="fleet-logo.jpg">
+    <link rel="icon" href="/favicon.ico" sizes="48x48">
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
     <script src="auth-config.js"></script>
     <style>
         :root {
@@ -200,6 +203,26 @@
             color: var(--txt);
             padding: 0.55rem 0.75rem;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(95, 184, 255, 0.55) transparent;
+        }
+        textarea::-webkit-scrollbar {
+            width: 5px;
+        }
+        textarea::-webkit-scrollbar-button {
+            display: none;
+            width: 0;
+            height: 0;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: rgba(95, 184, 255, 0.55);
+            border-radius: 999px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: rgba(120, 210, 255, 0.72);
+        }
+        textarea::-webkit-scrollbar-track {
+            background: transparent;
         }
         textarea:focus {
             outline: none;
@@ -1103,16 +1126,71 @@
 
         #secAuditLog .audit-log-wrap {
             margin-top: 0.65rem;
-            max-height: 22rem;
-            overflow: auto;
             border: 1px solid rgba(95, 184, 255, 0.2);
             border-radius: 10px;
             background: rgba(0, 0, 0, 0.22);
+            overflow: hidden;
+        }
+        .audit-log-head {
+            background: rgb(18, 48, 66);
+            padding-right: 9px;
+            box-sizing: border-box;
+        }
+        .audit-log-head .audit-log-table {
+            border-radius: 0;
+            overflow: visible;
+        }
+        .audit-log-head .audit-log-table th {
+            background: transparent;
+        }
+        .audit-log-body-scroll .audit-log-table {
+            border-radius: 0;
+            overflow: visible;
+        }
+        .audit-log-body-scroll {
+            max-height: calc(22rem - 2.35rem);
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 4px;
+            scrollbar-gutter: stable;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(95, 184, 255, 0.55) transparent;
         }
         .audit-log-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.82rem;
+            table-layout: fixed;
+        }
+        .audit-log-table col.audit-col-time {
+            width: 22%;
+        }
+        .audit-log-table col.audit-col-op {
+            width: 12%;
+        }
+        .audit-log-table col.audit-col-desc {
+            width: 46%;
+        }
+        .audit-log-table col.audit-col-ip {
+            width: 20%;
+        }
+        .audit-log-body-scroll::-webkit-scrollbar {
+            width: 5px;
+        }
+        .audit-log-body-scroll::-webkit-scrollbar-button {
+            display: none;
+            width: 0;
+            height: 0;
+        }
+        .audit-log-body-scroll::-webkit-scrollbar-thumb {
+            background: rgba(95, 184, 255, 0.55);
+            border-radius: 999px;
+        }
+        .audit-log-body-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(120, 210, 255, 0.72);
+        }
+        .audit-log-body-scroll::-webkit-scrollbar-track {
+            background: transparent;
         }
         .audit-log-table th,
         .audit-log-table td {
@@ -1122,12 +1200,8 @@
             vertical-align: top;
         }
         .audit-log-table th {
-            position: sticky;
-            top: 0;
-            background: rgb(18, 48, 66);
             color: #a8d8e8;
             font-weight: 600;
-            z-index: 1;
         }
         .audit-log-table tbody tr:hover td {
             background: rgba(95, 184, 255, 0.06);
@@ -1143,7 +1217,6 @@
             word-break: break-word;
         }
         .audit-log-table td:nth-child(4) {
-            max-width: 11rem;
             word-break: break-all;
             color: rgba(232, 244, 250, 0.55);
             font-size: 0.78rem;
@@ -1174,17 +1247,35 @@
                     <span id="auditLogMeta" class="hint"></span>
                 </div>
                 <div class="audit-log-wrap">
-                    <table class="audit-log-table">
-                        <thead>
-                            <tr>
-                                <th>时间（北京）</th>
-                                <th>操作者</th>
-                                <th>说明</th>
-                                <th>访问 IP</th>
-                            </tr>
-                        </thead>
-                        <tbody id="auditLogBody"></tbody>
-                    </table>
+                    <div class="audit-log-head">
+                        <table class="audit-log-table">
+                            <colgroup>
+                                <col class="audit-col-time" />
+                                <col class="audit-col-op" />
+                                <col class="audit-col-desc" />
+                                <col class="audit-col-ip" />
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th>时间（北京）</th>
+                                    <th>操作者</th>
+                                    <th>说明</th>
+                                    <th>访问 IP</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                    <div class="audit-log-body-scroll">
+                        <table class="audit-log-table">
+                            <colgroup>
+                                <col class="audit-col-time" />
+                                <col class="audit-col-op" />
+                                <col class="audit-col-desc" />
+                                <col class="audit-col-ip" />
+                            </colgroup>
+                            <tbody id="auditLogBody"></tbody>
+                        </table>
+                    </div>
                 </div>
                 <div id="auditLogErr" class="err" hidden></div>
             </section>
