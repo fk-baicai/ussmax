@@ -67,20 +67,29 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentVideo = video1;
     let nextVideo = video2;
     
+    function playCurrentVideo(fromStart) {
+        if (fromStart) {
+            currentVideo.currentTime = 0;
+        }
+        if (progressFill) {
+            progressFill.style.width = '0%';
+        }
+        const playPromise = currentVideo.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(() => {});
+        }
+    }
+
     function switchVideos() {
         currentVideo.classList.remove('active');
         currentVideo.pause();
-        
-        // 切换视频
+
         const temp = currentVideo;
         currentVideo = nextVideo;
         nextVideo = temp;
-        
-        // 更新UI
+
         currentVideo.classList.add('active');
-        currentVideo.currentTime = 0;
-        currentVideo.play();
-        
+        playCurrentVideo(true);
     }
     
     function initializeVideos() {

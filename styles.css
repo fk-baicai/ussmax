@@ -4781,22 +4781,23 @@ a.community-author-avatar-link:focus-visible {
 @media (max-width: 600px) {
   :root {
     --navbar-top-height: 37px;
-    --navbar-main-height: 6rem;
+    --navbar-main-height: 3.25rem;
     --navbar-height: calc(var(--navbar-top-height) + var(--navbar-main-height));
+    --navbar-logo-offset: 0;
     --home-content-pad-x: 5px;
     --home-section-block-gap: clamp(32px, 7vw, 44px);
-    --hero-progress-track-max: min(168px, 49.2vw);
-    --hero-progress-btn-size: 30px;
+    --hero-progress-track-max: min(88px, 22vw);
+    --hero-progress-btn-size: 28px;
   }
   body {
     font-size: 15px;
   }
   :root {
-    --navbar-pad-x: 1rem;
+    --navbar-pad-x: 0.75rem;
   }
   .navbar-top {
     padding: 0 var(--navbar-pad-x);
-    padding-left: calc(var(--navbar-pad-x) + var(--navbar-logo-offset));
+    padding-left: var(--navbar-pad-x);
   }
   .navbar-top-brand {
     font-size: 0.78rem;
@@ -4804,12 +4805,51 @@ a.community-author-avatar-link:focus-visible {
     word-spacing: 0.45em;
   }
   .navbar {
-    flex-direction: column;
-    padding: 0.52rem 1rem;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.35rem;
+    padding: 0.35rem var(--navbar-pad-x);
     min-height: var(--navbar-main-height);
   }
+  .navbar-start {
+    margin-left: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 0.55rem;
+  }
+  .logo {
+    height: 34px;
+  }
+  .logo img {
+    height: 34px;
+    max-height: 34px;
+  }
+  .nav-links {
+    gap: 0.45rem;
+    min-width: 0;
+    flex-shrink: 1;
+  }
+  .nav-dropdown-toggle {
+    font-size: 0.88rem;
+    gap: 0.32rem;
+    padding: 0.2rem 0.15rem 0.2rem 0;
+    white-space: nowrap;
+  }
   .nav-right {
-    margin-top: 8px;
+    margin-top: 0;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .nav-user-avatar {
+    width: 2rem;
+    height: 2rem;
+    max-width: 2rem;
+    max-height: 2rem;
+  }
+  .nav-mega-inner {
+    padding-left: var(--navbar-pad-x);
   }
   .hero {
     height: auto;
@@ -4822,10 +4862,17 @@ a.community-author-avatar-link:focus-visible {
     position: relative;
   }
   .video-player {
-    position: static !important;
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     width: 100% !important;
     height: 100% !important;
-    object-fit: contain !important;
+    min-width: 100%;
+    min-height: 100%;
+    object-fit: cover !important;
+    object-position: center;
     background: #000;
     display: block;
   }
@@ -4944,6 +4991,25 @@ a.community-author-avatar-link:focus-visible {
     display: block !important;
   }
 
+  .login-drawer.sidebar-modal {
+    width: min(18.5rem, calc(100vw - 1rem));
+    right: calc(-1 * min(18.5rem, calc(100vw - 1rem)));
+    top: var(--navbar-height);
+    height: auto;
+    max-height: calc(100dvh - var(--navbar-height));
+    min-height: 0;
+    padding: 0.75rem 0.65rem 0.85rem;
+    border-radius: 0 0 0 12px;
+    border-left: none;
+    border-top: none;
+    box-shadow: -8px 12px 36px rgba(0, 0, 0, 0.48);
+    overflow: hidden;
+  }
+
+  .login-drawer.sidebar-modal.active {
+    right: 0;
+  }
+
   .login-drawer.active {
     display: flex !important;
     flex-direction: column;
@@ -4957,20 +5023,38 @@ a.community-author-avatar-link:focus-visible {
 
   .login-drawer .modal-content.login-drawer-content {
     margin-top: 0 !important;
-    flex: 1;
+    flex: 1 1 auto;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding: 2.5rem 0 2rem;
+    justify-content: flex-start;
+    padding: 0.35rem 0 0.5rem;
     min-height: 0;
     overflow-y: auto;
-    transform: translateY(-100px);
+    transform: none;
+  }
+
+  .login-drawer-authed {
+    --dps: 1;
+    --drawer-content-inset-x: 0.55rem;
+    padding-bottom: 1.85rem;
   }
 
   .login-drawer .modal-content.login-drawer-content.login-drawer-content--authed {
     transform: none;
     justify-content: flex-start;
-    padding-top: 1.85rem;
+    padding: 0.35rem var(--drawer-content-inset-x) 0.65rem;
+  }
+
+  .login-drawer-authed .drawer-profile-row {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    row-gap: 0.45rem;
+  }
+
+  .drawer-footer-actions {
+    left: var(--drawer-content-inset-x);
+    right: var(--drawer-content-inset-x);
+    bottom: 0.15rem;
   }
   .form-input {
     font-size: 14px;
@@ -5229,5 +5313,107 @@ a.community-author-avatar-link:focus-visible {
         grid-column: 2;
         align-self: start;
         padding-left: 0;
+    }
+}
+
+@media (max-width: 600px) {
+    .uss-site-footer {
+        --uss-footer-icon-h: 2.15rem;
+    }
+
+    .uss-site-footer-inner {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0;
+        padding: 0.85rem 0 0.75rem;
+    }
+
+    .uss-site-footer-col {
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 0 0.25rem;
+    }
+
+    .uss-site-footer-col:last-child {
+        padding-right: 0;
+    }
+
+    .uss-site-footer-col + .uss-site-footer-col {
+        padding-left: 0.25rem;
+        padding-top: 0;
+        border-top: none;
+    }
+
+    .uss-site-footer-col + .uss-site-footer-col::before {
+        display: block;
+        top: 0.35rem;
+        bottom: 0.35rem;
+    }
+
+    .uss-footer-link-card {
+        max-width: none;
+        grid-template-columns: 1fr;
+        grid-template-rows: var(--uss-footer-icon-h) auto auto;
+        justify-items: center;
+        align-items: start;
+        gap: 0.28rem 0;
+        padding: 0.1rem 0;
+        text-align: center;
+    }
+
+    .uss-footer-icon-slot {
+        grid-row: 1;
+        grid-column: 1;
+        justify-content: center;
+        width: 100%;
+        height: var(--uss-footer-icon-h);
+        min-height: var(--uss-footer-icon-h);
+    }
+
+    .uss-footer-link-title {
+        grid-row: 2;
+        grid-column: 1;
+        font-size: 0.62rem;
+        letter-spacing: 0.02em;
+        line-height: 1.2;
+        text-align: center;
+        word-break: break-word;
+    }
+
+    .uss-footer-link-desc {
+        grid-row: 3;
+        grid-column: 1;
+        font-size: 0.54rem;
+        line-height: 1.25;
+        text-align: center;
+        word-break: break-word;
+        padding-left: 0;
+    }
+
+    .uss-footer-hanghua-logo {
+        width: 1.85rem;
+        height: 1.85rem;
+    }
+
+    .uss-footer-rsi-logo {
+        width: 2.1rem;
+        max-height: 1.85rem;
+    }
+
+    .uss-footer-bc-badge {
+        width: 1.85rem;
+        height: 1.85rem;
+        min-width: 1.85rem;
+        font-size: 0.68rem;
+    }
+
+    .uss-site-footer-bottom-inner {
+        padding: 0.65rem 0 0.85rem;
+    }
+
+    .uss-site-footer-copy {
+        font-size: 0.72rem;
     }
 }
