@@ -4937,6 +4937,8 @@ a.community-author-avatar-link:focus-visible {
   .rsi-funding-chart-frame {
     grid-column: 1;
     grid-row: 4;
+    min-height: 0;
+    padding: 8px 8px 2px 6px;
   }
   .section-title {
     font-size: 28px;

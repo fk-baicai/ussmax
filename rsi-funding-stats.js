@@ -21,6 +21,7 @@
     var tabsEl = null;
     var updatedEl = null;
     var timer = null;
+    var resizeTimer = null;
     var currentPeriod = 'day';
     var lastData = null;
     var chartPoints = [];
@@ -205,6 +206,20 @@
         );
     }
 
+    function getChartMetrics() {
+        var mobile =
+            typeof window !== 'undefined' && window.matchMedia('(max-width: 600px)').matches;
+        return {
+            width: 760,
+            height: mobile ? 188 : 260,
+            padL: mobile ? 14 : 18,
+            padR: mobile ? 12 : 16,
+            padT: mobile ? 14 : 22,
+            padB: mobile ? 20 : 34,
+            axisOffset: mobile ? 6 : 10,
+        };
+    }
+
     function renderChart(points, period) {
         if (!chartEl) return;
         hideChartTip();
@@ -216,12 +231,13 @@
             return;
         }
 
-        var width = 760;
-        var height = 260;
-        var padL = 18;
-        var padR = 16;
-        var padT = 22;
-        var padB = 34;
+        var metrics = getChartMetrics();
+        var width = metrics.width;
+        var height = metrics.height;
+        var padL = metrics.padL;
+        var padR = metrics.padR;
+        var padT = metrics.padT;
+        var padB = metrics.padB;
         var innerW = width - padL - padR;
         var innerH = height - padT - padB;
         chartLayout = { width: width, height: height };
@@ -311,7 +327,7 @@
                     '<text x="' +
                     labelX +
                     '" y="' +
-                    (height - 10) +
+                    (height - metrics.axisOffset) +
                     '" class="rsi-funding-chart-axis" text-anchor="' +
                     anchor +
                     '">' +
@@ -467,6 +483,14 @@
         renderTabs();
         loadStats();
         scheduleRefresh();
+        window.addEventListener('resize', function () {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function () {
+                if (lastData) {
+                    renderChart(getPeriodPoints(lastData, currentPeriod), currentPeriod);
+                }
+            }, 150);
+        });
         document.addEventListener('visibilitychange', function () {
             if (document.visibilityState !== 'visible') return;
             if (readLocalCache(false)) return;

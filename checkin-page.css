@@ -481,7 +481,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.85fr);
     gap: 1.35rem;
-    align-items: start;
+    align-items: stretch;
     margin-bottom: 1.35rem;
 }
 
@@ -489,6 +489,7 @@
     display: flex;
     flex-direction: column;
     gap: 1.35rem;
+    min-height: 100%;
 }
 
 .checkin-panel {
@@ -671,6 +672,30 @@
 
 .checkin-my-history-box {
     margin: 0;
+}
+
+@media (min-width: 901px) {
+    .checkin-unit-side {
+        display: grid;
+        grid-template-rows: auto auto minmax(0, 1fr);
+    }
+
+    .checkin-my-history-box {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .checkin-my-history-summary,
+    .checkin-my-history-nav {
+        flex-shrink: 0;
+    }
+
+    .checkin-my-history-list {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: none;
+    }
 }
 
 .checkin-my-history-summary {
