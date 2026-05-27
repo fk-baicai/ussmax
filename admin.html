@@ -2064,7 +2064,8 @@
                 document.getElementById('btnSaveOopzAuto').onclick = saveOopzAutoCheckin;
                 document.getElementById('btnSaveOopzTts').onclick = saveOopzTts;
                 document.getElementById('btnAddOopzTtsRule').onclick = addOopzTtsRuleRow;
-                document.getElementById('btnAddOopzNoCooldown').onclick = addOopzNoCooldownRow;
+                var btnAddNoCool = document.getElementById('btnAddOopzNoCooldown');
+                if (btnAddNoCool) btnAddNoCool.onclick = addOopzNoCooldownRow;
                 document.getElementById('btnSaveWhitelist').onclick = saveWhitelist;
                 document.getElementById('btnReloadWhitelist').onclick = loadWhitelist;
                 document.getElementById('btnReloadAuditLog').onclick = loadAuditLog;
@@ -3420,7 +3421,12 @@
                 var tbody = document.getElementById('oopzNoCooldownTbody');
                 var countEl = document.getElementById('oopzNoCooldownCount');
                 if (!tbody) return;
-                var list = normalizeOopzIdList(ids);
+                var list = Array.isArray(ids)
+                    ? ids.map(function (id) {
+                          return String(id == null ? '' : id).trim();
+                      })
+                    : [];
+                var validCount = normalizeOopzIdList(list).length;
                 if (!list.length) {
                     tbody.innerHTML =
                         '<tr><td colspan="2" class="hint">暂无免冷却 ID，点击「添加 ID」逐条加入。</td></tr>';
@@ -3441,25 +3447,35 @@
                         .join('');
                 }
                 if (countEl) {
-                    countEl.textContent = list.length ? '共 ' + list.length + ' 个 ID' : '';
+                    if (!list.length) {
+                        countEl.textContent = '';
+                    } else if (validCount < list.length) {
+                        countEl.textContent =
+                            validCount + ' 个已填，' + list.length + ' 行（含未填完）';
+                    } else {
+                        countEl.textContent = '共 ' + validCount + ' 个 ID';
+                    }
                 }
             }
 
-            function collectNoCooldownIds() {
+            function collectNoCooldownRows() {
                 var tbody = document.getElementById('oopzNoCooldownTbody');
                 if (!tbody) return [];
                 var rows = tbody.querySelectorAll('tr[data-nocool-idx]');
-                var ids = [];
+                var out = [];
                 rows.forEach(function (tr) {
                     var idEl = tr.querySelector('.oopz-nocool-id');
-                    var id = idEl ? idEl.value.trim() : '';
-                    if (/^\d{5,12}$/.test(id)) ids.push(id);
+                    out.push(idEl ? idEl.value.trim() : '');
                 });
-                return normalizeOopzIdList(ids);
+                return out;
+            }
+
+            function collectNoCooldownIds() {
+                return normalizeOopzIdList(collectNoCooldownRows());
             }
 
             function addOopzNoCooldownRow() {
-                var current = collectNoCooldownIds();
+                var current = collectNoCooldownRows();
                 current.push('');
                 renderNoCooldownTable(current);
                 var tbody = document.getElementById('oopzNoCooldownTbody');
@@ -3561,14 +3577,12 @@
                 if (nocoolDel) {
                     var trN = nocoolDel.closest('tr');
                     if (trN && trN.parentElement) {
-                        var tbodyN = trN.parentElement;
                         trN.remove();
-                        if (!tbodyN.querySelector('tr[data-nocool-idx]')) {
+                        var remaining = collectNoCooldownRows();
+                        if (!remaining.length) {
                             renderNoCooldownTable([]);
                         } else {
-                            var countN = document.getElementById('oopzNoCooldownCount');
-                            var leftN = tbodyN.querySelectorAll('tr[data-nocool-idx]').length;
-                            if (countN) countN.textContent = leftN ? '共 ' + leftN + ' 个 ID' : '';
+                            renderNoCooldownTable(remaining);
                         }
                     }
                     return;
