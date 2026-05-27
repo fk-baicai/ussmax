@@ -592,7 +592,11 @@
         #secOopzTts .oopz-tts-rules-scroll .oopz-tts-rule-template {
             min-width: 12rem;
         }
-        #secOopzTts .oopz-tts-rule-del {
+        #secOopzTts .oopz-nocool-scroll {
+            max-height: calc(2.35rem + 5 * 2.75rem);
+        }
+        #secOopzTts .oopz-tts-rule-del,
+        #secOopzTts .oopz-nocool-del {
             padding: 0.22rem 0.55rem;
             border-radius: 8px;
             border: 1px solid rgba(255, 120, 120, 0.35);
@@ -1600,9 +1604,27 @@
                     <input type="text" id="oopzTtsDefaultTemplate" value="欢迎 {user} 登舰成功" placeholder="欢迎 {user} 登舰成功" />
                 </div>
                 <div class="oopz-tts-template-row">
-                    <label for="oopzTtsNoCooldownIds">免冷却 OOPZ ID</label>
-                    <input type="text" id="oopzTtsNoCooldownIds" placeholder="683143562，多个用逗号分隔" />
-                    <span class="hint">名单内成员每次进频道都会播报，不受 120 秒冷却限制。</span>
+                    <label for="oopzTtsCooldownSec">播报冷却（秒）</label>
+                    <input type="number" id="oopzTtsCooldownSec" min="10" max="600" step="10" value="60" class="sched-num-inp" aria-label="播报冷却秒数" />
+                    <span class="hint">同一成员在同一频道重复进入，间隔少于此秒数则不重复播报。</span>
+                </div>
+
+                <h3 class="oopz-subhead">免冷却名单</h3>
+                <p class="hint">以下 OOPZ ID 每次进频道都会播报，不受上方冷却限制。可添加多条。</p>
+                <div class="oopz-tts-rules-toolbar">
+                    <button type="button" id="btnAddOopzNoCooldown" class="btn-secondary">添加 ID</button>
+                    <span class="users-count" id="oopzNoCooldownCount"></span>
+                </div>
+                <div class="oopz-tts-rules-scroll oopz-nocool-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>OOPZ ID</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="oopzNoCooldownTbody"></tbody>
+                    </table>
                 </div>
 
                 <h3 class="oopz-subhead">成员定制播报</h3>
@@ -2042,6 +2064,7 @@
                 document.getElementById('btnSaveOopzAuto').onclick = saveOopzAutoCheckin;
                 document.getElementById('btnSaveOopzTts').onclick = saveOopzTts;
                 document.getElementById('btnAddOopzTtsRule').onclick = addOopzTtsRuleRow;
+                document.getElementById('btnAddOopzNoCooldown').onclick = addOopzNoCooldownRow;
                 document.getElementById('btnSaveWhitelist').onclick = saveWhitelist;
                 document.getElementById('btnReloadWhitelist').onclick = loadWhitelist;
                 document.getElementById('btnReloadAuditLog').onclick = loadAuditLog;
@@ -3381,6 +3404,71 @@
                 }).join('');
             }
 
+            function normalizeOopzIdList(list) {
+                var seen = {};
+                var out = [];
+                (Array.isArray(list) ? list : []).forEach(function (item) {
+                    var id = String(item || '').trim();
+                    if (!/^\d{5,12}$/.test(id) || seen[id]) return;
+                    seen[id] = true;
+                    out.push(id);
+                });
+                return out;
+            }
+
+            function renderNoCooldownTable(ids) {
+                var tbody = document.getElementById('oopzNoCooldownTbody');
+                var countEl = document.getElementById('oopzNoCooldownCount');
+                if (!tbody) return;
+                var list = normalizeOopzIdList(ids);
+                if (!list.length) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="2" class="hint">暂无免冷却 ID，点击「添加 ID」逐条加入。</td></tr>';
+                } else {
+                    tbody.innerHTML = list
+                        .map(function (id, idx) {
+                            return (
+                                '<tr data-nocool-idx="' +
+                                idx +
+                                '">' +
+                                '<td><input type="text" class="oopz-tts-rule-id oopz-nocool-id" inputmode="numeric" maxlength="12" value="' +
+                                String(id).replace(/"/g, '&quot;') +
+                                '" placeholder="683143562" /></td>' +
+                                '<td><button type="button" class="oopz-nocool-del">删除</button></td>' +
+                                '</tr>'
+                            );
+                        })
+                        .join('');
+                }
+                if (countEl) {
+                    countEl.textContent = list.length ? '共 ' + list.length + ' 个 ID' : '';
+                }
+            }
+
+            function collectNoCooldownIds() {
+                var tbody = document.getElementById('oopzNoCooldownTbody');
+                if (!tbody) return [];
+                var rows = tbody.querySelectorAll('tr[data-nocool-idx]');
+                var ids = [];
+                rows.forEach(function (tr) {
+                    var idEl = tr.querySelector('.oopz-nocool-id');
+                    var id = idEl ? idEl.value.trim() : '';
+                    if (/^\d{5,12}$/.test(id)) ids.push(id);
+                });
+                return normalizeOopzIdList(ids);
+            }
+
+            function addOopzNoCooldownRow() {
+                var current = collectNoCooldownIds();
+                current.push('');
+                renderNoCooldownTable(current);
+                var tbody = document.getElementById('oopzNoCooldownTbody');
+                if (!tbody) return;
+                var inputs = tbody.querySelectorAll('.oopz-nocool-id');
+                var last = inputs.length ? inputs[inputs.length - 1] : null;
+                if (last) last.focus();
+            }
+
             function parseOopzNoCooldownIds(text) {
                 var seen = {};
                 var out = [];
@@ -3469,6 +3557,22 @@
             }
 
             document.addEventListener('click', function (ev) {
+                var nocoolDel = ev.target.closest('.oopz-nocool-del');
+                if (nocoolDel) {
+                    var trN = nocoolDel.closest('tr');
+                    if (trN && trN.parentElement) {
+                        var tbodyN = trN.parentElement;
+                        trN.remove();
+                        if (!tbodyN.querySelector('tr[data-nocool-idx]')) {
+                            renderNoCooldownTable([]);
+                        } else {
+                            var countN = document.getElementById('oopzNoCooldownCount');
+                            var leftN = tbodyN.querySelectorAll('tr[data-nocool-idx]').length;
+                            if (countN) countN.textContent = leftN ? '共 ' + leftN + ' 个 ID' : '';
+                        }
+                    }
+                    return;
+                }
                 var delBtn = ev.target.closest('.oopz-tts-rule-del');
                 if (!delBtn) return;
                 var tr = delBtn.closest('tr');
@@ -3497,7 +3601,7 @@
                     var voiceEl = document.getElementById('oopzTtsVoice');
                     var rateEl = document.getElementById('oopzTtsRate');
                     var templateEl = document.getElementById('oopzTtsDefaultTemplate');
-                    var noCooldownEl = document.getElementById('oopzTtsNoCooldownIds');
+                    var cooldownEl = document.getElementById('oopzTtsCooldownSec');
                     oopzTtsVoiceOptions = Array.isArray(cfg.voices) ? cfg.voices : [];
                     if (enabledEl) enabledEl.checked = cfg.enabled !== false;
                     if (voiceEl) {
@@ -3507,9 +3611,10 @@
                     if (templateEl) {
                         templateEl.value = cfg.defaultTemplate || '欢迎 {user} 登舰成功';
                     }
-                    if (noCooldownEl) {
-                        noCooldownEl.value = formatOopzNoCooldownIds(cfg.noCooldownOopzIds || []);
+                    if (cooldownEl) {
+                        cooldownEl.value = String(cfg.announceCooldownSec != null ? cfg.announceCooldownSec : 60);
                     }
+                    renderNoCooldownTable(cfg.noCooldownOopzIds || []);
                     renderOopzTtsRulesTable(cfg.memberRules || []);
                 } catch (eLoad) {
                     showErr('oopzTtsErr', (eLoad && eLoad.message) || '加载 OOPZ 语音播报配置失败');
@@ -3526,17 +3631,21 @@
                 var voiceEl = document.getElementById('oopzTtsVoice');
                 var rateEl = document.getElementById('oopzTtsRate');
                 var templateEl = document.getElementById('oopzTtsDefaultTemplate');
-                var noCooldownEl = document.getElementById('oopzTtsNoCooldownIds');
+                var cooldownEl = document.getElementById('oopzTtsCooldownSec');
                 var memberRules = collectOopzTtsMemberRules().filter(function (rule) {
                     return /^\d{5,12}$/.test(String(rule.oopzId || '').trim());
                 });
-                var noCooldownOopzIds = parseOopzNoCooldownIds(noCooldownEl ? noCooldownEl.value : '');
+                var noCooldownOopzIds = collectNoCooldownIds();
+                var announceCooldownSec = cooldownEl ? Number(cooldownEl.value) : 60;
+                if (!Number.isFinite(announceCooldownSec)) announceCooldownSec = 60;
+                announceCooldownSec = Math.min(600, Math.max(10, Math.floor(announceCooldownSec)));
                 try {
                     await window.UssAuthApi.adminPutOopzTts(s.token, {
                         enabled: !!(enabledEl && enabledEl.checked),
                         voiceId: voiceEl ? voiceEl.value : 'xiaoxiao_natural',
                         rate: rateEl ? rateEl.value : '+0%',
                         defaultTemplate: templateEl ? templateEl.value.trim() : '欢迎 {user} 登舰成功',
+                        announceCooldownSec: announceCooldownSec,
                         noCooldownOopzIds: noCooldownOopzIds,
                         memberRules: memberRules,
                     });
