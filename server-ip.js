@@ -169,7 +169,6 @@
                 var parts = [];
                 var updated = formatUpdatedAt(data.updatedAt);
                 if (updated) parts.push(updated);
-                if (data.source) parts.push('来源: ' + data.source);
                 metaEl.textContent = parts.join(' · ') || '已上报';
             }
             renderDetails(data);

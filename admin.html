@@ -490,6 +490,117 @@
         #secSchedule h2 {
             font-size: 1.05rem;
         }
+        #secOopzAutoCheckin h2,
+        #secOopzTts h2 {
+            font-size: 1.05rem;
+        }
+        #secOopzAutoCheckin .oopz-auto-toolbar,
+        #secOopzTts .oopz-auto-toolbar {
+            margin-bottom: 0.5rem;
+        }
+        #secOopzAutoCheckin .oopz-auto-check,
+        #secOopzTts .oopz-auto-check {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            white-space: nowrap;
+        }
+        #secOopzAutoCheckin select,
+        #secOopzTts select {
+            padding: 0.28rem 0.45rem;
+            border-radius: 8px;
+            border: 1px solid rgba(95, 184, 255, 0.35);
+            background: rgba(6, 14, 28, 0.92);
+            color: var(--txt);
+            font-size: 0.88rem;
+        }
+        .oopz-subhead {
+            margin: 1rem 0 0.55rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--txt);
+        }
+        #secOopzTts .oopz-tts-template-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.45rem 0.65rem;
+            margin: 0.35rem 0 0.85rem;
+        }
+        #secOopzTts .oopz-tts-template-row input[type="text"] {
+            min-width: min(100%, 420px);
+            flex: 1;
+            padding: 0.32rem 0.55rem;
+            border-radius: 8px;
+            border: 1px solid rgba(95, 184, 255, 0.35);
+            background: rgba(6, 14, 28, 0.92);
+            color: var(--txt);
+            font-size: 0.88rem;
+        }
+        #secOopzTts .oopz-tts-rules-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.35rem 0 0.55rem;
+        }
+        #secOopzTts .oopz-tts-rules-scroll {
+            max-height: calc(2.35rem + 8 * 2.75rem);
+            overflow: auto;
+            border: 1px solid rgba(95, 184, 255, 0.16);
+            border-radius: 10px;
+            margin-bottom: 0.75rem;
+        }
+        #secOopzTts .oopz-tts-rules-scroll table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.84rem;
+        }
+        #secOopzTts .oopz-tts-rules-scroll th,
+        #secOopzTts .oopz-tts-rules-scroll td {
+            padding: 0.42rem 0.45rem;
+            border-bottom: 1px solid rgba(95, 184, 255, 0.1);
+            vertical-align: middle;
+        }
+        #secOopzTts .oopz-tts-rules-scroll th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: rgba(8, 18, 32, 0.98);
+            text-align: left;
+            font-weight: 700;
+        }
+        #secOopzTts .oopz-tts-rules-scroll input[type="text"],
+        #secOopzTts .oopz-tts-rules-scroll select {
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            padding: 0.28rem 0.4rem;
+            border-radius: 8px;
+            border: 1px solid rgba(95, 184, 255, 0.28);
+            background: rgba(6, 14, 28, 0.92);
+            color: var(--txt);
+            font-size: 0.82rem;
+        }
+        #secOopzTts .oopz-tts-rules-scroll .oopz-tts-rule-id {
+            width: 7.5rem;
+            font-variant-numeric: tabular-nums;
+        }
+        #secOopzTts .oopz-tts-rules-scroll .oopz-tts-rule-note {
+            width: 6rem;
+        }
+        #secOopzTts .oopz-tts-rules-scroll .oopz-tts-rule-template {
+            min-width: 12rem;
+        }
+        #secOopzTts .oopz-tts-rule-del {
+            padding: 0.22rem 0.55rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 120, 120, 0.35);
+            background: rgba(255, 80, 80, 0.08);
+            color: #ffb0b0;
+            cursor: pointer;
+            white-space: nowrap;
+        }
         .def-dur-row {
             display: flex;
             flex-wrap: wrap;
@@ -532,6 +643,74 @@
         .users-count {
             color: var(--muted);
             font-size: 0.78rem;
+        }
+        .oopz-admin-user-oopz-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 0.55rem;
+            align-items: stretch;
+        }
+        .oopz-admin-user-oopz-row input[type="text"] {
+            min-width: 0;
+            width: 100%;
+        }
+        .oopz-admin-user-oopz-row .btn-secondary {
+            align-self: stretch;
+            min-height: 2.35rem;
+            padding: 0 0.85rem;
+            white-space: nowrap;
+        }
+        #userEditModal .modal-panel {
+            width: min(100%, 460px);
+        }
+        #userEditModal .user-edit-form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            margin-top: 0.35rem;
+        }
+        #userEditModal .user-edit-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+        #userEditModal .user-edit-field > label {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.8rem;
+            line-height: 1.3;
+        }
+        #userEditModal .user-edit-field > input[type="text"],
+        #userEditModal .user-edit-field > input[type="email"],
+        #userEditModal .user-edit-field > input[type="password"] {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        #userEditModal .user-edit-field--oopz {
+            padding: 0.75rem 0.85rem;
+            border-radius: 10px;
+            border: 1px solid rgba(95, 212, 255, 0.16);
+            background: rgba(8, 18, 34, 0.55);
+        }
+        #userEditModal .user-edit-field-meta {
+            margin: 0;
+            font-size: 0.78rem;
+            color: rgba(160, 210, 240, 0.88);
+        }
+        #userEditModal .user-edit-field-hint {
+            margin: 0;
+            font-size: 0.72rem;
+            color: var(--muted);
+            line-height: 1.45;
+        }
+        #userEditModal #userEditUuidLine {
+            margin: 0 0 0.15rem;
+            padding: 0.45rem 0.6rem;
+            border-radius: 8px;
+            background: rgba(8, 18, 34, 0.45);
+            font-size: 0.72rem;
+            line-height: 1.45;
+            word-break: break-all;
         }
         /* 用户列表：约 10 行可视，其余纵向滚动；表头 sticky */
         #secUsers .users-table-scroll {
@@ -643,6 +822,11 @@
             justify-content: flex-end;
             gap: 0.5rem;
             margin-top: 0.5rem;
+        }
+        #userEditModal .modal-actions {
+            margin-top: 1rem;
+            padding-top: 0.85rem;
+            border-top: 1px solid rgba(95, 212, 255, 0.12);
         }
         .admin-makeup-confirm-panel {
             width: min(100%, 400px);
@@ -1345,16 +1529,121 @@
                 <div id="schedGrid" class="grid-sched"></div>
             </section>
 
+            <section id="secOopzAutoCheckin">
+                <h2>OOPZ 自动签到</h2>
+                <details class="branch-help-details oopz-auto-help">
+                    <summary>
+                        <span class="branch-help-caret" aria-hidden="true"></span>
+                        说明
+                    </summary>
+                    <div class="branch-help-body">
+                        <p class="hint">已绑定 OOPZ 的成员，在语音频道累计在线达到设定分钟数后，自动写入指定分部签到。在线时长由机器人心跳统计（约每分钟 +1）。</p>
+                        <p class="hint"><strong>仅在签到时段内：</strong>勾选时，须该分部在上方「分部签到开放窗口」里当日已开放（全天或规定时段），才会自动签到；不勾选则达标即签，不受时段限制。</p>
+                    </div>
+                </details>
+                <div class="oopz-auto-toolbar def-dur-row">
+                    <label class="oopz-auto-check"><input type="checkbox" id="oopzAutoEnabled" /> 启用</label>
+                    <span class="def-dur-sep" aria-hidden="true"></span>
+                    <label for="oopzAutoMinMinutes">在线 ≥</label>
+                    <input type="number" id="oopzAutoMinMinutes" min="1" max="1440" step="1" value="60" class="sched-num-inp" aria-label="最低在线分钟" />
+                    <span>分钟</span>
+                    <span class="def-dur-sep" aria-hidden="true"></span>
+                    <label for="oopzAutoBranch">分部</label>
+                    <select id="oopzAutoBranch" aria-label="自动签到分部">
+                        <option value="hq">总部</option>
+                        <option value="squad1">一中队</option>
+                        <option value="uss">USS创伤舰队</option>
+                        <option value="ussprod">USS生产队</option>
+                    </select>
+                    <span class="def-dur-sep" aria-hidden="true"></span>
+                    <label class="oopz-auto-check" title="须该分部当日已在签到日程中开放，才会自动签到">
+                        <input type="checkbox" id="oopzAutoRequireWindow" checked /> 仅在签到时段内
+                    </label>
+                    <span class="def-dur-sep" aria-hidden="true"></span>
+                    <button type="button" id="btnSaveOopzAuto">保存</button>
+                </div>
+                <div id="oopzAutoErr" class="err" hidden></div>
+                <div id="oopzAutoOk" class="ok" hidden></div>
+            </section>
+
+            <section id="secOopzTts">
+                <h2>OOPZ 语音播报</h2>
+                <details class="branch-help-details oopz-auto-help">
+                    <summary>
+                        <span class="branch-help-caret" aria-hidden="true"></span>
+                        说明
+                    </summary>
+                    <div class="branch-help-body">
+                        <p class="hint">在此统一管理进入频道 TTS 播报：默认音色/文案，以及按 OOPZ ID 的定制规则。保存后机器人约 30 秒内同步，并在 <strong>OOPZ 语音频道内</strong>自动播放（不是网站播放）。</p>
+                        <p class="hint">默认播报：需成员在网站完成 <strong>OOPZ ID 绑定</strong>。若在下方「成员定制播报」中配置了某 OOPZ ID，则<strong>无需绑定</strong>也会按定制规则播报。</p>
+                        <p class="hint">文案占位符：<code>{user}</code> 昵称、<code>{channel}</code> 频道名、<code>{area}</code> 域名。成员定制文案也可写固定句子（可不包含占位符）。需确保 oopz-bot 已启动且 <code>OOPZ_VOICE_PLAY_ENABLED=1</code>。</p>
+                        <p class="hint">含普通话与 <strong>东北 / 陕西 / 粤语 / 台湾</strong> 方言女声（★ 为推荐微调）。edge-tts 免费通道<strong>暂无上海话、四川话</strong>等；方言合成可能比普通话略慢 1～2 秒。</p>
+                    </div>
+                </details>
+
+                <h3 class="oopz-subhead">默认播报</h3>
+                <div class="oopz-auto-toolbar def-dur-row">
+                    <label class="oopz-auto-check"><input type="checkbox" id="oopzTtsEnabled" checked /> 启用播报</label>
+                    <span class="def-dur-sep" aria-hidden="true"></span>
+                    <label for="oopzTtsVoice">默认音色</label>
+                    <select id="oopzTtsVoice" aria-label="默认播报音色"></select>
+                    <span class="def-dur-sep" aria-hidden="true"></span>
+                    <label for="oopzTtsRate">语速</label>
+                    <select id="oopzTtsRate" aria-label="默认播报语速">
+                        <option value="-10%">较慢</option>
+                        <option value="+0%" selected>正常</option>
+                        <option value="+10%">较快</option>
+                    </select>
+                </div>
+                <div class="oopz-tts-template-row">
+                    <label for="oopzTtsDefaultTemplate">默认文案</label>
+                    <input type="text" id="oopzTtsDefaultTemplate" value="欢迎 {user} 登舰成功" placeholder="欢迎 {user} 登舰成功" />
+                </div>
+                <div class="oopz-tts-template-row">
+                    <label for="oopzTtsNoCooldownIds">免冷却 OOPZ ID</label>
+                    <input type="text" id="oopzTtsNoCooldownIds" placeholder="683143562，多个用逗号分隔" />
+                    <span class="hint">名单内成员每次进频道都会播报，不受 120 秒冷却限制。</span>
+                </div>
+
+                <h3 class="oopz-subhead">成员定制播报</h3>
+                <p class="hint">为指定 OOPZ ID 设置独立音色或文案；<strong>在此添加的规则会自动获得播报资格</strong>（不必在网站绑定 OOPZ）。音色留空则跟随默认，文案留空则跟随默认文案。</p>
+                <div class="oopz-tts-rules-toolbar">
+                    <button type="button" id="btnAddOopzTtsRule" class="btn-secondary">添加规则</button>
+                    <span class="users-count" id="oopzTtsRulesCount"></span>
+                </div>
+                <div class="oopz-tts-rules-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>OOPZ ID</th>
+                                <th>备注</th>
+                                <th>音色</th>
+                                <th>语速</th>
+                                <th>定制文案</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="oopzTtsRulesTbody"></tbody>
+                    </table>
+                </div>
+
+                <div class="row">
+                    <button type="button" id="btnSaveOopzTts">保存语音配置</button>
+                </div>
+                <div id="oopzTtsErr" class="err" hidden></div>
+                <div id="oopzTtsOk" class="ok" hidden></div>
+            </section>
+
             <section id="secUsers">
-                <h2>用户（修改绑定 ID / 邮箱 / 密码）</h2>
-                <p class="hint">密码留空则不修改。仅超级管理员可改「fkbaicai」账户。</p>
+                <h2>用户（修改绑定 ID / 邮箱 / 密码 / OOPZ）</h2>
+                <p class="hint">密码留空则不修改。OOPZ ID 绑定后用户端不可自行更换或解绑，仅管理员可在此修改或解绑。仅超级管理员可改「fkbaicai」账户。</p>
                 <div id="usersErr" class="err" hidden></div>
                 <div id="usersOk" class="ok" hidden></div>
                 <div class="users-toolbar">
                     <input
                         type="search"
                         id="userSearchInput"
-                        placeholder="搜索绑定 ID、邮箱或用户 UUID…"
+                        placeholder="搜索绑定 ID、OOPZ ID、邮箱或用户 UUID…"
                         autocomplete="off"
                         aria-label="筛选用户"
                     />
@@ -1366,6 +1655,7 @@
                         <thead>
                             <tr>
                                 <th>绑定 ID</th>
+                                <th>OOPZ ID</th>
                                 <th>邮箱</th>
                                 <th>用户 UUID</th>
                                 <th>操作</th>
@@ -1496,15 +1786,30 @@
                 <h3 id="userEditTitle">编辑用户</h3>
                 <button type="button" class="modal-close btn-ghost" id="userEditModalClose" aria-label="关闭">×</button>
             </div>
-            <p class="hint" id="userEditUuidLine" style="margin-top: 0; word-break: break-all"></p>
+            <p class="hint" id="userEditUuidLine"></p>
             <div id="userEditErr" class="err" hidden></div>
-            <div class="form-stack">
-                <label for="ue_binding">绑定 ID</label>
-                <input type="text" id="ue_binding" autocomplete="off" />
-                <label for="ue_email">邮箱</label>
-                <input type="email" id="ue_email" autocomplete="off" />
-                <label for="ue_password">新密码</label>
-                <input type="password" id="ue_password" placeholder="留空则不修改" autocomplete="new-password" />
+            <div class="user-edit-form">
+                <div class="user-edit-field">
+                    <label for="ue_binding">绑定 ID</label>
+                    <input type="text" id="ue_binding" autocomplete="off" />
+                </div>
+                <div class="user-edit-field">
+                    <label for="ue_email">邮箱</label>
+                    <input type="email" id="ue_email" autocomplete="off" />
+                </div>
+                <div class="user-edit-field user-edit-field--oopz">
+                    <label for="ue_oopz">OOPZ ID</label>
+                    <div class="oopz-admin-user-oopz-row">
+                        <input type="text" id="ue_oopz" inputmode="numeric" maxlength="12" placeholder="5–12 位数字" autocomplete="off" />
+                        <button type="button" class="btn-secondary" id="ue_clear_oopz">解绑</button>
+                    </div>
+                    <p class="user-edit-field-meta" id="ue_oopz_name_line" hidden></p>
+                    <p class="user-edit-field-hint">留空或点击「解绑」后保存，可解除 OOPZ 绑定</p>
+                </div>
+                <div class="user-edit-field">
+                    <label for="ue_password">新密码</label>
+                    <input type="password" id="ue_password" placeholder="留空则不修改" autocomplete="new-password" />
+                </div>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn-secondary" id="ue_cancel">取消</button>
@@ -1734,10 +2039,15 @@
                 wireBranchTableDragScrollOnce();
                 document.getElementById('btnAddAdmin').onclick = addAdmin;
                 document.getElementById('btnSaveSchedule').onclick = saveSchedule;
+                document.getElementById('btnSaveOopzAuto').onclick = saveOopzAutoCheckin;
+                document.getElementById('btnSaveOopzTts').onclick = saveOopzTts;
+                document.getElementById('btnAddOopzTtsRule').onclick = addOopzTtsRuleRow;
                 document.getElementById('btnSaveWhitelist').onclick = saveWhitelist;
                 document.getElementById('btnReloadWhitelist').onclick = loadWhitelist;
                 document.getElementById('btnReloadAuditLog').onclick = loadAuditLog;
                 loadScheduleUi();
+                loadOopzAutoCheckinUi();
+                loadOopzTtsUi();
                 loadWhitelist();
                 loadAuditLog();
             }
@@ -1835,6 +2145,21 @@
                 document.getElementById('userEditModalClose').onclick = closeUserEditModal;
                 document.getElementById('ue_cancel').onclick = closeUserEditModal;
                 document.getElementById('ue_save').onclick = saveUserEditFromModal;
+                var clearOopzBtn = document.getElementById('ue_clear_oopz');
+                if (clearOopzBtn) {
+                    clearOopzBtn.onclick = function () {
+                        var oopzEl = document.getElementById('ue_oopz');
+                        if (oopzEl) oopzEl.value = '';
+                        state.editingUserClearOopz = true;
+                        showModalErr('');
+                    };
+                }
+                var oopzInput = document.getElementById('ue_oopz');
+                if (oopzInput) {
+                    oopzInput.addEventListener('input', function () {
+                        state.editingUserClearOopz = false;
+                    });
+                }
                 if (modal) {
                     modal.addEventListener('click', function (e) {
                         if (e.target === modal) closeUserEditModal();
@@ -1853,7 +2178,8 @@
                 var bid = String(u.bindingId || '').toLowerCase();
                 var rsi = String(u.rsiProfileHandle || '').toLowerCase();
                 var em = String(u.email || '').toLowerCase();
-                return id.indexOf(q) >= 0 || bid.indexOf(q) >= 0 || rsi.indexOf(q) >= 0 || em.indexOf(q) >= 0;
+                var oopz = String(u.oopzId || '').toLowerCase();
+                return id.indexOf(q) >= 0 || bid.indexOf(q) >= 0 || rsi.indexOf(q) >= 0 || em.indexOf(q) >= 0 || oopz.indexOf(q) >= 0;
             }
 
             function renderUsersRows() {
@@ -1872,6 +2198,8 @@
                     tr.innerHTML =
                         '<td>' +
                         esc(u.bindingId) +
+                        '</td><td>' +
+                        esc(u.oopzId || '—') +
                         '</td><td>' +
                         esc(u.email) +
                         '</td><td><code style="font-size:0.72rem">' +
@@ -1916,10 +2244,23 @@
                 });
                 var row = fresh || u;
                 state.editingUser = row;
+                state.editingUserClearOopz = false;
                 showModalErr('');
                 document.getElementById('ue_binding').value = row.bindingId || '';
                 document.getElementById('ue_email').value = row.email || '';
                 document.getElementById('ue_password').value = '';
+                var oopzEl = document.getElementById('ue_oopz');
+                if (oopzEl) oopzEl.value = row.oopzId || '';
+                var oopzNameEl = document.getElementById('ue_oopz_name_line');
+                if (oopzNameEl) {
+                    if (row.oopzName) {
+                        oopzNameEl.textContent = '当前 OOPZ 昵称：' + row.oopzName;
+                        oopzNameEl.hidden = false;
+                    } else {
+                        oopzNameEl.hidden = true;
+                        oopzNameEl.textContent = '';
+                    }
+                }
                 document.getElementById('userEditUuidLine').textContent = '用户 UUID：' + (row.id || '');
                 var modal = document.getElementById('userEditModal');
                 modal.hidden = false;
@@ -1932,6 +2273,7 @@
                 var modal = document.getElementById('userEditModal');
                 if (modal) modal.hidden = true;
                 state.editingUser = null;
+                state.editingUserClearOopz = false;
                 var pw = document.getElementById('ue_password');
                 if (pw) pw.value = '';
                 showModalErr('');
@@ -1942,9 +2284,21 @@
                 var b = document.getElementById('ue_binding').value.trim();
                 var e = document.getElementById('ue_email').value.trim();
                 var p = document.getElementById('ue_password').value;
+                var oopzEl = document.getElementById('ue_oopz');
+                var oopzRaw = oopzEl ? String(oopzEl.value || '').trim() : '';
+                var origOopz = String(orig.oopzId || '').trim();
                 if (b && b !== String(orig.bindingId || '').trim()) body.bindingId = b;
                 if (e && e.toLowerCase() !== String(orig.email || '').trim().toLowerCase()) body.email = e;
                 if (p) body.password = p;
+                if (state.editingUserClearOopz || (origOopz && !oopzRaw)) {
+                    body.clearOopz = true;
+                } else if (oopzRaw && oopzRaw !== origOopz) {
+                    if (!/^\d{5,12}$/.test(oopzRaw)) {
+                        body.__invalidOopz = true;
+                    } else {
+                        body.oopzId = oopzRaw;
+                    }
+                }
                 return body;
             }
 
@@ -1953,6 +2307,11 @@
                 if (!orig || !orig.id) return;
                 showModalErr('');
                 var body = buildUserPatchBody(orig);
+                if (body.__invalidOopz) {
+                    showModalErr('OOPZ ID 无效（5–12 位数字）');
+                    return;
+                }
+                delete body.__invalidOopz;
                 if (!Object.keys(body).length) {
                     showModalErr('未修改任何内容（密码留空表示不修改）。');
                     return;
@@ -2924,6 +3283,275 @@
                     alert('已保存');
                 } catch (e) {
                     showErr('schedErr', (e && e.message) || '保存失败');
+                }
+            }
+
+            async function loadOopzAutoCheckinUi() {
+                var errEl = document.getElementById('oopzAutoErr');
+                var okEl = document.getElementById('oopzAutoOk');
+                if (errEl) errEl.hidden = true;
+                if (okEl) okEl.hidden = true;
+                try {
+                    var s = loadSess();
+                    var data = await window.UssAuthApi.adminGetOopzAutoCheckin(s.token);
+                    var cfg = (data && data.oopzAutoCheckin) || {};
+                    var enabledEl = document.getElementById('oopzAutoEnabled');
+                    var minEl = document.getElementById('oopzAutoMinMinutes');
+                    var branchEl = document.getElementById('oopzAutoBranch');
+                    var windowEl = document.getElementById('oopzAutoRequireWindow');
+                    if (enabledEl) enabledEl.checked = !!cfg.enabled;
+                    if (minEl) minEl.value = cfg.minOnlineMinutes != null ? cfg.minOnlineMinutes : 60;
+                    if (branchEl) branchEl.value = cfg.targetBranch || 'hq';
+                    if (windowEl) windowEl.checked = cfg.requireScheduleWindow !== false;
+                } catch (eLoad) {
+                    showErr('oopzAutoErr', (eLoad && eLoad.message) || '加载 OOPZ 自动签到配置失败');
+                }
+            }
+
+            async function saveOopzAutoCheckin() {
+                var s = loadSess();
+                var errEl = document.getElementById('oopzAutoErr');
+                var okEl = document.getElementById('oopzAutoOk');
+                if (errEl) errEl.hidden = true;
+                if (okEl) okEl.hidden = true;
+                var enabledEl = document.getElementById('oopzAutoEnabled');
+                var minEl = document.getElementById('oopzAutoMinMinutes');
+                var branchEl = document.getElementById('oopzAutoBranch');
+                var windowEl = document.getElementById('oopzAutoRequireWindow');
+                var minRaw = minEl ? Number(minEl.value) : 60;
+                var minMinutes = Number.isFinite(minRaw) && minRaw > 0 ? Math.min(1440, Math.floor(minRaw)) : 60;
+                try {
+                    await window.UssAuthApi.adminPutOopzAutoCheckin(s.token, {
+                        enabled: !!(enabledEl && enabledEl.checked),
+                        minOnlineMinutes: minMinutes,
+                        targetBranch: branchEl ? branchEl.value : 'hq',
+                        requireScheduleWindow: !!(windowEl && windowEl.checked),
+                    });
+                    if (okEl) {
+                        okEl.textContent = '已保存 OOPZ 自动签到配置';
+                        okEl.hidden = false;
+                    }
+                    await loadOopzAutoCheckinUi();
+                } catch (eSave) {
+                    showErr('oopzAutoErr', (eSave && eSave.message) || '保存失败');
+                }
+            }
+
+            var oopzTtsVoiceOptions = [];
+
+            function buildOopzTtsVoiceOptions(selectedId, includeEmpty) {
+                var html = '';
+                if (includeEmpty) {
+                    html += '<option value="">跟随默认</option>';
+                }
+                var groups = {};
+                var groupOrder = [];
+                oopzTtsVoiceOptions.forEach(function (v) {
+                    var group = String(v.group || '其他');
+                    if (!groups[group]) {
+                        groups[group] = [];
+                        groupOrder.push(group);
+                    }
+                    groups[group].push(v);
+                });
+                groupOrder.forEach(function (group) {
+                    html += '<optgroup label="' + group.replace(/"/g, '&quot;') + '">';
+                    groups[group].forEach(function (v) {
+                        var id = String(v.id || '');
+                        var label = String(v.label || id);
+                        html += '<option value="' + id.replace(/"/g, '&quot;') + '"' +
+                            (selectedId === id ? ' selected' : '') + '>' +
+                            label.replace(/</g, '&lt;') + '</option>';
+                    });
+                    html += '</optgroup>';
+                });
+                return html;
+            }
+
+            function buildOopzTtsRateOptions(selectedRate) {
+                var rates = [
+                    { value: '', label: '跟随默认' },
+                    { value: '-10%', label: '较慢' },
+                    { value: '+0%', label: '正常' },
+                    { value: '+10%', label: '较快' },
+                ];
+                return rates.map(function (item) {
+                    return '<option value="' + item.value + '"' +
+                        (selectedRate === item.value ? ' selected' : '') + '>' + item.label + '</option>';
+                }).join('');
+            }
+
+            function parseOopzNoCooldownIds(text) {
+                var seen = {};
+                var out = [];
+                String(text || '')
+                    .split(/[,，\s]+/)
+                    .forEach(function (part) {
+                        var id = String(part || '').trim();
+                        if (!/^\d{5,12}$/.test(id) || seen[id]) return;
+                        seen[id] = true;
+                        out.push(id);
+                    });
+                return out;
+            }
+
+            function formatOopzNoCooldownIds(list) {
+                return (Array.isArray(list) ? list : [])
+                    .map(function (id) {
+                        return String(id || '').trim();
+                    })
+                    .filter(function (id) {
+                        return /^\d{5,12}$/.test(id);
+                    })
+                    .join(', ');
+            }
+
+            function renderOopzTtsRulesTable(rules) {
+                var tbody = document.getElementById('oopzTtsRulesTbody');
+                var countEl = document.getElementById('oopzTtsRulesCount');
+                if (!tbody) return;
+                var list = Array.isArray(rules) ? rules : [];
+                if (!list.length) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="hint">暂无定制规则，点击「添加规则」为指定 OOPZ ID 配置。</td></tr>';
+                } else {
+                    tbody.innerHTML = list.map(function (rule, idx) {
+                        return (
+                            '<tr data-rule-idx="' + idx + '">' +
+                            '<td><input type="text" class="oopz-tts-rule-id" inputmode="numeric" maxlength="12" value="' +
+                                String(rule.oopzId || '').replace(/"/g, '&quot;') + '" placeholder="683143562" /></td>' +
+                            '<td><input type="text" class="oopz-tts-rule-note" maxlength="40" value="' +
+                                String(rule.note || '').replace(/"/g, '&quot;') + '" placeholder="备注" /></td>' +
+                            '<td><select class="oopz-tts-rule-voice">' +
+                                buildOopzTtsVoiceOptions(String(rule.voiceId || ''), true) +
+                            '</select></td>' +
+                            '<td><select class="oopz-tts-rule-rate">' +
+                                buildOopzTtsRateOptions(String(rule.rate || '')) +
+                            '</select></td>' +
+                            '<td><input type="text" class="oopz-tts-rule-template" value="' +
+                                String(rule.template || '').replace(/"/g, '&quot;') +
+                                '" placeholder="留空=默认文案" /></td>' +
+                            '<td><button type="button" class="oopz-tts-rule-del">删除</button></td>' +
+                            '</tr>'
+                        );
+                    }).join('');
+                }
+                if (countEl) countEl.textContent = list.length ? ('共 ' + list.length + ' 条规则') : '';
+            }
+
+            function addOopzTtsRuleRow() {
+                var tbody = document.getElementById('oopzTtsRulesTbody');
+                if (!tbody) return;
+                var current = collectOopzTtsMemberRules();
+                current.push({ oopzId: '', note: '', voiceId: '', rate: '', template: '' });
+                renderOopzTtsRulesTable(current);
+            }
+
+            function collectOopzTtsMemberRules() {
+                var tbody = document.getElementById('oopzTtsRulesTbody');
+                if (!tbody) return [];
+                var rows = tbody.querySelectorAll('tr[data-rule-idx]');
+                var rules = [];
+                rows.forEach(function (tr) {
+                    var idEl = tr.querySelector('.oopz-tts-rule-id');
+                    var noteEl = tr.querySelector('.oopz-tts-rule-note');
+                    var voiceEl = tr.querySelector('.oopz-tts-rule-voice');
+                    var rateEl = tr.querySelector('.oopz-tts-rule-rate');
+                    var tplEl = tr.querySelector('.oopz-tts-rule-template');
+                    rules.push({
+                        oopzId: idEl ? idEl.value.trim() : '',
+                        note: noteEl ? noteEl.value.trim() : '',
+                        voiceId: voiceEl ? voiceEl.value.trim() : '',
+                        rate: rateEl ? rateEl.value.trim() : '',
+                        template: tplEl ? tplEl.value.trim() : '',
+                    });
+                });
+                return rules;
+            }
+
+            document.addEventListener('click', function (ev) {
+                var delBtn = ev.target.closest('.oopz-tts-rule-del');
+                if (!delBtn) return;
+                var tr = delBtn.closest('tr');
+                if (!tr || !tr.parentElement) return;
+                var tbody = tr.parentElement;
+                tr.remove();
+                if (!tbody.querySelector('tr')) {
+                    renderOopzTtsRulesTable([]);
+                    return;
+                }
+                var countEl = document.getElementById('oopzTtsRulesCount');
+                var left = tbody.querySelectorAll('tr[data-rule-idx]').length;
+                if (countEl) countEl.textContent = left ? ('共 ' + left + ' 条规则') : '';
+            });
+
+            async function loadOopzTtsUi() {
+                var errEl = document.getElementById('oopzTtsErr');
+                var okEl = document.getElementById('oopzTtsOk');
+                if (errEl) errEl.hidden = true;
+                if (okEl) okEl.hidden = true;
+                try {
+                    var s = loadSess();
+                    var data = await window.UssAuthApi.adminGetOopzTts(s.token);
+                    var cfg = (data && data.oopzTts) || {};
+                    var enabledEl = document.getElementById('oopzTtsEnabled');
+                    var voiceEl = document.getElementById('oopzTtsVoice');
+                    var rateEl = document.getElementById('oopzTtsRate');
+                    var templateEl = document.getElementById('oopzTtsDefaultTemplate');
+                    var noCooldownEl = document.getElementById('oopzTtsNoCooldownIds');
+                    oopzTtsVoiceOptions = Array.isArray(cfg.voices) ? cfg.voices : [];
+                    if (enabledEl) enabledEl.checked = cfg.enabled !== false;
+                    if (voiceEl) {
+                        voiceEl.innerHTML = buildOopzTtsVoiceOptions(cfg.voiceId || 'xiaoxiao_natural', false);
+                    }
+                    if (rateEl && cfg.rate) rateEl.value = cfg.rate;
+                    if (templateEl) {
+                        templateEl.value = cfg.defaultTemplate || '欢迎 {user} 登舰成功';
+                    }
+                    if (noCooldownEl) {
+                        noCooldownEl.value = formatOopzNoCooldownIds(cfg.noCooldownOopzIds || []);
+                    }
+                    renderOopzTtsRulesTable(cfg.memberRules || []);
+                } catch (eLoad) {
+                    showErr('oopzTtsErr', (eLoad && eLoad.message) || '加载 OOPZ 语音播报配置失败');
+                }
+            }
+
+            async function saveOopzTts() {
+                var s = loadSess();
+                var errEl = document.getElementById('oopzTtsErr');
+                var okEl = document.getElementById('oopzTtsOk');
+                if (errEl) errEl.hidden = true;
+                if (okEl) okEl.hidden = true;
+                var enabledEl = document.getElementById('oopzTtsEnabled');
+                var voiceEl = document.getElementById('oopzTtsVoice');
+                var rateEl = document.getElementById('oopzTtsRate');
+                var templateEl = document.getElementById('oopzTtsDefaultTemplate');
+                var noCooldownEl = document.getElementById('oopzTtsNoCooldownIds');
+                var memberRules = collectOopzTtsMemberRules().filter(function (rule) {
+                    return /^\d{5,12}$/.test(String(rule.oopzId || '').trim());
+                });
+                var noCooldownOopzIds = parseOopzNoCooldownIds(noCooldownEl ? noCooldownEl.value : '');
+                try {
+                    await window.UssAuthApi.adminPutOopzTts(s.token, {
+                        enabled: !!(enabledEl && enabledEl.checked),
+                        voiceId: voiceEl ? voiceEl.value : 'xiaoxiao_natural',
+                        rate: rateEl ? rateEl.value : '+0%',
+                        defaultTemplate: templateEl ? templateEl.value.trim() : '欢迎 {user} 登舰成功',
+                        noCooldownOopzIds: noCooldownOopzIds,
+                        memberRules: memberRules,
+                    });
+                    if (okEl) {
+                        okEl.textContent =
+                            '已保存 OOPZ 语音播报配置（含 ' +
+                            memberRules.length +
+                            ' 条成员规则，' +
+                            noCooldownOopzIds.length +
+                            ' 个免冷却 ID）';
+                        okEl.hidden = false;
+                    }
+                    await loadOopzTtsUi();
+                } catch (eSave) {
+                    showErr('oopzTtsErr', (eSave && eSave.message) || '保存失败');
                 }
             }
 

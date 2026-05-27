@@ -134,6 +134,34 @@
             return data;
         },
 
+        async getOopzBinding(token) {
+            var r = await fetch(joinUrl('/api/me/oopz'), {
+                headers: { Authorization: 'Bearer ' + token },
+            });
+            var data = await parseJson(r);
+            if (!r.ok) throw new Error(data.message || '加载 OOPZ 绑定失败');
+            return data;
+        },
+
+        async bindOopzId(token, oopzId) {
+            var r = await fetch(joinUrl('/api/me/oopz/bind'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: 'Bearer ' + token,
+                },
+                body: JSON.stringify({ oopzId: oopzId }),
+            });
+            var data = await parseJson(r);
+            if (!r.ok) {
+                var err = new Error(data.message || '绑定失败');
+                if (data.cooldownSec != null) err.cooldownSec = data.cooldownSec;
+                if (data.canChangeAt != null) err.canChangeAt = data.canChangeAt;
+                throw err;
+            }
+            return data;
+        },
+
         async sendPasswordResetCode(email) {
             var r = await fetch(joinUrl('/api/password-reset/send-code'), {
                 method: 'POST',
@@ -283,6 +311,26 @@
         },
         async adminPutSchedule(token, body) {
             return adminJson(token, '/api/admin/checkin/schedule', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body || {}),
+            });
+        },
+        async adminGetOopzAutoCheckin(token) {
+            return adminJson(token, '/api/admin/checkin/oopz-auto');
+        },
+        async adminPutOopzAutoCheckin(token, body) {
+            return adminJson(token, '/api/admin/checkin/oopz-auto', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body || {}),
+            });
+        },
+        async adminGetOopzTts(token) {
+            return adminJson(token, '/api/admin/oopz/tts');
+        },
+        async adminPutOopzTts(token, body) {
+            return adminJson(token, '/api/admin/oopz/tts', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body || {}),

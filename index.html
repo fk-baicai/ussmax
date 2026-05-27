@@ -264,6 +264,63 @@
         </div>
     </section>
 
+    <section class="oopz-bridge-section" id="oopz-bridge-section" aria-label="OOPZ语音">
+        <div class="oopz-bridge-wrap">
+            <header class="oopz-bridge-head">
+                <div class="oopz-bridge-head-text">
+                    <h2 class="oopz-bridge-title">OOPZ语音</h2>
+                    <button type="button" id="oopzBindOpenBtn" class="oopz-bind-head-btn">OOPZ 绑定</button>
+                </div>
+                <div class="oopz-bridge-status" aria-live="polite">
+                    <span id="oopzBridgeStatusDot" class="oopz-bridge-status-dot" aria-hidden="true"></span>
+                    <span id="oopzBridgeStatusText" class="oopz-bridge-status-text">连接中…</span>
+                </div>
+            </header>
+
+            <div id="oopzBindBackdrop" class="oopz-bind-backdrop" hidden>
+                <div class="oopz-bind-panel" role="dialog" aria-modal="true" aria-labelledby="oopzBindTitle">
+                    <div class="oopz-bind-panel-head">
+                        <h3 id="oopzBindTitle">OOPZ ID 绑定</h3>
+                        <button type="button" id="oopzBindCloseBtn" class="oopz-bind-close" aria-label="关闭">×</button>
+                    </div>
+                    <p class="oopz-bind-bound" id="oopzBindBoundText">尚未绑定</p>
+                    <p class="oopz-bind-online" id="oopzBindOnlineText" hidden></p>
+                    <div class="oopz-bind-form-row" id="oopzBindFormRow">
+                        <input type="text" id="oopzBindIdInput" class="oopz-bind-input" inputmode="numeric" pattern="[0-9]*" maxlength="12" placeholder="输入 OOPZ ID" autocomplete="off" />
+                    </div>
+                    <p class="oopz-bind-hint" id="oopzBindHint">需先在 OOPZ 语音频道在线，机器人可识别后再绑定。绑定成功后不可自行更换或解绑，如需调整请联系管理员。</p>
+                    <p class="oopz-bind-cooldown" id="oopzBindLocked" hidden></p>
+                    <div class="oopz-bind-actions">
+                        <button type="button" id="oopzBindSubmitBtn" class="oopz-bind-submit">确认绑定</button>
+                    </div>
+                </div>
+            </div>
+
+            <p id="oopzBridgeError" class="oopz-bridge-error" hidden></p>
+
+            <div class="oopz-bridge-panel">
+                <div class="oopz-bridge-panel-bar">
+                    <span class="oopz-bridge-panel-bar-icon" aria-hidden="true"></span>
+                    <span class="oopz-bridge-panel-bar-title">实时频道</span>
+                </div>
+                <div class="oopz-bridge-body">
+                    <div class="oopz-bridge-col oopz-bridge-col--channels">
+                        <h3 class="oopz-bridge-col-title">频道与成员</h3>
+                        <div id="oopzBridgeChannels" class="oopz-bridge-scroll">
+                            <p class="oopz-bridge-empty">加载中…</p>
+                        </div>
+                    </div>
+                    <div class="oopz-bridge-col oopz-bridge-col--announce">
+                        <h3 class="oopz-bridge-col-title">日志</h3>
+                        <div id="oopzBridgeLogs" class="oopz-bridge-scroll oopz-bridge-log-scroll">
+                            <p class="oopz-bridge-empty">加载中…</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section class="community-section" id="community-section" aria-label="社区">
         <div class="community-wrap">
 
@@ -3690,10 +3747,16 @@
                     dImg.src = sessionAvatarSrc();
                     dImg.alt = '用户头像';
                 }
+                if (typeof window.refreshOopzBindSection === 'function') {
+                    window.refreshOopzBindSection();
+                }
             } else {
                 guest.style.display = '';
                 authed.style.display = 'none';
                 if (drawerContent) drawerContent.classList.remove('login-drawer-content--authed');
+                if (typeof window.refreshOopzBindSection === 'function') {
+                    window.refreshOopzBindSection();
+                }
             }
         }
 
@@ -4132,9 +4195,10 @@
             if (isLoggedIn()) loadCommunityChatFull();
         });
     </script>
-    <script src="auth-api.js"></script>
+    <script src="oopz-bind.js"></script>
     <script src="rsi-server-status.js"></script>
     <script src="rsi-funding-stats.js"></script>
+    <script src="oopz-bridge.js"></script>
     <script src="site-footer.js"></script>
 </body>
 </html> 

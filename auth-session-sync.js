@@ -69,6 +69,14 @@
             rsiOrgRankSlots: user.rsiOrgRankSlots !== undefined ? user.rsiOrgRankSlots : prev.rsiOrgRankSlots,
             isAdmin: user.isAdmin !== undefined ? !!user.isAdmin : !!prev.isAdmin,
             isSuperAdmin: user.isSuperAdmin !== undefined ? !!user.isSuperAdmin : !!prev.isSuperAdmin,
+            oopzId: user.oopzId !== undefined ? user.oopzId : prev.oopzId,
+            oopzUid: user.oopzUid !== undefined ? user.oopzUid : prev.oopzUid,
+            oopzName: user.oopzName !== undefined ? user.oopzName : prev.oopzName,
+            oopzBoundAt: user.oopzBoundAt !== undefined ? user.oopzBoundAt : prev.oopzBoundAt,
+            canChangeOopz: user.canChangeOopz !== undefined ? user.canChangeOopz : prev.canChangeOopz,
+            oopzChangeCooldownSec:
+                user.oopzChangeCooldownSec !== undefined ? user.oopzChangeCooldownSec : prev.oopzChangeCooldownSec,
+            oopzCanChangeAt: user.oopzCanChangeAt !== undefined ? user.oopzCanChangeAt : prev.oopzCanChangeAt,
         };
     }
 

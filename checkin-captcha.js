@@ -105,6 +105,7 @@
             function closeModal() {
                 backdrop.hidden = true;
                 state.dragging = false;
+                window.removeEventListener('resize', onPuzzleResize);
             }
 
             function resetDragMeta() {
@@ -113,10 +114,14 @@
                 state.dragMeta = { durationMs: 0, moveCount: 0, samples: [] };
             }
 
-            function getDisplayScale() {
-                if (!puzzleWrap) return 1;
+            function getDisplayScales() {
+                if (!puzzleWrap) return { scaleX: 1, scaleY: 1 };
                 var w = puzzleWrap.clientWidth;
-                return w > 0 ? w / PUZZLE_W : 1;
+                var h = puzzleWrap.clientHeight;
+                return {
+                    scaleX: w > 0 ? w / PUZZLE_W : 1,
+                    scaleY: h > 0 ? h / PUZZLE_H : 1,
+                };
             }
 
             /** 拼图块在 300px 逻辑坐标系中的 left（与后端 targetX 一致） */
@@ -138,15 +143,17 @@
             }
 
             function paintSlider(logicalX) {
-                var scale = getDisplayScale();
+                var scales = getDisplayScales();
+                var scaleX = scales.scaleX;
+                var scaleY = scales.scaleY;
                 state.sliderX = Math.max(0, Math.min(state.maxSlider, logicalX));
-                pieceCanvas.style.width = PIECE * scale + 'px';
-                pieceCanvas.style.height = PIECE * scale + 'px';
-                pieceCanvas.style.left = (state.sliderX + SLIDER_PAD) * scale + 'px';
-                pieceCanvas.style.top = state.pieceY * scale + 'px';
+                pieceCanvas.style.width = PIECE * scaleX + 'px';
+                pieceCanvas.style.height = PIECE * scaleY + 'px';
+                pieceCanvas.style.left = (state.sliderX + SLIDER_PAD) * scaleX + 'px';
+                pieceCanvas.style.top = state.pieceY * scaleY + 'px';
                 var knobTravel = track ? Math.max(1, track.clientWidth - (knob ? knob.offsetWidth : PIECE)) : state.maxSlider;
                 knob.style.left = (state.sliderX / state.maxSlider) * knobTravel + 'px';
-                fill.style.width = (state.sliderX / state.maxSlider) * knobTravel + PIECE * scale * 0.45 + 'px';
+                fill.style.width = (state.sliderX / state.maxSlider) * knobTravel + PIECE * scaleX * 0.45 + 'px';
             }
 
             function renderFromPuzzle(puzzle) {
@@ -224,6 +231,10 @@
             };
             var track = backdrop.querySelector('.checkin-captcha-slider-track');
 
+            function onPuzzleResize() {
+                paintSlider(state.sliderX);
+            }
+
             function dragToClientX(clientX) {
                 if (!track) return;
                 var rect = track.getBoundingClientRect();
@@ -269,6 +280,7 @@
             };
 
             backdrop.hidden = false;
+            window.addEventListener('resize', onPuzzleResize);
             loadChallenge();
         });
     }
