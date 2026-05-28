@@ -350,11 +350,6 @@
                 body: JSON.stringify(body || {}),
             });
         },
-        async adminProbeOopzTtsVoices(token) {
-            return adminJson(token, '/api/admin/oopz/tts/probe-voices', {
-                method: 'POST',
-            });
-        },
         async adminGetRegisterWhitelist(token) {
             return adminJson(token, '/api/admin/register-whitelist');
         },

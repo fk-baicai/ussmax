@@ -1627,7 +1627,7 @@
                 </div>
 
                 <h3 class="oopz-subhead">免冷却名单</h3>
-                <p class="hint">名单内 ID 每次进频道都播报，不受频道冷却与重复进房（约 2 分钟内）限制；排队时<strong>优先播报</strong>，且不参与「超过 6 人合并欢迎」。</p>
+                <p class="hint">名单内 ID 每次进频道都播报，不受频道冷却与重复进房（约 2 分钟内）限制；超过 6 人合并欢迎时仍单独播报（按排队顺序，不插队）。</p>
                 <div class="oopz-tts-rules-toolbar">
                     <button type="button" id="btnAddOopzNoCooldown" class="btn-secondary">添加 ID</button>
                     <span class="users-count" id="oopzNoCooldownCount"></span>
@@ -1667,10 +1667,9 @@
                 </div>
 
                 <div class="row oopz-tts-actions">
-                    <button type="button" id="btnProbeOopzTtsVoices" class="btn-secondary">检测并移除不可用音色</button>
                     <button type="button" id="btnSaveOopzTts">保存语音配置</button>
                 </div>
-                <p class="hint" id="oopzTtsProbeHint">不可用 edge 音色会自动从下拉中隐藏；播报时也会自动换为可用音色。</p>
+                <p class="hint" id="oopzTtsYiseWarn" hidden></p>
                 <div id="oopzTtsErr" class="err" hidden></div>
                 <div id="oopzTtsOk" class="ok" hidden></div>
             </section>
@@ -2082,8 +2081,6 @@
                 document.getElementById('btnSaveSchedule').onclick = saveSchedule;
                 document.getElementById('btnSaveOopzAuto').onclick = saveOopzAutoCheckin;
                 document.getElementById('btnSaveOopzTts').onclick = saveOopzTts;
-                var btnProbeVoices = document.getElementById('btnProbeOopzTtsVoices');
-                if (btnProbeVoices) btnProbeVoices.onclick = probeOopzTtsVoices;
                 document.getElementById('btnAddOopzTtsRule').onclick = addOopzTtsRuleRow;
                 var btnAddNoCool = document.getElementById('btnAddOopzNoCooldown');
                 if (btnAddNoCool) btnAddNoCool.onclick = addOopzNoCooldownRow;
@@ -3504,6 +3501,24 @@
                 return label + ' · ' + engine;
             }
 
+            function oopzConfigUsesCloneVoice(cfg) {
+                var c = cfg || {};
+                var vid = String(c.voiceId || '').trim();
+                if (/^yise_/i.test(vid) || /^yinse_/i.test(vid) || vid.indexOf('clone:') === 0) {
+                    return true;
+                }
+                var rules = Array.isArray(c.memberRules) ? c.memberRules : [];
+                for (var i = 0; i < rules.length; i++) {
+                    var rid = String((rules[i] && rules[i].voiceId) || '').trim();
+                    if (rid && !/跟随默认/i.test(rid)) {
+                        if (/^yise_/i.test(rid) || /^yinse_/i.test(rid) || rid.indexOf('clone:') === 0) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
             function findOopzVoiceOptionById(voiceId) {
                 var needle = String(voiceId || '').trim();
                 if (!needle) return null;
@@ -3782,9 +3797,11 @@
                 var errEl = document.getElementById('oopzTtsErr');
                 var okEl = document.getElementById('oopzTtsOk');
                 var yiseOkHint = document.getElementById('oopzTtsYiseOkHint');
+                var yiseWarnEl = document.getElementById('oopzTtsYiseWarn');
                 if (errEl) errEl.hidden = true;
                 if (okEl) okEl.hidden = true;
                 if (yiseOkHint) yiseOkHint.hidden = true;
+                if (yiseWarnEl) yiseWarnEl.hidden = true;
                 try {
                     var s = loadSess();
                     var data = await window.UssAuthApi.adminGetOopzTts(s.token);
@@ -3802,7 +3819,8 @@
                     var cloneReady =
                         cloneScan.readyCount != null ? cloneScan.readyCount : apiCloneReady;
                     oopzTtsVoiceOptions = mergeOopzCloneVoiceFallback(apiVoices);
-                    if (errEl && cloneReady < OOPZ_CLONE_VOICE_FALLBACK.length) {
+                    var usesClone = oopzConfigUsesCloneVoice(cfg);
+                    if (cloneReady < OOPZ_CLONE_VOICE_FALLBACK.length) {
                         var yiseHint = cloneScan.yiseDir
                             ? String(cloneScan.yiseDir)
                             : 'backend\\data\\yise';
@@ -3810,17 +3828,26 @@
                             cloneScan.missingIds && cloneScan.missingIds.length
                                 ? cloneScan.missingIds.join('、')
                                 : 'yise_dongman、yise_foreign、yise_wumei';
-                        errEl.textContent =
-                            '未扫描到全部克隆参考 MP3（已就绪 ' +
+                        var yiseMsg =
+                            '克隆参考 MP3 已就绪 ' +
                             cloneReady +
                             '/' +
                             OOPZ_CLONE_VOICE_FALLBACK.length +
-                            '）。请在服务器目录放入 3 个 MP3 并重启 backend：\n' +
+                            '。目录：' +
                             yiseHint +
-                            '\n缺少：' +
+                            '。缺少文件：' +
                             miss +
-                            ' 对应的 .mp3（可与 voices.json 同级）。';
-                        errEl.hidden = false;
+                            '.mp3（与 voices.json 同级；仅 voices.json 不够，须复制 3 个 MP3 本体）。';
+                        if (usesClone && errEl) {
+                            errEl.textContent =
+                                yiseMsg + ' 当前配置使用了克隆音色，请上传后重启 backend。';
+                            errEl.hidden = false;
+                        } else if (yiseWarnEl) {
+                            yiseWarnEl.textContent =
+                                yiseMsg +
+                                ' 当前默认/成员均为 edge 音色时可先忽略；选用克隆或 bot 机播报克隆时，请在阿里云与本机 bot 的 yise 目录各放一份 MP3。';
+                            yiseWarnEl.hidden = false;
+                        }
                     } else if (cloneReady >= OOPZ_CLONE_VOICE_FALLBACK.length && cloneScan.yiseDir) {
                         var okHint = document.getElementById('oopzTtsYiseOkHint');
                         if (!okHint) {
@@ -3854,58 +3881,8 @@
                     }
                     renderNoCooldownTable(cfg.noCooldownOopzIds || []);
                     renderOopzTtsRulesTable(cfg.memberRules || []);
-                    var probeHint = document.getElementById('oopzTtsProbeHint');
-                    var dv = cfg.disabledVoices || {};
-                    var dc = dv.count != null ? dv.count : (dv.neuralVoices && dv.neuralVoices.length) || 0;
-                    if (probeHint) {
-                        probeHint.textContent =
-                            dc > 0
-                                ? '已屏蔽 ' +
-                                  dc +
-                                  ' 个不可用 edge 音色（下拉已隐藏，播报会自动换音）。可点「检测并移除不可用音色」重新扫描。'
-                                : '不可用 edge 音色会自动从下拉中隐藏；播报时也会自动换为可用音色。可点「检测并移除不可用音色」扫描。';
-                    }
                 } catch (eLoad) {
                     showErr('oopzTtsErr', (eLoad && eLoad.message) || '加载 OOPZ 语音播报配置失败');
-                }
-            }
-
-            async function probeOopzTtsVoices() {
-                var s = loadSess();
-                var errEl = document.getElementById('oopzTtsErr');
-                var okEl = document.getElementById('oopzTtsOk');
-                var btn = document.getElementById('btnProbeOopzTtsVoices');
-                if (errEl) errEl.hidden = true;
-                if (okEl) okEl.hidden = true;
-                if (btn) {
-                    btn.disabled = true;
-                    btn.textContent = '检测中…';
-                }
-                try {
-                    var data = await window.UssAuthApi.adminProbeOopzTtsVoices(s.token);
-                    var n = (data && data.disabledNeuralVoices && data.disabledNeuralVoices.length) || 0;
-                    var cfg = (data && data.oopzTts) || {};
-                    var apiVoices = Array.isArray(cfg.voices) ? cfg.voices : [];
-                    oopzTtsVoiceOptions = mergeOopzCloneVoiceFallback(apiVoices);
-                    var voiceEl = document.getElementById('oopzTtsVoice');
-                    if (voiceEl) {
-                        voiceEl.innerHTML = buildOopzTtsVoiceOptions(cfg.voiceId || '', false);
-                    }
-                    renderOopzTtsRulesTable(cfg.memberRules || []);
-                    if (okEl) {
-                        okEl.textContent =
-                            n > 0
-                                ? '已移除 ' + n + ' 个不可用音色，配置已自动修正'
-                                : '全部 edge 音色可用，无需移除';
-                        okEl.hidden = false;
-                    }
-                } catch (eProbe) {
-                    showErr('oopzTtsErr', (eProbe && eProbe.message) || '音色检测失败');
-                } finally {
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.textContent = '检测并移除不可用音色';
-                    }
                 }
             }
 
