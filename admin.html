@@ -1598,7 +1598,7 @@
                     </summary>
                     <div class="branch-help-body">
                         <p class="hint">进语音频道时在 OOPZ 内 TTS 播报（非网站播放）。保存后约 30 秒同步；需启动 oopz-bot。</p>
-                        <p class="hint">「克隆音色」来自 <code>oopz-bot/yise/</code> 下的参考 MP3（<code>voices.json</code> 登记），需安装 <a href="https://github.com/OpenMOSS/MOSS-TTS-Nano" target="_blank" rel="noopener">MOSS-TTS-Nano</a> 并在 <code>oopz-bot/.env</code> 配置 <code>MOSS_TTS_DIR</code>。下方亦可选用 edge-tts 普通话/方言。</p>
+                        <p class="hint">「克隆音色」参考 MP3：阿里云仅部署 backend 时放 <code>backend/data/yise/</code>；完整项目可放 <code>oopz-bot/yise/</code>（含 <code>voices.json</code>）。实际播报在 bot 机需 <a href="https://github.com/OpenMOSS/MOSS-TTS-Nano" target="_blank" rel="noopener">MOSS-TTS-Nano</a> 与 <code>MOSS_TTS_DIR</code>。亦可选用 edge-tts。</p>
                     </div>
                 </details>
 
@@ -1627,7 +1627,7 @@
                 </div>
 
                 <h3 class="oopz-subhead">免冷却名单</h3>
-                <p class="hint">名单内 ID 每次进频道都播报，不受频道冷却与重复进房（约 2 分钟内）限制。</p>
+                <p class="hint">名单内 ID 每次进频道都播报，不受频道冷却与重复进房（约 2 分钟内）限制；排队时<strong>优先播报</strong>，且不参与「超过 6 人合并欢迎」。</p>
                 <div class="oopz-tts-rules-toolbar">
                     <button type="button" id="btnAddOopzNoCooldown" class="btn-secondary">添加 ID</button>
                     <span class="users-count" id="oopzNoCooldownCount"></span>
@@ -3781,8 +3781,10 @@
             async function loadOopzTtsUi() {
                 var errEl = document.getElementById('oopzTtsErr');
                 var okEl = document.getElementById('oopzTtsOk');
+                var yiseOkHint = document.getElementById('oopzTtsYiseOkHint');
                 if (errEl) errEl.hidden = true;
                 if (okEl) okEl.hidden = true;
+                if (yiseOkHint) yiseOkHint.hidden = true;
                 try {
                     var s = loadSess();
                     var data = await window.UssAuthApi.adminGetOopzTts(s.token);
@@ -3793,14 +3795,51 @@
                     var templateEl = document.getElementById('oopzTtsDefaultTemplate');
                     var cooldownEl = document.getElementById('oopzTtsCooldownSec');
                     var apiVoices = Array.isArray(cfg.voices) ? cfg.voices : [];
-                    var apiCloneCount = apiVoices.filter(function (v) {
-                        return String(v.group || '') === '克隆音色';
+                    var cloneScan = cfg.cloneVoiceScan || {};
+                    var apiCloneReady = apiVoices.filter(function (v) {
+                        return String(v.group || '') === '克隆音色' && v.refAudioReady !== false;
                     }).length;
+                    var cloneReady =
+                        cloneScan.readyCount != null ? cloneScan.readyCount : apiCloneReady;
                     oopzTtsVoiceOptions = mergeOopzCloneVoiceFallback(apiVoices);
-                    if (errEl && apiCloneCount < OOPZ_CLONE_VOICE_FALLBACK.length) {
+                    if (errEl && cloneReady < OOPZ_CLONE_VOICE_FALLBACK.length) {
+                        var yiseHint = cloneScan.yiseDir
+                            ? String(cloneScan.yiseDir)
+                            : 'backend\\data\\yise';
+                        var miss =
+                            cloneScan.missingIds && cloneScan.missingIds.length
+                                ? cloneScan.missingIds.join('、')
+                                : 'yise_dongman、yise_foreign、yise_wumei';
                         errEl.textContent =
-                            '当前连接的 backend 未扫描到全部克隆参考音：请把 oopz-bot/yise/ 下 3 个 MP3 与 voices.json 放到服务器同路径，重启 backend 后刷新本页。下拉中已显示登记项，但试听/播报需服务器上确有 MP3。';
+                            '未扫描到全部克隆参考 MP3（已就绪 ' +
+                            cloneReady +
+                            '/' +
+                            OOPZ_CLONE_VOICE_FALLBACK.length +
+                            '）。请在服务器目录放入 3 个 MP3 并重启 backend：\n' +
+                            yiseHint +
+                            '\n缺少：' +
+                            miss +
+                            ' 对应的 .mp3（可与 voices.json 同级）。';
                         errEl.hidden = false;
+                    } else if (cloneReady >= OOPZ_CLONE_VOICE_FALLBACK.length && cloneScan.yiseDir) {
+                        var okHint = document.getElementById('oopzTtsYiseOkHint');
+                        if (!okHint) {
+                            okHint = document.createElement('p');
+                            okHint.id = 'oopzTtsYiseOkHint';
+                            okHint.className = 'hint';
+                            if (errEl && errEl.parentNode) {
+                                errEl.parentNode.insertBefore(okHint, errEl.nextSibling);
+                            }
+                        }
+                        if (okHint) {
+                            okHint.textContent =
+                                '克隆参考音目录：' +
+                                cloneScan.yiseDir +
+                                '（已识别 ' +
+                                cloneReady +
+                                ' 个）';
+                            okHint.hidden = false;
+                        }
                     }
                     if (enabledEl) enabledEl.checked = cfg.enabled !== false;
                     if (voiceEl) {
