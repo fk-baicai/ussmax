@@ -162,6 +162,20 @@
             return data;
         },
 
+        async setOopzAnnounceEnabled(token, enabled) {
+            var r = await fetch(joinUrl('/api/me/oopz/announce'), {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: 'Bearer ' + token,
+                },
+                body: JSON.stringify({ enabled: !!enabled }),
+            });
+            var data = await parseJson(r);
+            if (!r.ok) throw new Error(data.message || '保存播报设置失败');
+            return data;
+        },
+
         async sendPasswordResetCode(email) {
             var r = await fetch(joinUrl('/api/password-reset/send-code'), {
                 method: 'POST',
@@ -334,6 +348,11 @@
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body || {}),
+            });
+        },
+        async adminProbeOopzTtsVoices(token) {
+            return adminJson(token, '/api/admin/oopz/tts/probe-voices', {
+                method: 'POST',
             });
         },
         async adminGetRegisterWhitelist(token) {

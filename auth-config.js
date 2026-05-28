@@ -48,4 +48,7 @@
     if (!window.USS_DEFAULT_AVATAR) {
         window.USS_DEFAULT_AVATAR = 'default-avatar.png';
     }
+    if (!window.USS_HONGHOU_AVATAR) {
+        window.USS_HONGHOU_AVATAR = '/avatars/honghou.jpg';
+    }
 })();

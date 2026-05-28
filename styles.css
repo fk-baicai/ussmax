@@ -54,8 +54,8 @@ body.home-page-body .nav-mega-panel {
     --navbar-logo-offset: calc(2.75rem + 50px);
     --home-content-max: 1400px;
     --home-content-pad-x: 40px; /* 首页内容区域左右内边距 */                
-    /* 相邻板块接缝处为 half+half；与聊天/帖子栈内 gap 同值，视觉留白一致 */
-    --home-section-block-gap: clamp(44px, 5vw, 56px);
+    /* 相邻大板块接缝（服务器状态↔OOPZ、OOPZ↔聊天）统一留白 */
+    --home-section-block-gap: clamp(64px, 7vw, 80px);
     --home-section-block-gap-split: calc(var(--home-section-block-gap) / 2);
     --navbar-bg: rgb(8, 22, 37);
     /* 首页双色：深 = 菜单栏底；浅 = 视频下方内容区 */
@@ -2056,7 +2056,7 @@ a.drawer-checkin-textlink:hover {
     pointer-events: none;
 }
 
-/* --- 首页 RSI 众筹资金统计 --- */
+/* --- RSI 众筹资金统计（工具页） --- */
 .rsi-funding-section {
     position: relative;
     z-index: 2;
@@ -2493,16 +2493,16 @@ a.drawer-checkin-textlink:hover {
 .oopz-bridge-head {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
     gap: 16px 24px;
     margin-bottom: clamp(22px, 2.8vw, 30px);
 }
 
-.oopz-bridge-head-text {
+.oopz-bridge-head-left {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-end;
+    align-items: center;
     gap: 10px 14px;
     min-width: 0;
 }
@@ -2539,6 +2539,252 @@ a.drawer-checkin-textlink:hover {
     border-color: rgba(61, 217, 122, 0.45);
     background: rgba(61, 217, 122, 0.12);
     color: #9ef0bc;
+}
+
+.oopz-bind-head-block {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 0;
+}
+
+.oopz-user-prefs {
+    margin: 12px 0 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(94, 233, 255, 0.16);
+    background: rgba(8, 28, 48, 0.55);
+}
+
+.oopz-user-prefs__layout {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 10px 16px;
+}
+
+.oopz-user-prefs__main {
+    flex: 1 1 220px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-self: stretch;
+    gap: 0;
+    font-size: 1rem;
+}
+
+.oopz-user-prefs__checkin {
+    flex: 0 0 auto;
+    width: max-content;
+    max-width: 100%;
+    min-width: 0;
+    margin-left: auto;
+    padding-left: 12px;
+    border-left: 1px solid rgba(94, 233, 255, 0.12);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: space-between;
+    align-self: stretch;
+    gap: 0;
+    text-align: right;
+    font-size: 0.88rem;
+}
+
+@media (max-width: 640px) {
+    .oopz-user-prefs__main,
+    .oopz-user-prefs__checkin {
+        justify-content: flex-start;
+        gap: 8px;
+    }
+
+    .oopz-user-prefs__checkin {
+        flex: 1 1 100%;
+        padding-left: 0;
+        padding-top: 10px;
+        border-left: none;
+        border-top: 1px solid rgba(94, 233, 255, 0.12);
+        text-align: left;
+        align-items: flex-start;
+    }
+}
+
+.oopz-user-prefs__checkin-title {
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: 0.06em;
+    color: rgba(94, 233, 255, 0.88);
+}
+
+.oopz-user-prefs__checkin-remain {
+    margin: 0;
+    font-size: 0.86rem;
+    line-height: 1.3;
+    color: rgba(210, 236, 248, 0.92);
+}
+
+.oopz-user-prefs__checkin-branches {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin: 0;
+    width: max-content;
+    max-width: 100%;
+    font-size: 0.82rem;
+    line-height: 1.3;
+    color: rgba(168, 216, 232, 0.78);
+}
+
+.oopz-user-prefs__checkin-branches-label {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.oopz-user-prefs__checkin-branch-list {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0 10px;
+    min-width: 0;
+}
+
+.oopz-user-prefs__checkin-branch-item {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.oopz-user-prefs__checkin-branch-item:not(:first-child)::before {
+    content: '·';
+    margin-right: 8px;
+    opacity: 0.55;
+}
+
+@media (max-width: 900px) {
+    .oopz-user-prefs__checkin-branch-list {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        row-gap: 4px;
+    }
+}
+
+@media (max-width: 640px) {
+    .oopz-user-prefs__checkin-branches {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+
+    .oopz-user-prefs__checkin-branch-list {
+        justify-content: flex-start;
+    }
+}
+
+.oopz-user-prefs__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    margin: 0;
+}
+
+.oopz-user-prefs__stats {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.35;
+    color: rgba(210, 236, 248, 0.92);
+}
+
+.oopz-user-prefs__live {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: #0a1a12;
+    background: linear-gradient(90deg, #6ef0a8, #3dd97a);
+    animation: oopz-live-pulse 2s ease-in-out infinite;
+}
+
+@keyframes oopz-live-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.72;
+    }
+}
+
+.oopz-user-prefs__toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    min-height: 30px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.oopz-user-prefs__toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.oopz-user-prefs__toggle-ui {
+    flex-shrink: 0;
+    width: 40px;
+    height: 22px;
+    border-radius: 11px;
+    background: rgba(120, 150, 170, 0.45);
+    position: relative;
+    transition: background 0.2s ease;
+}
+
+.oopz-user-prefs__toggle-ui::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s ease;
+}
+
+.oopz-user-prefs__toggle input:checked + .oopz-user-prefs__toggle-ui {
+    background: rgba(61, 217, 122, 0.85);
+}
+
+.oopz-user-prefs__toggle input:checked + .oopz-user-prefs__toggle-ui::after {
+    transform: translateX(18px);
+}
+
+.oopz-user-prefs__toggle input:disabled + .oopz-user-prefs__toggle-ui {
+    opacity: 0.45;
+}
+
+.oopz-user-prefs__toggle-label {
+    font-size: 0.78rem;
+    line-height: 1.25;
+    color: rgba(200, 228, 240, 0.88);
+}
+
+.oopz-user-prefs__hint {
+    margin: 8px 0 0;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: rgba(168, 216, 232, 0.65);
 }
 
 .oopz-bind-backdrop {
@@ -2674,6 +2920,7 @@ body.oopz-bind-open {
     display: inline-flex;
     align-items: center;
     gap: 12px;
+    margin-left: auto;
     padding: 0.55rem 1rem;
     border-radius: 999px;
     border: 1px solid rgba(95, 184, 255, 0.28);
@@ -3315,6 +3562,128 @@ body.oopz-bind-open {
     background: rgba(80, 20, 30, 0.35);
     color: #ffb0b0;
     font-size: 0.85rem;
+}
+
+.oopz-command-guide.oopz-bridge-panel {
+    margin-top: var(--home-section-block-gap);
+}
+
+.oopz-command-guide.is-staff-locked .oopz-command-guide__summary {
+    cursor: not-allowed;
+    opacity: 0.72;
+}
+
+.oopz-command-guide.is-staff-locked .oopz-command-guide__summary:hover {
+    background: transparent;
+}
+
+.oopz-command-guide.is-staff-locked .oopz-command-guide__meta {
+    color: rgba(255, 176, 120, 0.88);
+}
+
+.oopz-command-guide__summary {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 1rem 1.3rem;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    transition: background 0.15s ease;
+}
+
+.oopz-command-guide__summary:hover {
+    background: rgba(94, 233, 255, 0.04);
+}
+
+.oopz-command-guide__summary::-webkit-details-marker {
+    display: none;
+}
+
+.oopz-command-guide__summary::after {
+    content: '';
+    width: 0;
+    height: 0;
+    margin-left: auto;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 7px solid rgba(168, 216, 232, 0.85);
+    transition: transform 0.18s ease;
+}
+
+.oopz-command-guide[open] .oopz-command-guide__summary {
+    border-bottom: 1px solid rgba(94, 233, 255, 0.12);
+}
+
+.oopz-command-guide[open] .oopz-command-guide__summary::after {
+    transform: rotate(180deg);
+}
+
+.oopz-command-guide__meta {
+    margin-left: 0.35rem;
+    font-size: var(--oopz-fs-sm);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: rgba(168, 216, 232, 0.55);
+}
+
+.oopz-command-guide__inner {
+    padding: 16px 18px 18px;
+}
+
+.oopz-command-guide__hint {
+    margin: 0 0 0.85rem;
+    font-size: var(--oopz-fs-sm);
+    color: rgba(168, 216, 232, 0.72);
+}
+
+.oopz-command-guide__body {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.oopz-command-guide__section {
+    margin: 0;
+    padding: 12px 13px;
+    border-radius: 11px;
+    border: 1px solid rgba(95, 184, 255, 0.12);
+    background: rgba(0, 0, 0, 0.16);
+}
+
+.oopz-command-guide__section-title {
+    margin: 0 0 0.45rem;
+    font-size: var(--oopz-fs-sm);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: rgba(200, 230, 255, 0.82);
+}
+
+.oopz-command-guide__list {
+    margin: 0;
+    padding-left: 1.05rem;
+    color: rgba(210, 230, 240, 0.88);
+    font-size: var(--oopz-fs-sm);
+    line-height: 1.55;
+}
+
+.oopz-command-guide__list li + li {
+    margin-top: 0.2rem;
+}
+
+.oopz-command-guide__examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.oopz-command-guide__example {
+    display: inline-block;
+    padding: 0.28rem 0.55rem;
+    border-radius: 6px;
+    background: rgba(94, 233, 255, 0.08);
+    border: 1px solid rgba(95, 184, 255, 0.14);
+    font-size: 0.78rem;
+    color: rgba(220, 240, 255, 0.92);
 }
 
 /* --- 首页舰员交流区（论坛式） --- */
@@ -5641,7 +6010,7 @@ a.community-author-avatar-link:focus-visible {
     --navbar-height: calc(var(--navbar-top-height) + var(--navbar-main-height));
     --navbar-logo-offset: 0;
     --home-content-pad-x: 5px;
-    --home-section-block-gap: clamp(32px, 7vw, 44px);
+    --home-section-block-gap: clamp(48px, 8vw, 64px);
     --hero-progress-track-max: min(88px, 22vw);
     --hero-progress-btn-size: 28px;
   }

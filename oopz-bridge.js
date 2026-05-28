@@ -489,6 +489,9 @@
             .then(function (res) {
                 if (!res.ok) throw new Error((res.data && res.data.message) || 'HTTP 错误');
                 renderState(res.data);
+                if (typeof window.refreshOopzUserPrefs === 'function') {
+                    window.refreshOopzUserPrefs();
+                }
             })
             .catch(function (e) {
                 setError('拉取失败：' + (e.message || '网络错误'));

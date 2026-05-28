@@ -514,6 +514,30 @@
             color: var(--txt);
             font-size: 0.88rem;
         }
+        #secOopzAutoCheckin .oopz-auto-branch-scroll {
+            overflow-x: auto;
+            margin-bottom: 0.65rem;
+        }
+        #secOopzAutoCheckin .oopz-auto-branch-scroll table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+        #secOopzAutoCheckin .oopz-auto-branch-scroll th,
+        #secOopzAutoCheckin .oopz-auto-branch-scroll td {
+            padding: 0.45rem 0.55rem;
+            border-bottom: 1px solid rgba(95, 184, 255, 0.12);
+            vertical-align: middle;
+        }
+        #secOopzAutoCheckin .oopz-auto-branch-scroll th {
+            text-align: left;
+            color: rgba(180, 210, 255, 0.85);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        #secOopzAutoCheckin .oopz-auto-branch-scroll input[type="number"] {
+            width: 4.2rem;
+        }
         .oopz-subhead {
             margin: 1rem 0 0.55rem;
             font-size: 0.95rem;
@@ -1541,30 +1565,25 @@
                         说明
                     </summary>
                     <div class="branch-help-body">
-                        <p class="hint">已绑定 OOPZ 的成员，在语音频道累计在线达到设定分钟数后，自动写入指定分部签到。在线时长由机器人心跳统计（约每分钟 +1）。</p>
+                        <p class="hint">已绑定 OOPZ 的成员，在语音频道累计在线达到设定分钟数后，自动写入<strong>对应分部</strong>签到。各分部可独立启用、设置在线时长与时段限制。在线时长由机器人心跳统计（约每分钟 +1）。</p>
                         <p class="hint"><strong>仅在签到时段内：</strong>勾选时，须该分部在上方「分部签到开放窗口」里当日已开放（全天或规定时段），才会自动签到；不勾选则达标即签，不受时段限制。</p>
                     </div>
                 </details>
-                <div class="oopz-auto-toolbar def-dur-row">
-                    <label class="oopz-auto-check"><input type="checkbox" id="oopzAutoEnabled" /> 启用</label>
-                    <span class="def-dur-sep" aria-hidden="true"></span>
-                    <label for="oopzAutoMinMinutes">在线 ≥</label>
-                    <input type="number" id="oopzAutoMinMinutes" min="1" max="1440" step="1" value="60" class="sched-num-inp" aria-label="最低在线分钟" />
-                    <span>分钟</span>
-                    <span class="def-dur-sep" aria-hidden="true"></span>
-                    <label for="oopzAutoBranch">分部</label>
-                    <select id="oopzAutoBranch" aria-label="自动签到分部">
-                        <option value="hq">总部</option>
-                        <option value="squad1">一中队</option>
-                        <option value="uss">USS创伤舰队</option>
-                        <option value="ussprod">USS生产队</option>
-                    </select>
-                    <span class="def-dur-sep" aria-hidden="true"></span>
-                    <label class="oopz-auto-check" title="须该分部当日已在签到日程中开放，才会自动签到">
-                        <input type="checkbox" id="oopzAutoRequireWindow" checked /> 仅在签到时段内
-                    </label>
-                    <span class="def-dur-sep" aria-hidden="true"></span>
-                    <button type="button" id="btnSaveOopzAuto">保存</button>
+                <div class="oopz-auto-branch-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>分部</th>
+                                <th>启用</th>
+                                <th>在线 ≥（分钟）</th>
+                                <th>仅在签到时段内</th>
+                            </tr>
+                        </thead>
+                        <tbody id="oopzAutoBranchTbody"></tbody>
+                    </table>
+                </div>
+                <div class="row">
+                    <button type="button" id="btnSaveOopzAuto">保存自动签到配置</button>
                 </div>
                 <div id="oopzAutoErr" class="err" hidden></div>
                 <div id="oopzAutoOk" class="ok" hidden></div>
@@ -1578,10 +1597,8 @@
                         说明
                     </summary>
                     <div class="branch-help-body">
-                        <p class="hint">在此统一管理进入频道 TTS 播报：默认音色/文案，以及按 OOPZ ID 的定制规则。保存后机器人约 30 秒内同步，并在 <strong>OOPZ 语音频道内</strong>自动播放（不是网站播放）。</p>
-                        <p class="hint">默认播报：需成员在网站完成 <strong>OOPZ ID 绑定</strong>。若在下方「成员定制播报」中配置了某 OOPZ ID，则<strong>无需绑定</strong>也会按定制规则播报。</p>
-                        <p class="hint">文案占位符：<code>{user}</code> 昵称、<code>{channel}</code> 频道名、<code>{area}</code> 域名。成员定制文案也可写固定句子（可不包含占位符）。需确保 oopz-bot 已启动且 <code>OOPZ_VOICE_PLAY_ENABLED=1</code>。</p>
-                        <p class="hint">含普通话与 <strong>东北 / 陕西 / 粤语 / 台湾</strong> 方言女声（★ 为推荐微调）。edge-tts 免费通道<strong>暂无上海话、四川话</strong>等；方言合成可能比普通话略慢 1～2 秒。</p>
+                        <p class="hint">进语音频道时在 OOPZ 内 TTS 播报（非网站播放）。保存后约 30 秒同步；需启动 oopz-bot。</p>
+                        <p class="hint">「克隆音色」来自 <code>oopz-bot/yise/</code> 下的参考 MP3（<code>voices.json</code> 登记），需安装 <a href="https://github.com/OpenMOSS/MOSS-TTS-Nano" target="_blank" rel="noopener">MOSS-TTS-Nano</a> 并在 <code>oopz-bot/.env</code> 配置 <code>MOSS_TTS_DIR</code>。下方亦可选用 edge-tts 普通话/方言。</p>
                     </div>
                 </details>
 
@@ -1606,11 +1623,11 @@
                 <div class="oopz-tts-template-row">
                     <label for="oopzTtsCooldownSec">播报冷却（秒）</label>
                     <input type="number" id="oopzTtsCooldownSec" min="10" max="600" step="10" value="60" class="sched-num-inp" aria-label="播报冷却秒数" />
-                    <span class="hint">同一成员在同一频道重复进入，间隔少于此秒数则不重复播报。</span>
+                    <span class="hint">重复进同一频道时的最短间隔。</span>
                 </div>
 
                 <h3 class="oopz-subhead">免冷却名单</h3>
-                <p class="hint">以下 OOPZ ID 每次进频道都会播报，不受上方冷却限制。可添加多条。</p>
+                <p class="hint">名单内 ID 每次进频道都播报，不受频道冷却与重复进房（约 2 分钟内）限制。</p>
                 <div class="oopz-tts-rules-toolbar">
                     <button type="button" id="btnAddOopzNoCooldown" class="btn-secondary">添加 ID</button>
                     <span class="users-count" id="oopzNoCooldownCount"></span>
@@ -1628,7 +1645,7 @@
                 </div>
 
                 <h3 class="oopz-subhead">成员定制播报</h3>
-                <p class="hint">为指定 OOPZ ID 设置独立音色或文案；<strong>在此添加的规则会自动获得播报资格</strong>（不必在网站绑定 OOPZ）。音色留空则跟随默认，文案留空则跟随默认文案。</p>
+                <p class="hint">按 ID 单独设音色/文案；添加后无需网站绑定。留空则跟随默认。</p>
                 <div class="oopz-tts-rules-toolbar">
                     <button type="button" id="btnAddOopzTtsRule" class="btn-secondary">添加规则</button>
                     <span class="users-count" id="oopzTtsRulesCount"></span>
@@ -1649,9 +1666,11 @@
                     </table>
                 </div>
 
-                <div class="row">
+                <div class="row oopz-tts-actions">
+                    <button type="button" id="btnProbeOopzTtsVoices" class="btn-secondary">检测并移除不可用音色</button>
                     <button type="button" id="btnSaveOopzTts">保存语音配置</button>
                 </div>
+                <p class="hint" id="oopzTtsProbeHint">不可用 edge 音色会自动从下拉中隐藏；播报时也会自动换为可用音色。</p>
                 <div id="oopzTtsErr" class="err" hidden></div>
                 <div id="oopzTtsOk" class="ok" hidden></div>
             </section>
@@ -2063,6 +2082,8 @@
                 document.getElementById('btnSaveSchedule').onclick = saveSchedule;
                 document.getElementById('btnSaveOopzAuto').onclick = saveOopzAutoCheckin;
                 document.getElementById('btnSaveOopzTts').onclick = saveOopzTts;
+                var btnProbeVoices = document.getElementById('btnProbeOopzTtsVoices');
+                if (btnProbeVoices) btnProbeVoices.onclick = probeOopzTtsVoices;
                 document.getElementById('btnAddOopzTtsRule').onclick = addOopzTtsRuleRow;
                 var btnAddNoCool = document.getElementById('btnAddOopzNoCooldown');
                 if (btnAddNoCool) btnAddNoCool.onclick = addOopzNoCooldownRow;
@@ -3310,6 +3331,67 @@
                 }
             }
 
+            var OOPZ_AUTO_BRANCHES = [
+                { id: 'hq', label: '总部' },
+                { id: 'squad1', label: '一中队' },
+                { id: 'uss', label: 'USS创伤舰队' },
+                { id: 'ussprod', label: 'USS生产队' },
+            ];
+
+            function renderOopzAutoBranchTable(branches) {
+                var tbody = document.getElementById('oopzAutoBranchTbody');
+                if (!tbody) return;
+                var bag = branches && typeof branches === 'object' ? branches : {};
+                tbody.innerHTML = OOPZ_AUTO_BRANCHES.map(function (b) {
+                    var cfg = bag[b.id] || {};
+                    var minVal = cfg.minOnlineMinutes != null ? cfg.minOnlineMinutes : 60;
+                    var enabled = cfg.enabled === true;
+                    var requireWin = cfg.requireScheduleWindow !== false;
+                    return (
+                        '<tr data-branch="' +
+                        b.id +
+                        '">' +
+                        '<td>' +
+                        b.label +
+                        '</td>' +
+                        '<td><label class="oopz-auto-check"><input type="checkbox" class="oopz-auto-branch-enabled" ' +
+                        (enabled ? 'checked' : '') +
+                        ' /> 启用</label></td>' +
+                        '<td><input type="number" class="oopz-auto-branch-min sched-num-inp" min="1" max="1440" step="1" value="' +
+                        minVal +
+                        '" aria-label="' +
+                        b.label +
+                        ' 最低在线分钟" /></td>' +
+                        '<td><label class="oopz-auto-check"><input type="checkbox" class="oopz-auto-branch-window" ' +
+                        (requireWin ? 'checked' : '') +
+                        ' /> 是</label></td>' +
+                        '</tr>'
+                    );
+                }).join('');
+            }
+
+            function collectOopzAutoBranchConfig() {
+                var tbody = document.getElementById('oopzAutoBranchTbody');
+                var out = {};
+                if (!tbody) return out;
+                tbody.querySelectorAll('tr[data-branch]').forEach(function (tr) {
+                    var bid = tr.getAttribute('data-branch');
+                    if (!bid) return;
+                    var enabledEl = tr.querySelector('.oopz-auto-branch-enabled');
+                    var minEl = tr.querySelector('.oopz-auto-branch-min');
+                    var windowEl = tr.querySelector('.oopz-auto-branch-window');
+                    var minRaw = minEl ? Number(minEl.value) : 60;
+                    var minMinutes =
+                        Number.isFinite(minRaw) && minRaw > 0 ? Math.min(1440, Math.floor(minRaw)) : 60;
+                    out[bid] = {
+                        enabled: !!(enabledEl && enabledEl.checked),
+                        minOnlineMinutes: minMinutes,
+                        requireScheduleWindow: !!(windowEl && windowEl.checked),
+                    };
+                });
+                return out;
+            }
+
             async function loadOopzAutoCheckinUi() {
                 var errEl = document.getElementById('oopzAutoErr');
                 var okEl = document.getElementById('oopzAutoOk');
@@ -3319,14 +3401,7 @@
                     var s = loadSess();
                     var data = await window.UssAuthApi.adminGetOopzAutoCheckin(s.token);
                     var cfg = (data && data.oopzAutoCheckin) || {};
-                    var enabledEl = document.getElementById('oopzAutoEnabled');
-                    var minEl = document.getElementById('oopzAutoMinMinutes');
-                    var branchEl = document.getElementById('oopzAutoBranch');
-                    var windowEl = document.getElementById('oopzAutoRequireWindow');
-                    if (enabledEl) enabledEl.checked = !!cfg.enabled;
-                    if (minEl) minEl.value = cfg.minOnlineMinutes != null ? cfg.minOnlineMinutes : 60;
-                    if (branchEl) branchEl.value = cfg.targetBranch || 'hq';
-                    if (windowEl) windowEl.checked = cfg.requireScheduleWindow !== false;
+                    renderOopzAutoBranchTable(cfg.branches || {});
                 } catch (eLoad) {
                     showErr('oopzAutoErr', (eLoad && eLoad.message) || '加载 OOPZ 自动签到配置失败');
                 }
@@ -3338,21 +3413,15 @@
                 var okEl = document.getElementById('oopzAutoOk');
                 if (errEl) errEl.hidden = true;
                 if (okEl) okEl.hidden = true;
-                var enabledEl = document.getElementById('oopzAutoEnabled');
-                var minEl = document.getElementById('oopzAutoMinMinutes');
-                var branchEl = document.getElementById('oopzAutoBranch');
-                var windowEl = document.getElementById('oopzAutoRequireWindow');
-                var minRaw = minEl ? Number(minEl.value) : 60;
-                var minMinutes = Number.isFinite(minRaw) && minRaw > 0 ? Math.min(1440, Math.floor(minRaw)) : 60;
+                var branches = collectOopzAutoBranchConfig();
+                var enabledCount = Object.keys(branches).filter(function (bid) {
+                    return branches[bid] && branches[bid].enabled;
+                }).length;
                 try {
-                    await window.UssAuthApi.adminPutOopzAutoCheckin(s.token, {
-                        enabled: !!(enabledEl && enabledEl.checked),
-                        minOnlineMinutes: minMinutes,
-                        targetBranch: branchEl ? branchEl.value : 'hq',
-                        requireScheduleWindow: !!(windowEl && windowEl.checked),
-                    });
+                    await window.UssAuthApi.adminPutOopzAutoCheckin(s.token, { branches: branches });
                     if (okEl) {
-                        okEl.textContent = '已保存 OOPZ 自动签到配置';
+                        okEl.textContent =
+                            '已保存 OOPZ 自动签到配置（' + enabledCount + ' 个分部已启用）';
                         okEl.hidden = false;
                     }
                     await loadOopzAutoCheckinUi();
@@ -3362,14 +3431,99 @@
             }
 
             var oopzTtsVoiceOptions = [];
+            var OOPZ_CLONE_VOICE_FALLBACK = [
+                { id: 'yise_dongman', label: '动漫少女', group: '克隆音色', voice: 'clone:yise_dongman' },
+                { id: 'yise_foreign', label: '外国大叔', group: '克隆音色', voice: 'clone:yise_foreign' },
+                { id: 'yise_wumei', label: '妩媚少女', group: '克隆音色', voice: 'clone:yise_wumei' },
+            ];
+
+            function cloneVoiceOptionScore(v) {
+                var id = String((v && v.id) || '');
+                var s = 0;
+                if (v && v.refAudioReady !== false) s += 100;
+                if (id.indexOf('yise_') === 0) s += 50;
+                if (!/^yinse_[a-f0-9]{8}$/i.test(id)) s += 20;
+                return s;
+            }
+
+            function dedupeOopzCloneVoiceOptions(list) {
+                var out = [];
+                var byLabel = {};
+                (Array.isArray(list) ? list : []).forEach(function (v) {
+                    if (String(v.group || '') !== '克隆音色') {
+                        out.push(v);
+                        return;
+                    }
+                    var lk = String(v.label || '')
+                        .replace(/（参考音待上传）/g, '')
+                        .trim() || String(v.id || '');
+                    var prev = byLabel[lk];
+                    if (!prev) {
+                        byLabel[lk] = v;
+                        out.push(v);
+                        return;
+                    }
+                    if (cloneVoiceOptionScore(v) > cloneVoiceOptionScore(prev)) {
+                        var idx = out.indexOf(prev);
+                        if (idx >= 0) out[idx] = v;
+                        byLabel[lk] = v;
+                    }
+                });
+                return out;
+            }
+
+            function mergeOopzCloneVoiceFallback(list) {
+                var arr = dedupeOopzCloneVoiceOptions(Array.isArray(list) ? list.slice() : []);
+                var seen = {};
+                var labels = {};
+                arr.forEach(function (v) {
+                    seen[String(v.id || '')] = true;
+                    if (String(v.group || '') === '克隆音色') {
+                        labels[String(v.label || '').replace(/（参考音待上传）/g, '').trim()] = true;
+                    }
+                });
+                OOPZ_CLONE_VOICE_FALLBACK.forEach(function (v) {
+                    var lk = String(v.label || '').trim();
+                    if (labels[lk] || seen[v.id]) return;
+                    arr.unshift(v);
+                    seen[v.id] = true;
+                    labels[lk] = true;
+                });
+                return dedupeOopzCloneVoiceOptions(arr);
+            }
+
+            function formatOopzVoiceOptionLabel(v) {
+                var id = String((v && v.id) || '').trim();
+                var label = String((v && v.label) || id).trim();
+                var voice = String((v && v.voice) || '').trim();
+                if (!label) label = id || voice || '未知';
+                if (!voice || voice === label || voice === id) {
+                    return label;
+                }
+                var engine = voice.indexOf('clone:') === 0 ? voice.slice(6) : voice;
+                return label + ' · ' + engine;
+            }
+
+            function findOopzVoiceOptionById(voiceId) {
+                var needle = String(voiceId || '').trim();
+                if (!needle) return null;
+                for (var i = 0; i < oopzTtsVoiceOptions.length; i++) {
+                    if (String(oopzTtsVoiceOptions[i].id || '') === needle) {
+                        return oopzTtsVoiceOptions[i];
+                    }
+                }
+                return null;
+            }
 
             function buildOopzTtsVoiceOptions(selectedId, includeEmpty) {
                 var html = '';
+                var sel = String(selectedId || '').trim();
                 if (includeEmpty) {
                     html += '<option value="">跟随默认</option>';
                 }
                 var groups = {};
                 var groupOrder = [];
+                var hasSelected = !sel;
                 oopzTtsVoiceOptions.forEach(function (v) {
                     var group = String(v.group || '其他');
                     if (!groups[group]) {
@@ -3378,17 +3532,39 @@
                     }
                     groups[group].push(v);
                 });
+                groupOrder.sort(function (a, b) {
+                    if (a === '克隆音色') return -1;
+                    if (b === '克隆音色') return 1;
+                    return a.localeCompare(b, 'zh-CN');
+                });
                 groupOrder.forEach(function (group) {
                     html += '<optgroup label="' + group.replace(/"/g, '&quot;') + '">';
                     groups[group].forEach(function (v) {
                         var id = String(v.id || '');
-                        var label = String(v.label || id);
+                        var display = formatOopzVoiceOptionLabel(v);
+                        var picked = sel === id;
+                        if (picked) hasSelected = true;
                         html += '<option value="' + id.replace(/"/g, '&quot;') + '"' +
-                            (selectedId === id ? ' selected' : '') + '>' +
-                            label.replace(/</g, '&lt;') + '</option>';
+                            (picked ? ' selected' : '') + ' title="' +
+                            display.replace(/"/g, '&quot;') + '">' +
+                            display.replace(/</g, '&lt;') + '</option>';
                     });
                     html += '</optgroup>';
                 });
+                if (sel && !hasSelected) {
+                    var orphan = findOopzVoiceOptionById(sel);
+                    var orphanLabel = orphan
+                        ? formatOopzVoiceOptionLabel(orphan)
+                        : sel;
+                    html +=
+                        '<optgroup label="当前配置"><option value="' +
+                        sel.replace(/"/g, '&quot;') +
+                        '" selected title="' +
+                        orphanLabel.replace(/"/g, '&quot;') +
+                        '">' +
+                        orphanLabel.replace(/</g, '&lt;') +
+                        '</option></optgroup>';
+                }
                 return html;
             }
 
@@ -3616,12 +3792,21 @@
                     var rateEl = document.getElementById('oopzTtsRate');
                     var templateEl = document.getElementById('oopzTtsDefaultTemplate');
                     var cooldownEl = document.getElementById('oopzTtsCooldownSec');
-                    oopzTtsVoiceOptions = Array.isArray(cfg.voices) ? cfg.voices : [];
+                    var apiVoices = Array.isArray(cfg.voices) ? cfg.voices : [];
+                    var apiCloneCount = apiVoices.filter(function (v) {
+                        return String(v.group || '') === '克隆音色';
+                    }).length;
+                    oopzTtsVoiceOptions = mergeOopzCloneVoiceFallback(apiVoices);
+                    if (errEl && apiCloneCount < OOPZ_CLONE_VOICE_FALLBACK.length) {
+                        errEl.textContent =
+                            '当前连接的 backend 未扫描到全部克隆参考音：请把 oopz-bot/yise/ 下 3 个 MP3 与 voices.json 放到服务器同路径，重启 backend 后刷新本页。下拉中已显示登记项，但试听/播报需服务器上确有 MP3。';
+                        errEl.hidden = false;
+                    }
                     if (enabledEl) enabledEl.checked = cfg.enabled !== false;
                     if (voiceEl) {
-                        voiceEl.innerHTML = buildOopzTtsVoiceOptions(cfg.voiceId || 'xiaoxiao_natural', false);
+                        voiceEl.innerHTML = buildOopzTtsVoiceOptions(cfg.voiceId || 'yise_dongman', false);
                     }
-                    if (rateEl && cfg.rate) rateEl.value = cfg.rate;
+                    if (rateEl) rateEl.value = cfg.rate || '+0%';
                     if (templateEl) {
                         templateEl.value = cfg.defaultTemplate || '欢迎 {user} 登舰成功';
                     }
@@ -3630,8 +3815,58 @@
                     }
                     renderNoCooldownTable(cfg.noCooldownOopzIds || []);
                     renderOopzTtsRulesTable(cfg.memberRules || []);
+                    var probeHint = document.getElementById('oopzTtsProbeHint');
+                    var dv = cfg.disabledVoices || {};
+                    var dc = dv.count != null ? dv.count : (dv.neuralVoices && dv.neuralVoices.length) || 0;
+                    if (probeHint) {
+                        probeHint.textContent =
+                            dc > 0
+                                ? '已屏蔽 ' +
+                                  dc +
+                                  ' 个不可用 edge 音色（下拉已隐藏，播报会自动换音）。可点「检测并移除不可用音色」重新扫描。'
+                                : '不可用 edge 音色会自动从下拉中隐藏；播报时也会自动换为可用音色。可点「检测并移除不可用音色」扫描。';
+                    }
                 } catch (eLoad) {
                     showErr('oopzTtsErr', (eLoad && eLoad.message) || '加载 OOPZ 语音播报配置失败');
+                }
+            }
+
+            async function probeOopzTtsVoices() {
+                var s = loadSess();
+                var errEl = document.getElementById('oopzTtsErr');
+                var okEl = document.getElementById('oopzTtsOk');
+                var btn = document.getElementById('btnProbeOopzTtsVoices');
+                if (errEl) errEl.hidden = true;
+                if (okEl) okEl.hidden = true;
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = '检测中…';
+                }
+                try {
+                    var data = await window.UssAuthApi.adminProbeOopzTtsVoices(s.token);
+                    var n = (data && data.disabledNeuralVoices && data.disabledNeuralVoices.length) || 0;
+                    var cfg = (data && data.oopzTts) || {};
+                    var apiVoices = Array.isArray(cfg.voices) ? cfg.voices : [];
+                    oopzTtsVoiceOptions = mergeOopzCloneVoiceFallback(apiVoices);
+                    var voiceEl = document.getElementById('oopzTtsVoice');
+                    if (voiceEl) {
+                        voiceEl.innerHTML = buildOopzTtsVoiceOptions(cfg.voiceId || '', false);
+                    }
+                    renderOopzTtsRulesTable(cfg.memberRules || []);
+                    if (okEl) {
+                        okEl.textContent =
+                            n > 0
+                                ? '已移除 ' + n + ' 个不可用音色，配置已自动修正'
+                                : '全部 edge 音色可用，无需移除';
+                        okEl.hidden = false;
+                    }
+                } catch (eProbe) {
+                    showErr('oopzTtsErr', (eProbe && eProbe.message) || '音色检测失败');
+                } finally {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = '检测并移除不可用音色';
+                    }
                 }
             }
 
@@ -3654,9 +3889,14 @@
                 if (!Number.isFinite(announceCooldownSec)) announceCooldownSec = 60;
                 announceCooldownSec = Math.min(600, Math.max(10, Math.floor(announceCooldownSec)));
                 try {
+                    var voiceIdVal = voiceEl ? String(voiceEl.value || '').trim() : '';
+                    if (!voiceIdVal) {
+                        showErr('oopzTtsErr', '请选择默认音色');
+                        return;
+                    }
                     await window.UssAuthApi.adminPutOopzTts(s.token, {
                         enabled: !!(enabledEl && enabledEl.checked),
-                        voiceId: voiceEl ? voiceEl.value : 'xiaoxiao_natural',
+                        voiceId: voiceIdVal,
                         rate: rateEl ? rateEl.value : '+0%',
                         defaultTemplate: templateEl ? templateEl.value.trim() : '欢迎 {user} 登舰成功',
                         announceCooldownSec: announceCooldownSec,

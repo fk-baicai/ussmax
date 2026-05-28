@@ -1,6 +1,6 @@
 /**
- * 首页 RSI 众筹资金统计（Funds / Star Citizens + 时间线）
- * 经本站 /api/rsi-funding-stats 读取；localStorage 1 小时缓存。
+ * RSI 众筹资金统计（Funds / Star Citizens + 时间线）
+ * 工具页 rsi-funding.html；经本站 /api/rsi-funding-stats 读取。
  */
 (function () {
     'use strict';

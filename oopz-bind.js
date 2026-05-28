@@ -52,7 +52,6 @@
 
     function fillModal(sess) {
         var boundEl = document.getElementById('oopzBindBoundText');
-        var onlineEl = document.getElementById('oopzBindOnlineText');
         var rowEl = document.getElementById('oopzBindFormRow');
         var inputEl = document.getElementById('oopzBindIdInput');
         var submitBtn = document.getElementById('oopzBindSubmitBtn');
@@ -81,29 +80,6 @@
             submitBtn.textContent = '确认绑定';
             if (!inputEl.matches(':focus')) inputEl.value = '';
         }
-
-        if (onlineEl) onlineEl.hidden = true;
-    }
-
-    async function refreshOnlineStats(sess) {
-        if (!sess || !sess.token || !window.UssAuthApi || !window.UssAuthApi.getOopzBinding) return;
-        var onlineEl = document.getElementById('oopzBindOnlineText');
-        try {
-            var data = await window.UssAuthApi.getOopzBinding(sess.token);
-            if (onlineEl && data.autoCheckinEnabled) {
-                onlineEl.textContent =
-                    '今日 OOPZ 在线 ' +
-                    (data.onlineMinutesToday || 0) +
-                    ' / ' +
-                    (data.autoCheckinMinMinutes || 60) +
-                    ' 分钟（达标后自动签到）';
-                onlineEl.hidden = false;
-            } else if (onlineEl) {
-                onlineEl.hidden = true;
-            }
-        } catch (e) {
-            /* ignore */
-        }
     }
 
     function openModal() {
@@ -117,7 +93,6 @@
             return;
         }
         fillModal(sess);
-        refreshOnlineStats(sess);
         backdrop.hidden = false;
         document.body.classList.add('oopz-bind-open');
         var inputEl = document.getElementById('oopzBindIdInput');
@@ -157,7 +132,6 @@
             }
             refreshHeadButton(merged);
             fillModal(merged);
-            await refreshOnlineStats(merged);
             if (typeof window.refreshLoginDrawerView === 'function') {
                 window.refreshLoginDrawerView();
             }
@@ -172,6 +146,9 @@
     function refreshAll() {
         var sess = loadAuthSession();
         refreshHeadButton(sess);
+        if (typeof window.refreshOopzUserPrefs === 'function') {
+            window.refreshOopzUserPrefs();
+        }
     }
 
     openBtn.addEventListener('click', openModal);
