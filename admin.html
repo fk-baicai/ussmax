@@ -1598,7 +1598,7 @@
                     </summary>
                     <div class="branch-help-body">
                         <p class="hint">进语音频道时在 OOPZ 内 TTS 播报（非网站播放）。保存后约 30 秒同步；需启动 oopz-bot。</p>
-                        <p class="hint">「克隆音色」参考 MP3：阿里云仅部署 backend 时放 <code>backend/data/yise/</code>；完整项目可放 <code>oopz-bot/yise/</code>（含 <code>voices.json</code>）。实际播报在 bot 机需 <a href="https://github.com/OpenMOSS/MOSS-TTS-Nano" target="_blank" rel="noopener">MOSS-TTS-Nano</a> 与 <code>MOSS_TTS_DIR</code>。亦可选用 edge-tts。</p>
+                        <p class="hint"><strong>克隆音色</strong>（MOSS，拟真慢）与 <strong>edge-tts</strong>（进房约 1～3 秒，含普通话/方言女声）均可选。克隆参考音放 <code>yise/</code>；edge 可用 <code>download_edge_voice_pack.py</code> 探测本机可用项。</p>
                     </div>
                 </details>
 
@@ -3430,7 +3430,7 @@
             var oopzTtsVoiceOptions = [];
             var OOPZ_CLONE_VOICE_FALLBACK = [
                 { id: 'yise_dongman', label: '动漫少女', group: '克隆音色', voice: 'clone:yise_dongman' },
-                { id: 'yise_foreign', label: '外国大叔', group: '克隆音色', voice: 'clone:yise_foreign' },
+                { id: 'yise_foreign', label: '温柔女声', group: '克隆音色', voice: 'clone:yise_foreign' },
                 { id: 'yise_wumei', label: '妩媚少女', group: '克隆音色', voice: 'clone:yise_wumei' },
             ];
 
@@ -3818,7 +3818,9 @@
                     }).length;
                     var cloneReady =
                         cloneScan.readyCount != null ? cloneScan.readyCount : apiCloneReady;
-                    oopzTtsVoiceOptions = mergeOopzCloneVoiceFallback(apiVoices);
+                    oopzTtsVoiceOptions = mergeOopzCloneVoiceFallback(
+                        Array.isArray(apiVoices) ? apiVoices.slice() : []
+                    );
                     var usesClone = oopzConfigUsesCloneVoice(cfg);
                     if (cloneReady < OOPZ_CLONE_VOICE_FALLBACK.length) {
                         var yiseHint = cloneScan.yiseDir
@@ -3827,7 +3829,7 @@
                         var miss =
                             cloneScan.missingIds && cloneScan.missingIds.length
                                 ? cloneScan.missingIds.join('、')
-                                : 'yise_dongman、yise_foreign、yise_wumei';
+                                : '动漫少女、妩媚少女、温柔女声';
                         var yiseMsg =
                             '克隆参考 MP3 已就绪 ' +
                             cloneReady +
@@ -3845,7 +3847,7 @@
                         } else if (yiseWarnEl) {
                             yiseWarnEl.textContent =
                                 yiseMsg +
-                                ' 当前默认/成员均为 edge 音色时可先忽略；选用克隆或 bot 机播报克隆时，请在阿里云与本机 bot 的 yise 目录各放一份 MP3。';
+                                ' 请在阿里云与本机 bot 的 yise 目录各放一份 MP3 后重启 backend / bot。';
                             yiseWarnEl.hidden = false;
                         }
                     } else if (cloneReady >= OOPZ_CLONE_VOICE_FALLBACK.length && cloneScan.yiseDir) {
@@ -3870,7 +3872,7 @@
                     }
                     if (enabledEl) enabledEl.checked = cfg.enabled !== false;
                     if (voiceEl) {
-                        voiceEl.innerHTML = buildOopzTtsVoiceOptions(cfg.voiceId || 'yise_dongman', false);
+                        voiceEl.innerHTML = buildOopzTtsVoiceOptions(cfg.voiceId || 'voice_loli_xiaoyi', false);
                     }
                     if (rateEl) rateEl.value = cfg.rate || '+0%';
                     if (templateEl) {

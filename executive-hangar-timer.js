@@ -1,14 +1,17 @@
 /**
- * 行政机库计时器 — 后端基准 + 本地每秒推算（主显示：本轮剩余）
+ * 行政机库计时器 — exectimer 定期校对 + 访客本机时间每秒推算
  */
 (function () {
     if (typeof document === 'undefined') return;
 
     var CYCLE_MS = 185 * 60 * 1000;
     var anchorStartTime = null;
-    var serverSkewMs = 0;
+    var calibrationOffsetMs = 0;
     var tickTimer = null;
     var pollTimer = null;
+    var calibrateTimer = null;
+    /** 与后端 WEB_CALIBRATE_INTERVAL_MS 一致：每 3 分钟带 fresh 拉一次网站校对 */
+    var CALIBRATE_POLL_MS = 3 * 60 * 1000;
 
     var board = document.getElementById('execHangarBoard');
     var errBox = document.getElementById('execHangarError');
@@ -138,8 +141,9 @@
         };
     }
 
-    function nowAligned() {
-        return Date.now() - serverSkewMs;
+    function localElapsedMs() {
+        if (anchorStartTime == null) return 0;
+        return modMs(Date.now() - anchorStartTime + calibrationOffsetMs, CYCLE_MS);
     }
 
     function renderClock(parts) {
@@ -187,8 +191,7 @@
 
     function tick() {
         if (anchorStartTime == null) return;
-        var elapsed = modMs(nowAligned() - anchorStartTime, CYCLE_MS);
-        render(computeLocal(elapsed));
+        render(computeLocal(localElapsedMs()));
     }
 
     function showError(msg) {
@@ -201,20 +204,38 @@
         if (errBox) errBox.classList.add('is-hidden');
     }
 
+    function reanchorFromServer(data) {
+        if (data.cycleDurationMs) CYCLE_MS = data.cycleDurationMs;
+        calibrationOffsetMs = 0;
+
+        // 用 API 已进行时间对齐到访客本机时钟，避免服务器 anchor 与浏览器时钟不一致
+        if (data.elapsedMs != null && Number.isFinite(Number(data.elapsedMs))) {
+            anchorStartTime = Date.now() - modMs(Number(data.elapsedMs), CYCLE_MS);
+            return;
+        }
+        if (data.anchorStartTime != null) {
+            var skew =
+                data.serverNow != null && Number.isFinite(Number(data.serverNow))
+                    ? Date.now() - Number(data.serverNow)
+                    : 0;
+            anchorStartTime = Number(data.anchorStartTime) + skew;
+            calibrationOffsetMs = Number(data.calibrationOffsetMs) || 0;
+        }
+    }
+
     function applyServerPayload(data) {
         if (!data || !data.ok) {
             showError((data && data.message) || '无法获取周期状态');
             return;
         }
         hideError();
-        anchorStartTime = data.anchorStartTime;
-        if (data.cycleDurationMs) CYCLE_MS = data.cycleDurationMs;
-        if (data.serverNow) serverSkewMs = Date.now() - data.serverNow;
+        reanchorFromServer(data);
         tick();
     }
 
-    function fetchState() {
-        return fetch(apiBase() + '/api/exec-hangar/state', { cache: 'no-store' })
+    function fetchState(fresh) {
+        var url = apiBase() + '/api/exec-hangar/state' + (fresh ? '?fresh=1' : '');
+        return fetch(url, { cache: 'no-store' })
             .then(function (r) {
                 return r.json().then(function (j) {
                     if (!r.ok) throw new Error((j && j.message) || 'HTTP ' + r.status);
@@ -267,11 +288,17 @@
     function start() {
         initLeds();
         initPhaseInfoCards();
-        fetchState();
+        fetchState(true);
         if (tickTimer) clearInterval(tickTimer);
         tickTimer = setInterval(tick, 1000);
         if (pollTimer) clearInterval(pollTimer);
-        pollTimer = setInterval(fetchState, 60000);
+        pollTimer = setInterval(function () {
+            fetchState(false);
+        }, 30000);
+        if (calibrateTimer) clearInterval(calibrateTimer);
+        calibrateTimer = setInterval(function () {
+            fetchState(true);
+        }, CALIBRATE_POLL_MS);
     }
 
     if (document.readyState === 'loading') {
