@@ -1621,13 +1621,13 @@
                     <input type="text" id="oopzTtsDefaultTemplate" value="欢迎 {user} 登舰成功" placeholder="欢迎 {user} 登舰成功" />
                 </div>
                 <div class="oopz-tts-template-row">
-                    <label for="oopzTtsCooldownSec">播报冷却（秒）</label>
-                    <input type="number" id="oopzTtsCooldownSec" min="10" max="600" step="10" value="60" class="sched-num-inp" aria-label="播报冷却秒数" />
-                    <span class="hint">重复进同一频道时的最短间隔。</span>
+                    <label for="oopzTtsCooldownSec">频道播报间隔（秒）</label>
+                    <input type="number" id="oopzTtsCooldownSec" min="1" max="30" step="1" value="1" class="sched-num-inp" aria-label="频道播报间隔秒数" />
+                    <span class="hint">同频道不同人之间最短间隔（默认 1 秒）。同一人 30 秒内重复进房不重复播（免冷却名单除外）。</span>
                 </div>
 
                 <h3 class="oopz-subhead">免冷却名单</h3>
-                <p class="hint">名单内 ID 每次进频道都播报，不受频道冷却与重复进房（约 2 分钟内）限制；超过 6 人合并欢迎时仍单独播报（按排队顺序，不插队）。</p>
+                <p class="hint">名单内 ID 每次进频道都播报（使用默认音色/文案，无需网站绑定），不受频道间隔与 30 秒内重复进房限制；同频道普通用户排队超过 5 人时合并欢迎，免冷却仍单独播报。请填写本人 OOPZ 数字 ID。</p>
                 <div class="oopz-tts-rules-toolbar">
                     <button type="button" id="btnAddOopzNoCooldown" class="btn-secondary">添加 ID</button>
                     <span class="users-count" id="oopzNoCooldownCount"></span>
@@ -3877,7 +3877,7 @@
                         templateEl.value = cfg.defaultTemplate || '欢迎 {user} 登舰成功';
                     }
                     if (cooldownEl) {
-                        cooldownEl.value = String(cfg.announceCooldownSec != null ? cfg.announceCooldownSec : 60);
+                        cooldownEl.value = String(cfg.announceCooldownSec != null ? cfg.announceCooldownSec : 1);
                     }
                     renderNoCooldownTable(cfg.noCooldownOopzIds || []);
                     renderOopzTtsRulesTable(cfg.memberRules || []);
@@ -3901,9 +3901,9 @@
                     return /^\d{5,12}$/.test(String(rule.oopzId || '').trim());
                 });
                 var noCooldownOopzIds = collectNoCooldownIds();
-                var announceCooldownSec = cooldownEl ? Number(cooldownEl.value) : 60;
-                if (!Number.isFinite(announceCooldownSec)) announceCooldownSec = 60;
-                announceCooldownSec = Math.min(600, Math.max(10, Math.floor(announceCooldownSec)));
+                var announceCooldownSec = cooldownEl ? Number(cooldownEl.value) : 1;
+                if (!Number.isFinite(announceCooldownSec)) announceCooldownSec = 1;
+                announceCooldownSec = Math.min(30, Math.max(1, Math.floor(announceCooldownSec)));
                 try {
                     var voiceIdVal = voiceEl ? String(voiceEl.value || '').trim() : '';
                     if (!voiceIdVal) {
