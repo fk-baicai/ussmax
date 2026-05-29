@@ -67,6 +67,8 @@ body.home-page-body .nav-mega-panel {
     /* 卡片/面板统一铺深色底 */
     --home-surface-tint: var(--navbar-bg);
     --home-surface-border: rgba(95, 184, 255, 0.18);
+    /* 首页 OOPZ / 聊天 / 贴子 等大模块外框（略深于 --home-surface-border） */
+    --home-module-border: rgba(84, 173, 247, 0.3);
     /* 视频进度条：原宽 360px/64vw 的 60%，右缘与下方内容区对齐 */
     --hero-progress-track-max: min(216px, 38.4vw);
     --hero-progress-btn-size: 34px;
@@ -1641,15 +1643,15 @@ a.drawer-checkin-textlink:hover {
 .ship-hero-name {
     display: block;
     font-weight: 700;
-    font-size: clamp(18px, 2.5vw, 26px);
+    font-size: clamp(24px, 3.2vw, 38px);
     letter-spacing: 0.03em;
     line-height: 1.35;
-    margin: 0 0 0.2em;
+    margin: 0 0 0.25em;
 }
 
 .ship-hero-tagline {
     display: block;
-    font-size: clamp(15px, 2.05vw, 21px);
+    font-size: clamp(17px, 2.4vw, 24px);
     font-weight: 400;
     line-height: 1.55;
 }
@@ -2487,7 +2489,7 @@ a.drawer-checkin-textlink:hover {
     --oopz-member-max-h: 272px;
     --oopz-grid-min: 228px;
     --oopz-avatar: 30px;
-    --oopz-log-h: 360px;
+    --oopz-log-h: 420px;
 }
 
 .oopz-bridge-head {
@@ -2559,7 +2561,7 @@ a.drawer-checkin-textlink:hover {
     margin: 12px 0 12px;
     padding: 10px 12px;
     border-radius: 10px;
-    border: 1px solid rgba(94, 233, 255, 0.16);
+    border: 1px solid rgba(94, 233, 255, 0.3);
     background: rgba(8, 28, 48, 0.55);
 }
 
@@ -3049,7 +3051,7 @@ body.oopz-bind-open {
 .oopz-bridge-panel {
     position: relative;
     border-radius: 18px;
-    border: 1px solid var(--home-surface-border);
+    border: 1px solid var(--home-module-border);
     background: var(--home-surface-tint);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
     overflow: visible;
@@ -3060,7 +3062,7 @@ body.oopz-bind-open {
     align-items: center;
     gap: 14px;
     padding: 1rem 1.3rem;
-    border-bottom: 1px solid rgba(94, 233, 255, 0.12);
+    border-bottom: 1px solid rgba(94, 233, 255, 0.2);
     background: transparent;
 }
 
@@ -3183,14 +3185,19 @@ body.oopz-bind-open {
     margin-top: 1px;
 }
 
+.oopz-bridge-channel.has-toggle:not(.is-expanded) .oopz-bridge-member-scroll {
+    -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
+}
+
 .oopz-bridge-channel-toggle {
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     margin: 0;
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     padding: 0;
     box-sizing: border-box;
     border: none;
@@ -3427,6 +3434,38 @@ body.oopz-bind-open {
     color: rgba(150, 180, 205, 0.72);
 }
 
+.oopz-bridge-log-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.oopz-bridge-log-section-title {
+    margin: 0 0 6px;
+    padding: 0 2px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: rgba(180, 210, 240, 0.88);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.oopz-bridge-log-section-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.15rem;
+    padding: 0 5px;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: rgba(200, 220, 240, 0.88);
+    background: rgba(94, 233, 255, 0.08);
+    border: 1px solid rgba(94, 233, 255, 0.12);
+}
+
 .oopz-bridge-log-timeline {
     list-style: none;
     margin: 0;
@@ -3479,9 +3518,15 @@ body.oopz-bind-open {
     line-height: 1;
 }
 
-.oopz-bridge-log-row--voice .oopz-bridge-log-row-type {
+.oopz-bridge-log-row--enter .oopz-bridge-log-row-type {
     color: #9ee8ff;
     background: rgba(94, 233, 255, 0.12);
+}
+
+.oopz-bridge-log-row--broadcast .oopz-bridge-log-row-type,
+.oopz-bridge-log-row--voice .oopz-bridge-log-row-type {
+    color: #c9b8ff;
+    background: rgba(167, 139, 250, 0.14);
 }
 
 .oopz-bridge-log-row--checkin .oopz-bridge-log-row-type {
@@ -4072,7 +4117,7 @@ body.oopz-bind-open {
     min-width: 0;
     border-radius: 12px;
     background: var(--navbar-bg);
-    border: 1px solid rgba(84, 173, 247, 0.09);
+    border: 1px solid var(--home-module-border);
     overflow: hidden;
 }
 
@@ -4083,7 +4128,7 @@ body.oopz-bind-open {
     justify-content: space-between;
     gap: 12px;
     padding: 12px 16px;
-    border-bottom: 1px solid rgba(84, 173, 247, 0.07);
+    border-bottom: 1px solid rgba(84, 173, 247, 0.16);
     background: transparent;
 }
 
@@ -6224,10 +6269,10 @@ a.community-author-avatar-link:focus-visible {
     max-width: 100%;
   }
   .ship-hero-name {
-    font-size: 17px;
+    font-size: 22px;
   }
   .ship-hero-tagline {
-    font-size: 15px;
+    font-size: 17px;
   }
   .games-section {
     position: static;
@@ -6570,6 +6615,20 @@ a.community-author-avatar-link:focus-visible {
 
 .uss-footer-link-card--erkul:hover .uss-footer-link-title {
     color: #ffd4a8;
+}
+
+.uss-footer-chub-logo {
+    width: 2.5rem;
+    height: 2.5rem;
+    object-fit: contain;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+    display: block;
+}
+
+.uss-footer-link-card--chub:hover .uss-footer-link-title {
+    color: #ffe2b0;
 }
 
 .uss-site-footer-bottom {

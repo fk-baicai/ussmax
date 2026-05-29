@@ -3,7 +3,8 @@
 
     var POLL_MS = 5000;
     var expandedChannels = {};
-    var VISIBLE_MEMBERS_COLLAPSED = 4;
+    /** 与 styles.css --oopz-member-h 折叠高度一致，约可显示 3 行成员 */
+    var COLLAPSED_MEMBER_ROWS = 3;
 
     var statusDot = document.getElementById('oopzBridgeStatusDot');
     var statusText = document.getElementById('oopzBridgeStatusText');
@@ -67,14 +68,53 @@
         }
     }
 
+    var LOG_SECTIONS = [
+        { id: 'enter', title: '进入语音', badge: '入', badgeTitle: '进入语音频道' },
+        { id: 'broadcast', title: '播报', badge: '播', badgeTitle: '语音播报' },
+        { id: 'checkin', title: '签到', badge: '签', badgeTitle: '签到' },
+    ];
+    var LOG_SECTION_LIMIT = 20;
+
+    function classifyLogKind(item) {
+        if (!item || typeof item !== 'object') return 'broadcast';
+        var type = String(item.type || '').trim();
+        if (type === 'checkin' || type === 'enter' || type === 'broadcast') return type;
+        if (type === 'voice') {
+            var text = String(item.text || '').trim();
+            var userName = String(item.userName || '').trim();
+            if (userName === '合并播报' || /欢迎大家加入/.test(text)) return 'enter';
+            if (/欢迎/.test(text) && /加入语音|登舰|语音频道|登舰成功/.test(text)) return 'enter';
+            if (userName && userName !== '合并播报' && /欢迎/.test(text) && text.indexOf(userName) >= 0) {
+                return 'enter';
+            }
+            return 'broadcast';
+        }
+        return 'broadcast';
+    }
+
+    function normalizeLogItem(item) {
+        if (!item || typeof item !== 'object') return null;
+        var copy = Object.assign({}, item);
+        copy.type = classifyLogKind(copy);
+        return copy;
+    }
+
+    function logTypeMeta(type) {
+        for (var i = 0; i < LOG_SECTIONS.length; i++) {
+            if (LOG_SECTIONS[i].id === type) return LOG_SECTIONS[i];
+        }
+        return LOG_SECTIONS[1];
+    }
+
     function logGroupKey(item) {
-        if (item.type === 'checkin') {
+        var type = classifyLogKind(item);
+        if (type === 'checkin') {
             return (
                 'checkin:' +
                 String(item.id || item.userName + '|' + (item.branch || '') + '|' + (item.at || ''))
             );
         }
-        return 'voice:' + String(item.text || '').trim();
+        return type + ':' + String(item.text || '').trim();
     }
 
     function logDisplayText(item) {
@@ -102,7 +142,7 @@
             if (!byKey[key]) {
                 byKey[key] = {
                     key: key,
-                    type: item.type || 'voice',
+                    type: classifyLogKind(item),
                     latest: item,
                     count: 1,
                     oldestAt: item.at,
@@ -349,14 +389,14 @@
                     var members = ch.members || [];
                     var channelId = String(ch.channelId || ch.channelName || '');
                     var isExpanded = !!expandedChannels[channelId];
-                    var hasMore = members.length > VISIBLE_MEMBERS_COLLAPSED;
+                    var hasMore = members.length > COLLAPSED_MEMBER_ROWS;
                     html += '<div class="oopz-bridge-channel' + (isExpanded ? ' is-expanded' : '') + (hasMore ? ' has-toggle' : '') + '">';
                     html += '<div class="oopz-bridge-channel-head">';
                     html += '<p class="oopz-bridge-channel-name">' + escapeHtml(ch.channelName || ch.channelId) + '</p>';
                     html += '<div class="oopz-bridge-channel-actions">';
                     html += '<span class="oopz-bridge-channel-count">' + members.length + '</span>';
                     if (hasMore) {
-                        html += '<button type="button" class="oopz-bridge-channel-toggle" data-channel-id="' + escapeHtml(channelId) + '" aria-expanded="' + (isExpanded ? 'true' : 'false') + '" aria-label="' + (isExpanded ? '收起成员列表' : '展开成员列表') + '">';
+                        html += '<button type="button" class="oopz-bridge-channel-toggle" data-channel-id="' + escapeHtml(channelId) + '" aria-expanded="' + (isExpanded ? 'true' : 'false') + '" aria-label="' + (isExpanded ? '收起成员列表' : '展开成员列表') + '" title="' + (isExpanded ? '收起成员列表' : '展开全部 ' + members.length + ' 人') + '">';
                         html += '<span class="oopz-bridge-channel-toggle-icon" aria-hidden="true"></span>';
                         html += '</button>';
                     }
@@ -399,8 +439,8 @@
         } else {
             var legacy = Array.isArray(data.announcements) ? data.announcements : [];
             logs = legacy.map(function (item) {
-                return {
-                    type: 'voice',
+                var row = {
+                    type: 'broadcast',
                     id: 'voice:' + (item.id || item.at),
                     at: item.at,
                     text: item.text,
@@ -408,6 +448,8 @@
                     userName: item.userName,
                     audioUrl: item.audioUrl,
                 };
+                row.type = classifyLogKind(row);
+                return row;
             });
         }
         return logs.filter(function (item) {
@@ -415,24 +457,8 @@
         });
     }
 
-    function renderLogs(list) {
-        if (!logRoot) return;
-        list = (list || []).filter(function (item) {
-            return item && isWithinLogRetention(item.at);
-        });
-        if (!list.length) {
-            logRoot.innerHTML = '<p class="oopz-bridge-empty">暂无日志记录。</p>';
-            return;
-        }
-
-        var groups = groupLogsForDisplay(list).slice(0, 48);
-        var merged = groups.length < list.length;
-
-        var html = '<div class="oopz-bridge-log-summary">';
-        html += '近 24 小时 · 共 ' + list.length + ' 条';
-        if (merged) html += ' · 合并显示 ' + groups.length + ' 组';
-        html += '</div>';
-        html += '<ul class="oopz-bridge-log-timeline">';
+    function renderLogTimeline(groups) {
+        var html = '<ul class="oopz-bridge-log-timeline">';
         groups.forEach(function (g) {
             var item = g.latest;
             var msg = logDisplayText(item);
@@ -440,16 +466,17 @@
             if (g.count > 1 && g.oldestAt && g.oldestAt !== item.at) {
                 timeStr = formatLogTime(g.oldestAt) + ' ~ ' + formatLogTime(item.at);
             }
+            var meta = logTypeMeta(g.type || classifyLogKind(item));
             html +=
                 '<li class="oopz-bridge-log-row oopz-bridge-log-row--' +
-                escapeHtml(g.type || 'voice') +
+                escapeHtml(meta.id) +
                 '">';
             html += '<span class="oopz-bridge-log-row-time">' + escapeHtml(timeStr) + '</span>';
             html +=
                 '<span class="oopz-bridge-log-row-type" title="' +
-                (g.type === 'checkin' ? '签到' : '语音播报') +
+                escapeHtml(meta.badgeTitle) +
                 '">' +
-                (g.type === 'checkin' ? '签' : '播') +
+                escapeHtml(meta.badge) +
                 '</span>';
             html += '<span class="oopz-bridge-log-row-msg" title="' + escapeHtml(msg) + '">' + escapeHtml(msg) + '</span>';
             if (g.count > 1) {
@@ -458,6 +485,58 @@
             html += '</li>';
         });
         html += '</ul>';
+        return html;
+    }
+
+    function renderLogs(list) {
+        if (!logRoot) return;
+        list = (list || [])
+            .map(normalizeLogItem)
+            .filter(function (item) {
+                return item && isWithinLogRetention(item.at);
+            });
+        if (!list.length) {
+            logRoot.innerHTML = '<p class="oopz-bridge-empty">暂无日志记录。</p>';
+            return;
+        }
+
+        var buckets = { enter: [], broadcast: [], checkin: [] };
+        list.forEach(function (item) {
+            var kind = classifyLogKind(item);
+            if (!buckets[kind]) buckets[kind] = [];
+            buckets[kind].push(item);
+        });
+
+        var sectionPayloads = [];
+        var groupedTotal = 0;
+        LOG_SECTIONS.forEach(function (section) {
+            var sectionList = buckets[section.id] || [];
+            if (!sectionList.length) return;
+            var groups = groupLogsForDisplay(sectionList).slice(0, LOG_SECTION_LIMIT);
+            groupedTotal += groups.length;
+            sectionPayloads.push({ section: section, groups: groups, count: sectionList.length });
+        });
+
+        var html = '<div class="oopz-bridge-log-summary">近 24 小时 · 共 ' + list.length + ' 条';
+        if (groupedTotal < list.length) {
+            html += ' · 合并显示 ' + groupedTotal + ' 组';
+        }
+        html += '</div><div class="oopz-bridge-log-sections">';
+        sectionPayloads.forEach(function (block) {
+            html +=
+                '<section class="oopz-bridge-log-section" aria-label="' +
+                escapeHtml(block.section.title) +
+                '">';
+            html +=
+                '<h4 class="oopz-bridge-log-section-title">' +
+                escapeHtml(block.section.title) +
+                '<span class="oopz-bridge-log-section-count">' +
+                block.count +
+                '</span></h4>';
+            html += renderLogTimeline(block.groups);
+            html += '</section>';
+        });
+        html += '</div>';
         logRoot.innerHTML = html;
     }
 

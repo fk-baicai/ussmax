@@ -388,6 +388,22 @@
             padding: 0.28rem 0.18rem;
             font-size: 0.76rem;
         }
+        .grid-sched .sched-branch-template-tr > td.sched-template-label {
+            font-size: 0.72rem;
+            color: var(--muted);
+            white-space: nowrap;
+            vertical-align: top;
+            padding-top: 0.45rem;
+        }
+        .sched-cell.sched-cell-inherited {
+            box-shadow: inset 0 0 0 1px rgba(95, 184, 255, 0.18);
+        }
+        .sched-template-cell .sch-template-hint {
+            font-size: 0.68rem;
+            color: var(--muted);
+            margin-bottom: 0.25rem;
+            line-height: 1.35;
+        }
         .sched-cell {
             vertical-align: top;
         }
@@ -432,6 +448,27 @@
             color-scheme: dark;
             padding-inline-end: 0.28rem;
         }
+        /* 长期默认行横跨整表，开始时间不必拉满 */
+        .sched-template-cell .sch-slot-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 0.55rem 0.85rem;
+            max-width: 22rem;
+        }
+        .sched-template-cell label.sch-time-lbl {
+            flex: 0 0 auto;
+            width: 6.4rem;
+            max-width: 38vw;
+            margin-bottom: 0;
+        }
+        .sched-template-cell input[type="time"] {
+            width: 100%;
+            max-width: 6.4rem;
+        }
+        .sched-template-cell label.sch-dur-lbl {
+            flex: 0 0 auto;
+        }
         /* Chrome / Edge / Safari：原生时间图标默认偏深，拉高对比并贴近主题青色 */
         .sched-cell input[type="time"]::-webkit-calendar-picker-indicator {
             cursor: pointer;
@@ -456,8 +493,11 @@
         }
         .sched-cell .sch-dur-row .sch-dur-inp {
             flex: 0 0 auto;
-            width: min(4.2rem, 26vw);
+            width: min(5.8rem, 34vw);
             max-width: 100%;
+        }
+        .sched-template-cell .sch-dur-row .sch-dur-inp {
+            width: min(5.8rem, 34vw);
         }
         .sched-cell .sch-dur-unit {
             font-size: 0.68rem;
@@ -476,7 +516,8 @@
             font-size: 0.75rem;
             opacity: 0.95;
         }
-        tr.sched-branch-data-tr.sched-branch-tr-collapsed {
+        tr.sched-branch-data-tr.sched-branch-tr-collapsed,
+        tr.sched-branch-template-tr.sched-branch-tr-collapsed {
             display: none;
         }
         /* 签到区块顶部说明、默认时长一行：比表格略大，易读 */
@@ -1470,9 +1511,11 @@
                     </summary>
                     <div class="branch-help-body">
                         <p class="hint">
-                            默认规则：未配置日期禁止签到。<br />
+                            默认规则：未配置日期且未设长期默认时禁止签到。<br />
                             勾选全天开放：当日随时可签；<br />
                             不勾选：需设置开始时间与开放时长，仅规定时段内可签。<br />
+                            各分部「长期默认」：未单独配置的日期将自动沿用该分部长期规则。<br />
+                            时段签到时，OOPZ 在线时长仅统计签到开放窗口内的时间。<br />
                             各分部签到积分可在分部标题旁单独设置，默认 1 分，签到成功自动加分。
                         </p>
                     </div>
@@ -1491,6 +1534,11 @@
                     <option value="90"></option>
                     <option value="120"></option>
                     <option value="180"></option>
+                    <option value="240"></option>
+                    <option value="360"></option>
+                    <option value="480"></option>
+                    <option value="720"></option>
+                    <option value="1440"></option>
                 </datalist>
                 <datalist id="adminSchedPointsOpts">
                     <option value="1"></option>
@@ -1510,7 +1558,7 @@
                         type="number"
                         id="defDurInp"
                         min="1"
-                        max="180"
+                        max="1440"
                         step="1"
                         value="3"
                         list="adminSchedDurOpts"
@@ -1534,8 +1582,8 @@
                         说明
                     </summary>
                     <div class="branch-help-body">
-                        <p class="hint"><strong>自动签到：</strong>已绑定 OOPZ 的成员，语音在线累计达到分钟数后自动写入对应分部签到（机器人心跳约每分钟 +1）。「仅在签到时段内」勾选时，须该分部在上方开放窗口内才会自动签。</p>
-                        <p class="hint"><strong>手动签到：</strong>控制分部页「今日签到」按钮的额外条件。须绑定 OOPZ 时未绑定将引导去首页绑定；勾选「须在线时长」时，须今日 OOPZ 语音在线累计达到右侧分钟数（与自动签到共用在线统计）。</p>
+                        <p class="hint"><strong>自动签到：</strong>已绑定 OOPZ 的成员，在 OOPZ 语音频道内按实际停留时长累计（机器人约每 60 秒上报一次）。达到分钟数后自动写入对应分部签到。「仅在签到时段内」勾选时，须该分部在上方开放窗口内才会自动签；时段签到下在线时长仅计开放窗口内。</p>
+                        <p class="hint"><strong>手动签到：</strong>控制分部页「今日签到」按钮的额外条件。须绑定 OOPZ 时未绑定将引导去首页绑定；勾选「须在线时长」时，全天签到计今日总在线，时段签到仅计该分部开放窗口内在线（与自动签到共用统计）。</p>
                     </div>
                 </details>
                 <div class="oopz-auto-branch-scroll oopz-checkin-merged-scroll">
@@ -3136,7 +3184,32 @@
             function clampScheduleMinutes(raw) {
                 var n = Math.round(Number(raw));
                 if (!Number.isFinite(n)) return 3;
-                return Math.min(180, Math.max(1, n));
+                return Math.min(1440, Math.max(1, n));
+            }
+
+            function buildSchedSlotHtml(day, defM) {
+                var stRaw = day.startTime != null ? String(day.startTime).trim() : '';
+                var duRaw = day.durationMinutes != null ? Number(day.durationMinutes) : 0;
+                var allDay = day.allDay === true || day.allDay === 'true';
+                var timeVal = allDay ? '' : padTimeForInput(stRaw);
+                var durVal = duRaw > 0 ? clampScheduleMinutes(duRaw) : defM;
+                return (
+                    '<label class="sch-allday-wrap"><input type="checkbox" class="sch-allday"' +
+                    (allDay ? ' checked' : '') +
+                    ' title="全天开放" /> <span title="全天开放">全天</span></label>' +
+                    '<div class="sch-slot-wrap">' +
+                    '<label class="sch-time-lbl" title="开始时刻（24小时制）">开始' +
+                    '<input type="time" class="sch-time" step="300" title="24小时制" value="' +
+                    esc(timeVal) +
+                    '" /></label>' +
+                    '<label class="sch-dur-lbl" title="开放持续时间（分钟）">持续时间' +
+                    '<div class="sch-dur-row">' +
+                    '<input type="number" class="sch-dur-inp sched-num-inp" min="1" max="1440" step="1" list="adminSchedDurOpts" title="开放时长（分钟），可点下箭头选常用值" value="' +
+                    esc(String(durVal)) +
+                    '" />' +
+                    '<span class="hint sch-dur-unit">分</span></div></label>' +
+                    '</div>'
+                );
             }
 
             function clampSchedulePoints(raw) {
@@ -3238,6 +3311,21 @@
                         '" min="1" max="1000" step="1" list="adminSchedPointsOpts" title="该分部每次成功签到的基础积分" value="' +
                         esc(String(pptBr)) +
                         '" /></label></span></span></td></tr>';
+                    var tplDay = (sch.branchTemplates && sch.branchTemplates[br.id]) || {};
+                    html +=
+                        '<tr class="sched-branch-template-tr' +
+                        (folded ? ' sched-branch-tr-collapsed' : '') +
+                        '" data-sched-branch="' +
+                        esc(br.id) +
+                        '"><td class="sched-template-label" title="未单独配置日期时沿用此规则">长期默认</td>' +
+                        '<td class="sched-cell sched-template-cell" colspan="' +
+                        dates.length +
+                        '" data-sched-template="' +
+                        esc(br.id) +
+                        '">' +
+                        '<div class="sch-template-hint">以下规则将应用于该分部所有未单独配置的日期；留空开始时间表示不启用长期默认。</div>' +
+                        buildSchedSlotHtml(tplDay, defM) +
+                        '</td></tr>';
                     html +=
                         '<tr class="sched-branch-data-tr' +
                         (folded ? ' sched-branch-tr-collapsed' : '') +
@@ -3245,36 +3333,26 @@
                         esc(br.id) +
                         '"><td class="sched-branch-spacer" aria-hidden="true"></td>';
                     dates.forEach(function (d) {
-                        var day = (sch.branches && sch.branches[br.id] && sch.branches[br.id][d]) || {};
-                        var stRaw = day.startTime != null ? String(day.startTime).trim() : '';
-                        var duRaw = day.durationMinutes != null ? Number(day.durationMinutes) : 0;
-                        var allDay = day.allDay === true || day.allDay === 'true';
-                        var timeVal = allDay ? '' : padTimeForInput(stRaw);
-                        var durVal =
-                            duRaw > 0
-                                ? Math.min(180, Math.max(1, Math.round(duRaw)))
-                                : defM;
+                        var explicit =
+                            sch.branches && sch.branches[br.id] && sch.branches[br.id][d]
+                                ? sch.branches[br.id][d]
+                                : null;
+                        var tpl = (sch.branchTemplates && sch.branchTemplates[br.id]) || {};
+                        var day = explicit || tpl || {};
+                        var inherited =
+                            !explicit && tpl && (tpl.allDay === true || tpl.allDay === 'true' || tpl.startTime);
                         html +=
-                            '<td class="sched-cell" data-b="' +
+                            '<td class="sched-cell' +
+                            (inherited ? ' sched-cell-inherited' : '') +
+                            '" data-b="' +
                             esc(br.id) +
                             '" data-d="' +
                             esc(d) +
-                            '">' +
-                            '<label class="sch-allday-wrap"><input type="checkbox" class="sch-allday"' +
-                            (allDay ? ' checked' : '') +
-                            ' title="全天开放" /> <span title="全天开放">全天</span></label>' +
-                            '<div class="sch-slot-wrap">' +
-                            '<label class="sch-time-lbl" title="开始时刻（24小时制）">开始' +
-                            '<input type="time" class="sch-time" step="300" title="24小时制" value="' +
-                            esc(timeVal) +
-                            '" /></label>' +
-                            '<label class="sch-dur-lbl" title="开放持续时间（分钟）">持续时间' +
-                            '<div class="sch-dur-row">' +
-                            '<input type="number" class="sch-dur-inp sched-num-inp" min="1" max="180" step="1" list="adminSchedDurOpts" title="开放时长（分钟），可点下箭头选常用值" value="' +
-                            esc(String(durVal)) +
-                            '" />' +
-                            '<span class="hint sch-dur-unit">分</span></div></label>' +
-                            '</div></td>';
+                            '"' +
+                            (inherited ? ' title="沿用长期默认规则"' : '') +
+                            '>' +
+                            buildSchedSlotHtml(day, defM) +
+                            '</td>';
                     });
                     html += '</tr>';
                 });
@@ -3290,10 +3368,17 @@
                         var bid = btn.getAttribute('data-sched-branch');
                         if (!bid) return;
                         var titleTr = btn.closest('tr.sched-branch-title-tr');
-                        var dataTr = titleTr && titleTr.nextElementSibling;
+                        var templateTr = titleTr && titleTr.nextElementSibling;
+                        var dataTr =
+                            templateTr && templateTr.classList.contains('sched-branch-template-tr')
+                                ? templateTr.nextElementSibling
+                                : templateTr;
                         if (!dataTr || !dataTr.classList.contains('sched-branch-data-tr')) return;
                         state.scheduleCollapsed[bid] = !state.scheduleCollapsed[bid];
                         var folded = !!state.scheduleCollapsed[bid];
+                        if (templateTr && templateTr.classList.contains('sched-branch-template-tr')) {
+                            templateTr.classList.toggle('sched-branch-tr-collapsed', folded);
+                        }
                         dataTr.classList.toggle('sched-branch-tr-collapsed', folded);
                         btn.setAttribute('aria-expanded', folded ? 'false' : 'true');
                         btn.setAttribute('title', folded ? '展开该分部' : '收起该分部');
@@ -3312,7 +3397,28 @@
                     pptBy[bid] = clampSchedulePoints(pin && pin.value);
                 });
                 var payloadBranches = { hq: {}, squad1: {}, uss: {}, ussprod: {} };
+                var branchTemplates = {};
                 ['hq', 'squad1', 'uss', 'ussprod'].forEach(function (bid) {
+                    var tplTd = document.querySelector(
+                        '#schedGrid td.sched-template-cell[data-sched-template="' + bid + '"]'
+                    );
+                    if (tplTd) {
+                        if (tplTd.querySelector('.sch-allday').checked) {
+                            branchTemplates[bid] = { allDay: true };
+                        } else {
+                            var tplTim = padTimeForInput(tplTd.querySelector('.sch-time').value);
+                            if (!tplTim) {
+                                branchTemplates[bid] = null;
+                            } else {
+                                var tplDurInp = tplTd.querySelector('.sch-dur-inp');
+                                var tplDur = clampScheduleMinutes(tplDurInp ? tplDurInp.value : def) || def;
+                                branchTemplates[bid] = {
+                                    startTime: tplTim,
+                                    durationMinutes: tplDur,
+                                };
+                            }
+                        }
+                    }
                     state.dates.forEach(function (d) {
                         var td = document.querySelector('#schedGrid td.sched-cell[data-b="' + bid + '"][data-d="' + d + '"]');
                         if (!td) return;
@@ -3338,6 +3444,7 @@
                     state.schedule = await window.UssAuthApi.adminPutSchedule(s.token, {
                         defaultDurationMinutes: def,
                         pointsPerCheckinByBranch: pptBy,
+                        branchTemplates: branchTemplates,
                         branches: payloadBranches,
                     });
                     renderScheduleGrid();
