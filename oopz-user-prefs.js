@@ -60,13 +60,11 @@
             } else {
                 line += ' · 当前在语音频道中';
             }
-        } else if (data && data.oopzId) {
-            line += ' · 当前未在语音频道';
         }
         return line;
     }
 
-    function buildBranchRemainLine(b, mins) {
+    function buildBranchRemainLine(b, data) {
         if (b.checkedInToday) {
             return '今日已签到';
         }
@@ -79,16 +77,26 @@
         var remain =
             b.remainingMinutes != null
                 ? b.remainingMinutes
-                : Math.max(0, (b.minOnlineMinutes || 60) - mins);
-        return '剩余时间：' + formatMinutes(remain);
+                : Math.max(0, (b.minOnlineMinutes || 60) - branchEffectiveMins(b, data));
+        var scopeHint = b.windowScoped ? '（开放时段内）' : '';
+        return '剩余时间：' + formatMinutes(remain) + scopeHint;
     }
 
-    function buildBranchProgressText(b, mins) {
+    function branchEffectiveMins(b, data) {
+        if (b && b.onlineMinutesEffective != null) {
+            return Math.max(0, Math.floor(Number(b.onlineMinutesEffective) || 0));
+        }
+        return data && data.onlineMinutesToday != null ? data.onlineMinutesToday : 0;
+    }
+
+    function buildBranchProgressText(b, data) {
         var label = b.label || b.id;
+        var mins = branchEffectiveMins(b, data);
         if (b.checkedInToday) {
             return label + '（已签）';
         }
-        return label + ' ' + mins + '/' + (b.minOnlineMinutes || 60) + ' 分';
+        var suffix = b.windowScoped ? '（时段内）' : '';
+        return label + ' ' + mins + '/' + (b.minOnlineMinutes || 60) + ' 分' + suffix;
     }
 
     function buildRemainLine(data) {
@@ -116,7 +124,11 @@
         if (remain == null) {
             return '剩余时间：—';
         }
-        return '剩余时间：' + formatMinutes(remain);
+        var pendingScoped = pending.some(function (b) {
+            return b.windowScoped;
+        });
+        var scopeHint = pendingScoped ? '（开放时段内）' : '';
+        return '剩余时间：' + formatMinutes(remain) + scopeHint;
     }
 
     function renderSingleBranchList(data) {
@@ -126,12 +138,11 @@
             checkinBranchListEl.textContent = '无';
             return;
         }
-        var mins = data && data.onlineMinutesToday != null ? data.onlineMinutesToday : 0;
         var html = '';
         branches.forEach(function (b) {
             html +=
                 '<span class="oopz-user-prefs__checkin-branch-item">' +
-                escapeHtml(buildBranchProgressText(b, mins)) +
+                escapeHtml(buildBranchProgressText(b, data)) +
                 '</span>';
         });
         checkinBranchListEl.innerHTML = html;
@@ -140,20 +151,19 @@
     function renderMultiCheckinCards(data) {
         if (!checkinCardsEl) return;
         var branches = data && Array.isArray(data.autoCheckinBranches) ? data.autoCheckinBranches : [];
-        var mins = data && data.onlineMinutesToday != null ? data.onlineMinutesToday : 0;
         var html = '';
         branches.forEach(function (b) {
             html += '<div class="oopz-user-prefs__checkin-card">';
             html += '<p class="oopz-user-prefs__checkin-title">自动签到</p>';
             html +=
                 '<p class="oopz-user-prefs__checkin-remain">' +
-                escapeHtml(buildBranchRemainLine(b, mins)) +
+                escapeHtml(buildBranchRemainLine(b, data)) +
                 '</p>';
             html += '<div class="oopz-user-prefs__checkin-branches">';
             html += '<span class="oopz-user-prefs__checkin-branches-label">开启分部：</span>';
             html +=
                 '<span class="oopz-user-prefs__checkin-branch-name">' +
-                escapeHtml(buildBranchProgressText(b, mins)) +
+                escapeHtml(buildBranchProgressText(b, data)) +
                 '</span>';
             html += '</div></div>';
         });

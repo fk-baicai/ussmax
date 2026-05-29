@@ -49,6 +49,13 @@
         '<span class="uss-footer-link-desc">Erkul.games 舰船配置</span>' +
         '</a>' +
         '</div>' +
+        '<div class="uss-site-footer-col">' +
+        '<a class="uss-footer-link-card uss-footer-link-card--chub" href="https://citizenshub.app/app-settings" target="_blank" rel="noopener noreferrer">' +
+        '<span class="uss-footer-icon-slot"><img class="uss-footer-chub-logo" src="sp/png/citizenshub.png" alt="Citizens\' Hub" width="40" height="40" decoding="async"></span>' +
+        '<span class="uss-footer-link-title">Citizens\' Hub</span>' +
+        '<span class="uss-footer-link-desc">CCU路线规划</span>' +
+        '</a>' +
+        '</div>' +
         '</div>' +
         '</div>' +
         '<div class="uss-site-footer-bottom">' +
