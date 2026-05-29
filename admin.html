@@ -538,6 +538,18 @@
         #secOopzAutoCheckin .oopz-auto-branch-scroll input[type="number"] {
             width: 4.2rem;
         }
+        .oopz-checkin-merged-table th {
+            text-align: center;
+        }
+        .oopz-checkin-merged-table th:first-child,
+        .oopz-checkin-merged-table td:first-child {
+            text-align: left;
+        }
+        .oopz-checkin-merged-table thead tr:first-child th {
+            font-size: 0.82rem;
+            letter-spacing: 0.04em;
+            color: rgba(140, 220, 255, 0.9);
+        }
         .oopz-subhead {
             margin: 1rem 0 0.55rem;
             font-size: 0.95rem;
@@ -1449,49 +1461,6 @@
     <main>
         <p id="gateMsg" class="err"></p>
         <div id="app" style="display: none;">
-            <section id="secAuditLog">
-                <h2>操作日志</h2>
-                <p class="hint">
-                    记录管理员在后台的写操作（补签、调分、改用户、保存签到表、白名单等），最近保留约 5000 条。访问 IP 为操作当时网络地址；若为一长串带冒号（如 240e:…），是 <strong>IPv6</strong>，不是显示错误。
-                </p>
-                <div class="row">
-                    <button type="button" id="btnReloadAuditLog">刷新</button>
-                    <span id="auditLogMeta" class="hint"></span>
-                </div>
-                <div class="audit-log-wrap">
-                    <div class="audit-log-head">
-                        <table class="audit-log-table">
-                            <colgroup>
-                                <col class="audit-col-time" />
-                                <col class="audit-col-op" />
-                                <col class="audit-col-desc" />
-                                <col class="audit-col-ip" />
-                            </colgroup>
-                            <thead>
-                                <tr>
-                                    <th>时间（北京）</th>
-                                    <th>操作者</th>
-                                    <th>说明</th>
-                                    <th>访问 IP</th>
-                                </tr>
-                            </thead>
-                        </table>
-                    </div>
-                    <div class="audit-log-body-scroll">
-                        <table class="audit-log-table">
-                            <colgroup>
-                                <col class="audit-col-time" />
-                                <col class="audit-col-op" />
-                                <col class="audit-col-desc" />
-                                <col class="audit-col-ip" />
-                            </colgroup>
-                            <tbody id="auditLogBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-                <div id="auditLogErr" class="err" hidden></div>
-            </section>
-
             <section id="secSchedule">
                 <h2>分部签到开放窗口（北京时间）</h2>
                 <details class="branch-help-details">
@@ -1558,32 +1527,39 @@
             </section>
 
             <section id="secOopzAutoCheckin">
-                <h2>OOPZ 自动签到</h2>
+                <h2>OOPZ 签到配置</h2>
                 <details class="branch-help-details oopz-auto-help">
                     <summary>
                         <span class="branch-help-caret" aria-hidden="true"></span>
                         说明
                     </summary>
                     <div class="branch-help-body">
-                        <p class="hint">已绑定 OOPZ 的成员，在语音频道累计在线达到设定分钟数后，自动写入<strong>对应分部</strong>签到。各分部可独立启用、设置在线时长与时段限制。在线时长由机器人心跳统计（约每分钟 +1）。</p>
-                        <p class="hint"><strong>仅在签到时段内：</strong>勾选时，须该分部在上方「分部签到开放窗口」里当日已开放（全天或规定时段），才会自动签到；不勾选则达标即签，不受时段限制。</p>
+                        <p class="hint"><strong>自动签到：</strong>已绑定 OOPZ 的成员，语音在线累计达到分钟数后自动写入对应分部签到（机器人心跳约每分钟 +1）。「仅在签到时段内」勾选时，须该分部在上方开放窗口内才会自动签。</p>
+                        <p class="hint"><strong>手动签到：</strong>控制分部页「今日签到」按钮的额外条件。须绑定 OOPZ 时未绑定将引导去首页绑定；勾选「须在线时长」时，须今日 OOPZ 语音在线累计达到右侧分钟数（与自动签到共用在线统计）。</p>
                     </div>
                 </details>
-                <div class="oopz-auto-branch-scroll">
-                    <table>
+                <div class="oopz-auto-branch-scroll oopz-checkin-merged-scroll">
+                    <table class="oopz-checkin-merged-table">
                         <thead>
                             <tr>
-                                <th>分部</th>
+                                <th rowspan="2">分部</th>
+                                <th colspan="3">自动签到</th>
+                                <th colspan="3">手动签到</th>
+                            </tr>
+                            <tr>
                                 <th>启用</th>
-                                <th>在线 ≥（分钟）</th>
-                                <th>仅在签到时段内</th>
+                                <th>在线 ≥（分）</th>
+                                <th>仅时段内</th>
+                                <th>须绑定</th>
+                                <th>须在线时长</th>
+                                <th>在线 ≥（分）</th>
                             </tr>
                         </thead>
-                        <tbody id="oopzAutoBranchTbody"></tbody>
+                        <tbody id="oopzCheckinBranchTbody"></tbody>
                     </table>
                 </div>
                 <div class="row">
-                    <button type="button" id="btnSaveOopzAuto">保存自动签到配置</button>
+                    <button type="button" id="btnSaveOopzAuto">保存 OOPZ 签到配置</button>
                 </div>
                 <div id="oopzAutoErr" class="err" hidden></div>
                 <div id="oopzAutoOk" class="ok" hidden></div>
@@ -1816,6 +1792,49 @@
                 </div>
                 <ul id="adminList"></ul>
                 <div id="admErr" class="err" hidden></div>
+            </section>
+
+            <section id="secAuditLog">
+                <h2>操作日志</h2>
+                <p class="hint">
+                    记录管理员在后台的写操作（补签、调分、改用户、保存签到表、白名单等），最近保留约 5000 条。访问 IP 为操作当时网络地址；若为一长串带冒号（如 240e:…），是 <strong>IPv6</strong>，不是显示错误。
+                </p>
+                <div class="row">
+                    <button type="button" id="btnReloadAuditLog">刷新</button>
+                    <span id="auditLogMeta" class="hint"></span>
+                </div>
+                <div class="audit-log-wrap">
+                    <div class="audit-log-head">
+                        <table class="audit-log-table">
+                            <colgroup>
+                                <col class="audit-col-time" />
+                                <col class="audit-col-op" />
+                                <col class="audit-col-desc" />
+                                <col class="audit-col-ip" />
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th>时间（北京）</th>
+                                    <th>操作者</th>
+                                    <th>说明</th>
+                                    <th>访问 IP</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                    <div class="audit-log-body-scroll">
+                        <table class="audit-log-table">
+                            <colgroup>
+                                <col class="audit-col-time" />
+                                <col class="audit-col-op" />
+                                <col class="audit-col-desc" />
+                                <col class="audit-col-ip" />
+                            </colgroup>
+                            <tbody id="auditLogBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="auditLogErr" class="err" hidden></div>
             </section>
         </div>
     </main>
@@ -2079,7 +2098,7 @@
                 wireBranchTableDragScrollOnce();
                 document.getElementById('btnAddAdmin').onclick = addAdmin;
                 document.getElementById('btnSaveSchedule').onclick = saveSchedule;
-                document.getElementById('btnSaveOopzAuto').onclick = saveOopzAutoCheckin;
+                document.getElementById('btnSaveOopzAuto').onclick = saveOopzCheckin;
                 document.getElementById('btnSaveOopzTts').onclick = saveOopzTts;
                 document.getElementById('btnAddOopzTtsRule').onclick = addOopzTtsRuleRow;
                 var btnAddNoCool = document.getElementById('btnAddOopzNoCooldown');
@@ -2088,7 +2107,7 @@
                 document.getElementById('btnReloadWhitelist').onclick = loadWhitelist;
                 document.getElementById('btnReloadAuditLog').onclick = loadAuditLog;
                 loadScheduleUi();
-                loadOopzAutoCheckinUi();
+                loadOopzCheckinUi();
                 loadOopzTtsUi();
                 loadWhitelist();
                 loadAuditLog();
@@ -3335,15 +3354,20 @@
                 { id: 'ussprod', label: 'USS生产队' },
             ];
 
-            function renderOopzAutoBranchTable(branches) {
-                var tbody = document.getElementById('oopzAutoBranchTbody');
+            function renderOopzCheckinBranchTable(autoBranches, manualBranches) {
+                var tbody = document.getElementById('oopzCheckinBranchTbody');
                 if (!tbody) return;
-                var bag = branches && typeof branches === 'object' ? branches : {};
+                var autoBag = autoBranches && typeof autoBranches === 'object' ? autoBranches : {};
+                var manualBag = manualBranches && typeof manualBranches === 'object' ? manualBranches : {};
                 tbody.innerHTML = OOPZ_AUTO_BRANCHES.map(function (b) {
-                    var cfg = bag[b.id] || {};
-                    var minVal = cfg.minOnlineMinutes != null ? cfg.minOnlineMinutes : 60;
-                    var enabled = cfg.enabled === true;
-                    var requireWin = cfg.requireScheduleWindow !== false;
+                    var auto = autoBag[b.id] || {};
+                    var manual = manualBag[b.id] || {};
+                    var autoMin = auto.minOnlineMinutes != null ? auto.minOnlineMinutes : 60;
+                    var manualMin = manual.minOnlineMinutes != null ? manual.minOnlineMinutes : 60;
+                    var autoEnabled = auto.enabled === true;
+                    var requireWin = auto.requireScheduleWindow !== false;
+                    var requireBind = manual.requireOopzBind === true;
+                    var requireOnline = manual.requireOopzOnlineMinutes === true;
                     return (
                         '<tr data-branch="' +
                         b.id +
@@ -3352,23 +3376,34 @@
                         b.label +
                         '</td>' +
                         '<td><label class="oopz-auto-check"><input type="checkbox" class="oopz-auto-branch-enabled" ' +
-                        (enabled ? 'checked' : '') +
-                        ' /> 启用</label></td>' +
+                        (autoEnabled ? 'checked' : '') +
+                        ' /> 是</label></td>' +
                         '<td><input type="number" class="oopz-auto-branch-min sched-num-inp" min="1" max="1440" step="1" value="' +
-                        minVal +
+                        autoMin +
                         '" aria-label="' +
                         b.label +
-                        ' 最低在线分钟" /></td>' +
+                        ' 自动签到最低在线分钟" /></td>' +
                         '<td><label class="oopz-auto-check"><input type="checkbox" class="oopz-auto-branch-window" ' +
                         (requireWin ? 'checked' : '') +
                         ' /> 是</label></td>' +
+                        '<td><label class="oopz-auto-check"><input type="checkbox" class="manual-oopz-branch-bind" ' +
+                        (requireBind ? 'checked' : '') +
+                        ' /> 是</label></td>' +
+                        '<td><label class="oopz-auto-check"><input type="checkbox" class="manual-oopz-branch-online" ' +
+                        (requireOnline ? 'checked' : '') +
+                        ' /> 是</label></td>' +
+                        '<td><input type="number" class="manual-oopz-branch-min sched-num-inp" min="1" max="1440" step="1" value="' +
+                        manualMin +
+                        '" aria-label="' +
+                        b.label +
+                        ' 手动签到最低在线分钟" /></td>' +
                         '</tr>'
                     );
                 }).join('');
             }
 
             function collectOopzAutoBranchConfig() {
-                var tbody = document.getElementById('oopzAutoBranchTbody');
+                var tbody = document.getElementById('oopzCheckinBranchTbody');
                 var out = {};
                 if (!tbody) return out;
                 tbody.querySelectorAll('tr[data-branch]').forEach(function (tr) {
@@ -3389,39 +3424,69 @@
                 return out;
             }
 
-            async function loadOopzAutoCheckinUi() {
+            function collectManualOopzBranchConfig() {
+                var tbody = document.getElementById('oopzCheckinBranchTbody');
+                var out = {};
+                if (!tbody) return out;
+                tbody.querySelectorAll('tr[data-branch]').forEach(function (tr) {
+                    var bid = tr.getAttribute('data-branch');
+                    if (!bid) return;
+                    var bindEl = tr.querySelector('.manual-oopz-branch-bind');
+                    var onlineEl = tr.querySelector('.manual-oopz-branch-online');
+                    var minEl = tr.querySelector('.manual-oopz-branch-min');
+                    var minRaw = minEl ? Number(minEl.value) : 60;
+                    var minMinutes =
+                        Number.isFinite(minRaw) && minRaw > 0 ? Math.min(1440, Math.floor(minRaw)) : 60;
+                    out[bid] = {
+                        requireOopzBind: !!(bindEl && bindEl.checked),
+                        requireOopzOnlineMinutes: !!(onlineEl && onlineEl.checked),
+                        minOnlineMinutes: minMinutes,
+                    };
+                });
+                return out;
+            }
+
+            async function loadOopzCheckinUi() {
                 var errEl = document.getElementById('oopzAutoErr');
                 var okEl = document.getElementById('oopzAutoOk');
                 if (errEl) errEl.hidden = true;
                 if (okEl) okEl.hidden = true;
                 try {
                     var s = loadSess();
-                    var data = await window.UssAuthApi.adminGetOopzAutoCheckin(s.token);
-                    var cfg = (data && data.oopzAutoCheckin) || {};
-                    renderOopzAutoBranchTable(cfg.branches || {});
+                    var results = await Promise.all([
+                        window.UssAuthApi.adminGetOopzAutoCheckin(s.token),
+                        window.UssAuthApi.adminGetManualCheckinOopz(s.token),
+                    ]);
+                    var autoCfg = (results[0] && results[0].oopzAutoCheckin) || {};
+                    var manualCfg = (results[1] && results[1].manualCheckinOopz) || {};
+                    renderOopzCheckinBranchTable(autoCfg.branches || {}, manualCfg.branches || {});
                 } catch (eLoad) {
-                    showErr('oopzAutoErr', (eLoad && eLoad.message) || '加载 OOPZ 自动签到配置失败');
+                    showErr('oopzAutoErr', (eLoad && eLoad.message) || '加载 OOPZ 签到配置失败');
                 }
             }
 
-            async function saveOopzAutoCheckin() {
+            async function saveOopzCheckin() {
                 var s = loadSess();
                 var errEl = document.getElementById('oopzAutoErr');
                 var okEl = document.getElementById('oopzAutoOk');
                 if (errEl) errEl.hidden = true;
                 if (okEl) okEl.hidden = true;
-                var branches = collectOopzAutoBranchConfig();
-                var enabledCount = Object.keys(branches).filter(function (bid) {
-                    return branches[bid] && branches[bid].enabled;
+                var autoBranches = collectOopzAutoBranchConfig();
+                var manualBranches = collectManualOopzBranchConfig();
+                var enabledCount = Object.keys(autoBranches).filter(function (bid) {
+                    return autoBranches[bid] && autoBranches[bid].enabled;
                 }).length;
                 try {
-                    await window.UssAuthApi.adminPutOopzAutoCheckin(s.token, { branches: branches });
+                    await Promise.all([
+                        window.UssAuthApi.adminPutOopzAutoCheckin(s.token, { branches: autoBranches }),
+                        window.UssAuthApi.adminPutManualCheckinOopz(s.token, { branches: manualBranches }),
+                    ]);
                     if (okEl) {
                         okEl.textContent =
-                            '已保存 OOPZ 自动签到配置（' + enabledCount + ' 个分部已启用）';
+                            '已保存 OOPZ 签到配置（自动签到 ' + enabledCount + ' 个分部已启用）';
                         okEl.hidden = false;
                     }
-                    await loadOopzAutoCheckinUi();
+                    await loadOopzCheckinUi();
                 } catch (eSave) {
                     showErr('oopzAutoErr', (eSave && eSave.message) || '保存失败');
                 }

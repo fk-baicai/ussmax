@@ -1,5 +1,5 @@
 /**
- * 行政机库计时器 — exectimer 定期校对 + 访客本机时间每秒推算
+ * 行政机库计时器 — exec.xyxyll.com 定期校对 + 访客本机时间每秒推算
  */
 (function () {
     if (typeof document === 'undefined') return;
@@ -11,7 +11,7 @@
     var pollTimer = null;
     var calibrateTimer = null;
     /** 与后端 WEB_CALIBRATE_INTERVAL_MS 一致：每 3 分钟带 fresh 拉一次网站校对 */
-    var CALIBRATE_POLL_MS = 3 * 60 * 1000;
+    var CALIBRATE_POLL_MS = 24 * 60 * 60 * 1000;
 
     var board = document.getElementById('execHangarBoard');
     var errBox = document.getElementById('execHangarError');
@@ -67,73 +67,127 @@
 
     var PHASE_REMAIN_LABEL = {
         charging: '充电阶段还剩',
-        access: '插卡窗口还剩',
         discharge: '放电阶段还剩',
         cooldown: '冷却阶段还剩',
     };
 
+    var INSERT_WINDOW = 12 * 60000;
+    var DISCHARGE = 60 * 60000;
+
+    function dischargeOffset(t) {
+        return Math.max(0, t - 120 * 60000);
+    }
+
     function computeLocal(elapsedMs) {
         var t = modMs(elapsedMs, CYCLE_MS);
         var CHARGE = 120 * 60000;
-        var ACCESS = 12 * 60000;
-        var DISCHARGE = 48 * 60000;
         var phase;
         var phaseEnd;
         var phaseLabel;
-        var greenCount = 0;
 
         if (t < CHARGE) {
             phase = 'charging';
             phaseLabel = '充电中';
             phaseEnd = CHARGE;
-            greenCount = Math.min(5, Math.floor(t / (24 * 60000)));
-        } else if (t < CHARGE + ACCESS) {
-            phase = 'access';
-            phaseLabel = '可插卡窗口';
-            phaseEnd = CHARGE + ACCESS;
-            greenCount = 5;
-        } else if (t < CHARGE + ACCESS + DISCHARGE) {
+        } else if (t < CHARGE + DISCHARGE) {
             phase = 'discharge';
-            phaseLabel = '放电中';
-            phaseEnd = CHARGE + ACCESS + DISCHARGE;
-            var reds = Math.floor((t - CHARGE - ACCESS) / (12 * 60000)) + 1;
-            greenCount = Math.max(0, 5 - reds);
+            phaseEnd = CHARGE + DISCHARGE;
+            phaseLabel = dischargeOffset(t) < INSERT_WINDOW ? '放电中（可插卡）' : '放电中';
         } else {
             phase = 'cooldown';
             phaseLabel = '冷却中';
             phaseEnd = CYCLE_MS;
-            greenCount = 0;
         }
 
+        var greenCount = 0;
         var leds = [];
-        for (var i = 0; i < 5; i++) leds.push(i < greenCount);
-        var canInsert = greenCount === 5;
+        var ledDetails = [];
+        var i;
+        var dt = dischargeOffset(t);
+        if (phase === 'charging') {
+            greenCount = Math.min(5, Math.floor(t / (24 * 60000)));
+            for (i = 0; i < 5; i++) {
+                leds.push(i < greenCount);
+                ledDetails.push({ green: i < greenCount, red: false });
+            }
+        } else if (phase === 'discharge') {
+            if (dt < INSERT_WINDOW) {
+                greenCount = 5;
+                for (i = 0; i < 5; i++) {
+                    leds.push(true);
+                    ledDetails.push({ green: true, red: false });
+                }
+            } else {
+                var reds = Math.min(5, Math.floor((dt - INSERT_WINDOW) / (12 * 60000)) + 1);
+                greenCount = Math.max(0, 5 - reds);
+                for (i = 0; i < 5; i++) {
+                    var isGreen = i < greenCount;
+                    leds.push(isGreen);
+                    ledDetails.push({ green: isGreen, red: !isGreen });
+                }
+            }
+        } else {
+            greenCount = 0;
+            for (i = 0; i < 5; i++) {
+                leds.push(false);
+                ledDetails.push({ green: false, red: true });
+            }
+        }
+
+        var canInsert = phase === 'discharge' && dt < INSERT_WINDOW;
         var cycleRemainingMs = CYCLE_MS - t;
-        var nextAccessMs =
-            phase === 'access' ? null : phase === 'charging' ? CHARGE - t : cycleRemainingMs + CHARGE;
+        var phaseRemainingMs = phaseEnd - t;
+        var indicatorRemainingMs = phaseRemainingMs;
+        if (phase === 'charging') {
+            var slot = 24 * 60000;
+            indicatorRemainingMs = Math.min(CHARGE, Math.ceil((t + 1) / slot) * slot) - t;
+        } else if (phase === 'discharge') {
+            if (dt < INSERT_WINDOW) {
+                indicatorRemainingMs = INSERT_WINDOW - dt;
+            } else {
+                var base = INSERT_WINDOW;
+                var slotD = 12 * 60000;
+                var nextDt = Math.min(DISCHARGE, base + Math.ceil((dt - base + 1) / slotD) * slotD);
+                indicatorRemainingMs = CHARGE + nextDt - t;
+            }
+        }
+
+        var nextAccessMs = canInsert ? null : phase === 'charging' ? CHARGE - t : cycleRemainingMs + CHARGE;
 
         var nextAccessText;
         var nextAccessLabelText;
-        if (phase === 'access') {
+        if (canInsert) {
             nextAccessText = '窗口进行中';
-            nextAccessLabelText = '下次插卡窗口';
+            nextAccessLabelText = '插卡窗口关闭';
         } else {
             nextAccessText = formatMs(nextAccessMs);
             nextAccessLabelText = '距下次插卡窗口';
         }
 
+        var showIndicatorCountdown = phase === 'charging' || phase === 'discharge';
+        var indicatorText =
+            pad2(Math.floor(indicatorRemainingMs / 60000)) +
+            ':' +
+            pad2(Math.floor((indicatorRemainingMs / 1000) % 60));
+
         return {
             phase: phase,
             phaseLabel: phaseLabel,
-            phaseRemainLabel: PHASE_REMAIN_LABEL[phase] || '当前阶段还剩',
+            phaseRemainLabel: showIndicatorCountdown
+                ? '距下次指示灯变化'
+                : PHASE_REMAIN_LABEL[phase] || '当前阶段还剩',
             elapsedMs: t,
             elapsedText: formatMs(t),
             cycleRemainingMs: cycleRemainingMs,
             cycleRemainingParts: partsFromMs(cycleRemainingMs),
-            phaseRemainingText: formatMs(phaseEnd - t),
+            phaseRemainingText: formatMs(phaseRemainingMs),
+            phaseRemainingMs: phaseRemainingMs,
+            indicatorRemainingText: indicatorText,
+            phaseRemainingDisplayText: showIndicatorCountdown ? indicatorText : formatMs(phaseRemainingMs),
             cycleProgress: (t / CYCLE_MS) * 100,
             greenCount: greenCount,
             leds: leds,
+            ledDetails: ledDetails,
             canInsert: canInsert,
             canInsertLabel: canInsert ? '可插卡' : '不可插卡',
             nextAccessText: nextAccessText,
@@ -161,32 +215,68 @@
         }
     }
 
-    function renderLeds(leds) {
+    function renderLeds(leds, ledDetails) {
         if (!ledStrip) return;
         var nodes = ledStrip.querySelectorAll('.exec-led');
+        var details = ledDetails && ledDetails.length ? ledDetails : null;
         for (var i = 0; i < 5; i++) {
-            if (nodes[i]) nodes[i].classList.toggle('is-on', !!leds[i]);
+            if (!nodes[i]) continue;
+            var d = details ? details[i] : null;
+            var on = d ? !!d.green : !!(leds && leds[i]);
+            var red = d ? !!d.red : false;
+            nodes[i].classList.toggle('is-on', on);
+            nodes[i].classList.toggle('is-red', red && !on);
         }
+    }
+
+    function renderFromPayload(data) {
+        var state = computeLocal(data.elapsedMs != null ? Number(data.elapsedMs) : localElapsedMs());
+        if (data.phase) state.phase = data.phase;
+        if (data.phaseLabel) state.phaseLabel = data.phaseLabel;
+        if (data.ledDetails) state.ledDetails = data.ledDetails;
+        if (data.leds) state.leds = data.leds;
+        if (data.greenCount != null) state.greenCount = data.greenCount;
+        if (data.canInsert != null) {
+            state.canInsert = !!data.canInsert;
+            state.canInsertLabel = data.canInsertLabel || (state.canInsert ? '可插卡' : '不可插卡');
+        }
+        if (data.indicatorRemainingText) {
+            state.indicatorRemainingText = data.indicatorRemainingText;
+            if (data.phase === 'charging' || data.phase === 'discharge') {
+                state.phaseRemainLabel = '距下次指示灯变化';
+                state.phaseRemainingDisplayText = data.indicatorRemainingText;
+            }
+        }
+        if (data.phaseRemainingText && data.phase !== 'charging' && data.phase !== 'discharge') {
+            state.phaseRemainingDisplayText = data.phaseRemainingText;
+        }
+        return state;
     }
 
     function render(state) {
         if (!state) return;
 
-        if (board) board.setAttribute('data-phase', state.phase);
+        if (board) {
+            board.setAttribute('data-phase', state.phase);
+            board.setAttribute('data-can-insert', state.canInsert ? 'yes' : 'no');
+        }
         renderPhaseRail(state.phase);
         renderClock(state.cycleRemainingParts);
 
         if (insertBanner) insertBanner.setAttribute('data-state', state.canInsert ? 'yes' : 'no');
         if (insertText) insertText.textContent = state.canInsertLabel;
         if (phaseRemainLabel) phaseRemainLabel.textContent = state.phaseRemainLabel;
-        if (phaseRemainHero) phaseRemainHero.textContent = state.phaseRemainingText;
+        if (phaseRemainHero) {
+            phaseRemainHero.textContent =
+                state.phaseRemainingDisplayText || state.indicatorRemainingText || state.phaseRemainingText;
+        }
         if (elapsedHero) elapsedHero.textContent = state.elapsedText;
         if (nextAccessLabel) nextAccessLabel.textContent = state.nextAccessLabelText;
         if (nextAccessHero) nextAccessHero.textContent = state.nextAccessText;
         if (ledCountEl) ledCountEl.textContent = state.greenCount + ' / 5';
         if (cycleMarker) cycleMarker.style.left = state.cycleProgress.toFixed(3) + '%';
 
-        renderLeds(state.leds);
+        renderLeds(state.leds, state.ledDetails);
     }
 
     function tick() {
@@ -230,7 +320,7 @@
         }
         hideError();
         reanchorFromServer(data);
-        tick();
+        render(renderFromPayload(data));
     }
 
     function fetchState(fresh) {

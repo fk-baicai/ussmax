@@ -340,6 +340,16 @@
                 body: JSON.stringify(body || {}),
             });
         },
+        async adminGetManualCheckinOopz(token) {
+            return adminJson(token, '/api/admin/checkin/manual-oopz');
+        },
+        async adminPutManualCheckinOopz(token, body) {
+            return adminJson(token, '/api/admin/checkin/manual-oopz', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body || {}),
+            });
+        },
         async adminGetOopzTts(token) {
             return adminJson(token, '/api/admin/oopz/tts');
         },

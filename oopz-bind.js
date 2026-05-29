@@ -3,7 +3,7 @@
 
     var openBtn = document.getElementById('oopzBindOpenBtn');
     var backdrop = document.getElementById('oopzBindBackdrop');
-    if (!openBtn || !backdrop) return;
+    if (!backdrop) return;
 
     function loadAuthSession() {
         if (window.UssAuthSessionSync && window.UssAuthSessionSync.loadAuthSession) {
@@ -151,7 +151,7 @@
         }
     }
 
-    openBtn.addEventListener('click', openModal);
+    openBtn && openBtn.addEventListener('click', openModal);
     backdrop.addEventListener('click', function (e) {
         if (e.target === backdrop) closeModal();
     });
@@ -160,6 +160,20 @@
     var submitBtn = document.getElementById('oopzBindSubmitBtn');
     if (submitBtn) submitBtn.addEventListener('click', submitBind);
 
+    window.openOopzBindModal = openModal;
     window.refreshOopzBindSection = refreshAll;
     refreshAll();
+
+    try {
+        var p = new URLSearchParams(window.location.search || '');
+        if (p.get('oopzBind') === '1' || p.get('oopzBind') === 'true') {
+            openModal();
+            p.delete('oopzBind');
+            var qs = p.toString();
+            var nextUrl = window.location.pathname + (qs ? '?' + qs : '') + (window.location.hash || '');
+            window.history.replaceState({}, '', nextUrl);
+        }
+    } catch (eQuery) {
+        /* ignore */
+    }
 })();

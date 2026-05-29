@@ -83,7 +83,7 @@ body.exec-hangar-body::before {
     box-shadow: inset 0 0 40px rgba(80, 180, 255, 0.04);
 }
 
-.exec-console[data-phase='access'] {
+.exec-console[data-phase='discharge'][data-can-insert='yes'] {
     border-color: rgba(100, 255, 160, 0.55);
     box-shadow:
         0 0 80px rgba(60, 220, 120, 0.28),
@@ -92,12 +92,12 @@ body.exec-hangar-body::before {
         inset 0 0 50px rgba(60, 200, 100, 0.08);
 }
 
-/* —— 四阶段导航 —— */
+/* —— 三阶段导航 —— */
 .exec-phase-rail {
     position: relative;
     z-index: 1;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.6rem;
     margin-bottom: 1.15rem;
     padding-bottom: 0.5rem;
@@ -192,13 +192,19 @@ body.exec-hangar-body::before {
     color: rgba(168, 210, 235, 0.85);
 }
 
-.exec-phase-node[data-phase='access'].is-active {
+.exec-phase-node[data-phase='discharge'].is-active {
+    border-color: rgba(255, 184, 108, 0.55);
+    background: linear-gradient(180deg, rgba(90, 55, 20, 0.45) 0%, rgba(50, 30, 12, 0.35) 100%);
+    box-shadow: 0 0 32px rgba(255, 180, 80, 0.22);
+}
+
+.exec-console[data-phase='discharge'][data-can-insert='yes'] .exec-phase-node[data-phase='discharge'].is-active {
     border-color: rgba(100, 255, 160, 0.6);
     background: linear-gradient(180deg, rgba(25, 90, 55, 0.5) 0%, rgba(12, 50, 35, 0.35) 100%);
     box-shadow: 0 0 32px rgba(80, 255, 140, 0.28);
 }
 
-.exec-phase-node[data-phase='access'].is-active .exec-phase-dot {
+.exec-console[data-phase='discharge'][data-can-insert='yes'] .exec-phase-node[data-phase='discharge'].is-active .exec-phase-dot {
     background: #7dffb0;
     box-shadow: 0 0 22px rgba(100, 255, 160, 0.95);
 }
@@ -357,7 +363,7 @@ body.exec-hangar-body::before {
     }
 }
 
-.exec-console[data-phase='access'] .exec-clock-seg b {
+.exec-console[data-phase='discharge'][data-can-insert='yes'] .exec-clock-seg b {
     color: #e0ffee;
     text-shadow:
         0 0 28px rgba(120, 255, 170, 0.85),
@@ -485,32 +491,49 @@ body.exec-hangar-body::before {
     background: rgba(255, 70, 70, 0.1);
 }
 
-.exec-led:not(.is-on) {
-    animation: exec-led-red-blink 2.2s ease-in-out infinite;
+.exec-led:not(.is-on):not(.is-red) {
+    border-color: rgba(55, 65, 75, 0.55);
+    background: radial-gradient(circle at 38% 32%, #3a4248 0%, #1e2428 48%, #101418 100%);
+    box-shadow:
+        inset 0 4px 14px rgba(0, 0, 0, 0.75),
+        0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
-.exec-led:nth-child(1):not(.is-on) {
+.exec-led.is-red:nth-child(1) {
     animation-delay: 0s;
 }
 
-.exec-led:nth-child(2):not(.is-on) {
+.exec-led.is-red:nth-child(2) {
     animation-delay: 0.18s;
 }
 
-.exec-led:nth-child(3):not(.is-on) {
+.exec-led.is-red:nth-child(3) {
     animation-delay: 0.36s;
 }
 
-.exec-led:nth-child(4):not(.is-on) {
+.exec-led.is-red:nth-child(4) {
     animation-delay: 0.54s;
 }
 
-.exec-led:nth-child(5):not(.is-on) {
+.exec-led.is-red:nth-child(5) {
     animation-delay: 0.72s;
 }
 
-.exec-led:not(.is-on)::before {
-    border-color: rgba(255, 80, 80, 0.1);
+.exec-led:not(.is-on):not(.is-red)::before {
+    border-color: rgba(95, 184, 255, 0.06);
+}
+
+.exec-led.is-red {
+    background: radial-gradient(circle at 35% 30%, #ff8a80 0%, #e53935 45%, #8b0000 100%);
+    border-color: rgba(255, 120, 120, 0.85);
+    box-shadow:
+        inset 0 2px 6px rgba(60, 0, 0, 0.45),
+        0 0 14px rgba(255, 70, 70, 0.55);
+    animation: exec-led-red-blink 2.2s ease-in-out infinite;
+}
+
+.exec-led.is-red::before {
+    opacity: 0.35;
 }
 
 .exec-led.is-on {
@@ -587,13 +610,19 @@ body.exec-hangar-body::before {
     background: linear-gradient(90deg, #1a5080, #3a9ad4);
 }
 
-.exec-cycle-seg--access {
-    background: linear-gradient(90deg, #1a8048, #48e878);
-    box-shadow: 0 0 12px rgba(80, 255, 130, 0.5);
+.exec-cycle-seg--discharge {
+    background: linear-gradient(
+        90deg,
+        #1a8048 0%,
+        #48e878 20%,
+        #805020 20%,
+        #e8a040 100%
+    );
 }
 
-.exec-cycle-seg--discharge {
-    background: linear-gradient(90deg, #805020, #e8a040);
+.exec-cycle-legend-mark {
+    color: rgba(120, 255, 170, 0.82);
+    font-size: 0.82rem;
 }
 
 .exec-cycle-seg--cooldown {
@@ -627,12 +656,12 @@ body.exec-hangar-body::before {
     font-variant-numeric: tabular-nums;
 }
 
-/* —— 四阶段说明（2×2，可点击，文字为主）—— */
+/* —— 三阶段说明 —— */
 .exec-phase-info {
     position: relative;
     z-index: 1;
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 1.15rem;
     margin-top: 1.35rem;
     padding-top: 1.15rem;
@@ -724,14 +753,9 @@ body.exec-hangar-body::before {
     box-shadow: 0 0 10px rgba(58, 154, 212, 0.55);
 }
 
-.exec-phase-info-card[data-phase='access'] .exec-phase-info-title::before {
-    background: #48e878;
-    box-shadow: 0 0 10px rgba(72, 232, 120, 0.55);
-}
-
 .exec-phase-info-card[data-phase='discharge'] .exec-phase-info-title::before {
-    background: #e8a040;
-    box-shadow: 0 0 10px rgba(232, 160, 64, 0.55);
+    background: linear-gradient(135deg, #48e878 0%, #e8a040 100%);
+    box-shadow: 0 0 10px rgba(180, 200, 100, 0.45);
 }
 
 .exec-phase-info-card[data-phase='cooldown'] .exec-phase-info-title::before {
@@ -778,7 +802,6 @@ body.exec-hangar-body::before {
 }
 
 .exec-phase-info-card[data-phase='charging'] .exec-phase-info-dot,
-.exec-phase-info-card[data-phase='access'] .exec-phase-info-dot,
 .exec-phase-info-card[data-phase='discharge'] .exec-phase-info-dot,
 .exec-phase-info-card[data-phase='cooldown'] .exec-phase-info-dot {
     display: none;
@@ -789,7 +812,6 @@ body.exec-hangar-body::before {
 }
 
 .exec-console[data-phase='charging'] .exec-phase-info-card[data-phase='charging']:not(.is-picked),
-.exec-console[data-phase='access'] .exec-phase-info-card[data-phase='access']:not(.is-picked),
 .exec-console[data-phase='discharge'] .exec-phase-info-card[data-phase='discharge']:not(.is-picked),
 .exec-console[data-phase='cooldown'] .exec-phase-info-card[data-phase='cooldown']:not(.is-picked) {
     border-color: rgba(142, 224, 255, 0.38);
@@ -799,7 +821,7 @@ body.exec-hangar-body::before {
         inset 0 1px 0 rgba(142, 224, 255, 0.1);
 }
 
-.exec-console[data-phase='access'] .exec-phase-info-card[data-phase='access']:not(.is-picked) {
+.exec-console[data-phase='discharge'][data-can-insert='yes'] .exec-phase-info-card[data-phase='discharge']:not(.is-picked) {
     border-color: rgba(100, 255, 160, 0.4);
     box-shadow:
         0 0 22px rgba(80, 255, 140, 0.12),
@@ -817,7 +839,7 @@ body.exec-hangar-body::before {
     border-color: rgba(160, 180, 200, 0.35);
 }
 
-.exec-phase-info-card[data-phase='access'].is-picked {
+.exec-console[data-phase='discharge'][data-can-insert='yes'] .exec-phase-info-card[data-phase='discharge'].is-picked {
     border-color: rgba(100, 255, 160, 0.58);
     box-shadow:
         0 0 0 1px rgba(100, 255, 160, 0.22),

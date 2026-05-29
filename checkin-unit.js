@@ -47,6 +47,22 @@
     var historyViewYM = null;
     var historyMonthDropdownDocListeners = false;
     var lastCheckinWindowMsg = '';
+    var lastOopzGateMsg = '';
+    var lastOopzGateReason = '';
+
+    function formatMinutesShort(mins) {
+        var n = Math.max(0, Math.floor(Number(mins) || 0));
+        if (n < 60) return n + ' 分钟';
+        var h = Math.floor(n / 60);
+        var m = n % 60;
+        return h + ' 小时' + (m ? ' ' + m + ' 分钟' : '');
+    }
+
+    function goBindOopzOnHome() {
+        if (window.confirm('签到须先绑定 OOPZ ID。是否前往首页绑定？')) {
+            window.location.href = 'index.html?oopzBind=1';
+        }
+    }
 
     function loadAuthSession() {
         try {
@@ -824,6 +840,8 @@
     function applyPrimaryBtnFromSummary(data, loadFailed) {
         var btn = document.getElementById('checkinPrimaryBtn');
         if (!btn || !UNIT) return;
+        lastOopzGateMsg = '';
+        lastOopzGateReason = '';
         if (!isLoggedIn() || !window.UssAuthApi) {
             btn.textContent = '今日签到';
             btn.disabled = true;
@@ -853,10 +871,32 @@
         if (data && data.todaySigned) {
             btn.textContent = '今日已签';
             btn.disabled = true;
-        } else {
-            btn.textContent = '今日签到';
-            btn.disabled = false;
+            return;
         }
+        var gate = data && data.oopzCheckinGate ? data.oopzCheckinGate : null;
+        if (gate && gate.allowed === false) {
+            lastOopzGateMsg = gate.message || '';
+            lastOopzGateReason = gate.blockReason || '';
+            if (gate.blockReason === 'bind') {
+                btn.textContent = '须绑定 OOPZ';
+                btn.disabled = false;
+                return;
+            }
+            if (gate.blockReason === 'online') {
+                var remain =
+                    gate.remainingMinutes != null
+                        ? gate.remainingMinutes
+                        : Math.max(0, (gate.minOnlineMinutes || 60) - (gate.onlineMinutesToday || 0));
+                btn.textContent = '在线不足 · 剩 ' + formatMinutesShort(remain);
+                btn.disabled = true;
+                return;
+            }
+            btn.textContent = '条件未满足';
+            btn.disabled = true;
+            return;
+        }
+        btn.textContent = '今日签到';
+        btn.disabled = false;
     }
 
     function onPrimaryClick() {
@@ -866,7 +906,15 @@
                 showAlert(lastCheckinWindowMsg);
                 return;
             }
+            if (lastOopzGateReason === 'online' && lastOopzGateMsg) {
+                showAlert(lastOopzGateMsg);
+                return;
+            }
             showAlert('今日已签。');
+            return;
+        }
+        if (btn && btn.textContent === '须绑定 OOPZ') {
+            goBindOopzOnHome();
             return;
         }
         doSign();

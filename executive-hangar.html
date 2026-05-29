@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>行政机库 · USS星巢</title>
-    <meta name="description" content="USS星巢行政机库实时倒计时，185分钟周期内充电、可插卡、放电、冷却四阶段一目了然，精准掌握 Pyro 行政机库插卡窗口。">
+    <meta name="description" content="USS星巢行政机库实时倒计时，185分钟周期内充电、放电、冷却三阶段，放电段首12分钟可插卡，精准掌握 Pyro 行政机库插卡窗口。">
     <meta name="keywords" content="星际公民,行政机库,Pyro,插卡窗口,倒计时,USS星巢">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="executive-hangar.css">
@@ -69,21 +69,16 @@
         <section id="execHangarBoard" class="exec-console" aria-live="polite">
             <div class="exec-console-frame" aria-hidden="true"></div>
 
-            <nav class="exec-phase-rail" id="execPhaseRail" aria-label="周期四阶段">
+            <nav class="exec-phase-rail" id="execPhaseRail" aria-label="周期三阶段">
                 <div class="exec-phase-node" data-phase="charging">
                     <span class="exec-phase-dot"></span>
                     <span class="exec-phase-name">充电</span>
                     <span class="exec-phase-sub">0–120′</span>
                 </div>
-                <div class="exec-phase-node" data-phase="access">
-                    <span class="exec-phase-dot"></span>
-                    <span class="exec-phase-name">可插卡</span>
-                    <span class="exec-phase-sub">12′</span>
-                </div>
                 <div class="exec-phase-node" data-phase="discharge">
                     <span class="exec-phase-dot"></span>
                     <span class="exec-phase-name">放电</span>
-                    <span class="exec-phase-sub">48′</span>
+                    <span class="exec-phase-sub">120–180′</span>
                 </div>
                 <div class="exec-phase-node" data-phase="cooldown">
                     <span class="exec-phase-dot"></span>
@@ -130,17 +125,16 @@
             <div class="exec-cycle-track-wrap">
                 <div class="exec-cycle-track">
                     <div class="exec-cycle-seg exec-cycle-seg--charge" style="flex:120" title="充电 120min"></div>
-                    <div class="exec-cycle-seg exec-cycle-seg--access" style="flex:12" title="可插卡 12min"></div>
-                    <div class="exec-cycle-seg exec-cycle-seg--discharge" style="flex:48" title="放电 48min"></div>
+                    <div class="exec-cycle-seg exec-cycle-seg--discharge" style="flex:60" title="放电 120–180min（前 12min 可插卡）"></div>
                     <div class="exec-cycle-seg exec-cycle-seg--cooldown" style="flex:5" title="冷却 5min"></div>
                     <div class="exec-cycle-marker" id="execCycleMarker" aria-hidden="true"></div>
                 </div>
                 <div class="exec-cycle-legend">
-                    <span>0</span><span>120</span><span>132</span><span>180</span><span>185 min</span>
+                    <span>0</span><span>120</span><span class="exec-cycle-legend-mark">132</span><span>180</span><span>185 min</span>
                 </div>
             </div>
 
-            <div class="exec-phase-info" aria-label="周期四阶段说明">
+            <div class="exec-phase-info" aria-label="周期三阶段说明">
                 <button type="button" class="exec-phase-info-card" data-phase="charging" aria-pressed="false">
                     <span class="exec-phase-info-head">
                         <span class="exec-phase-info-dot"></span>
@@ -150,23 +144,14 @@
                     <span class="exec-phase-info-desc">每 24 分钟亮 1 盏绿灯，依次点亮 5 盏。全程不可插卡。</span>
                     <span class="exec-phase-info-extra">节点：0 → 24 → 48 → 72 → 96 → 120 min 五盏依次点亮</span>
                 </button>
-                <button type="button" class="exec-phase-info-card" data-phase="access" aria-pressed="false">
-                    <span class="exec-phase-info-head">
-                        <span class="exec-phase-info-dot"></span>
-                        <span class="exec-phase-info-title">可插卡窗口</span>
-                        <span class="exec-phase-info-time">120 – 132 min</span>
-                    </span>
-                    <span class="exec-phase-info-desc">5 盏全绿，持续 12 分钟。唯一可插卡、开门窗口。</span>
-                    <span class="exec-phase-info-extra">132 min 起第一盏变红，窗口立即关闭</span>
-                </button>
                 <button type="button" class="exec-phase-info-card" data-phase="discharge" aria-pressed="false">
                     <span class="exec-phase-info-head">
                         <span class="exec-phase-info-dot"></span>
                         <span class="exec-phase-info-title">放电阶段</span>
-                        <span class="exec-phase-info-time">132 – 180 min</span>
+                        <span class="exec-phase-info-time">120 – 180 min</span>
                     </span>
-                    <span class="exec-phase-info-desc">每 12 分钟熄灭 1 盏绿灯。一旦出现红灯即失去访问权限。</span>
-                    <span class="exec-phase-info-extra">节点：132 → 144 → 156 → 168 → 180 min 逐盏熄灭</span>
+                    <span class="exec-phase-info-desc">120 min 起 5 盏全绿；132 min 起每 12 分钟 1 盏绿→红。首盏变红前为可插卡窗口。</span>
+                    <span class="exec-phase-info-extra">可插卡：120–132 min · 变红节点：132 → 144 → 156 → 168 → 180 min</span>
                 </button>
                 <button type="button" class="exec-phase-info-card" data-phase="cooldown" aria-pressed="false">
                     <span class="exec-phase-info-head">

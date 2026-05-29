@@ -9,7 +9,12 @@
         radial-gradient(ellipse 50% 35% at 0% 80%, rgba(20, 70, 110, 0.14), transparent 45%),
         linear-gradient(180deg, #04080e 0%, #0a1520 42%, #060d14 100%);
     color: #e8f4ff;
-    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+.server-ip-body .server-ip-main,
+.server-ip-body .server-ip-main * {
+    font-family: inherit;
 }
 
 .server-ip-body::before {
@@ -115,7 +120,6 @@
 
 .server-ip-value {
     display: block;
-    font-family: ui-monospace, Consolas, 'Cascadia Mono', monospace;
     font-size: clamp(1.75rem, 5vw, 2.75rem);
     font-weight: 800;
     color: #9ee8ff;
@@ -210,7 +214,6 @@
 }
 
 .server-ip-detail-value {
-    font-family: ui-monospace, Consolas, 'Cascadia Mono', monospace;
     font-size: clamp(1.35rem, 3vw, 1.75rem);
     font-weight: 800;
     color: #9ee8ff;
@@ -251,10 +254,10 @@
 
 .server-ip-detail-sub {
     display: block;
-    font-family: ui-monospace, Consolas, 'Cascadia Mono', monospace;
     font-size: 0.98rem;
     font-weight: 600;
     color: rgba(158, 220, 255, 0.92);
+    font-variant-numeric: tabular-nums;
 }
 
 .server-ip-error {
