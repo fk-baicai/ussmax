@@ -398,6 +398,36 @@
         .sched-cell.sched-cell-inherited {
             box-shadow: inset 0 0 0 1px rgba(95, 184, 255, 0.18);
         }
+        .sched-cell.sched-cell-locked {
+            opacity: 0.62;
+            pointer-events: none;
+            user-select: none;
+        }
+        .sched-cell.sched-cell-locked .sch-slot-wrap {
+            opacity: 0.85;
+        }
+        .sched-cell .sched-lock-badge {
+            display: none;
+            font-size: 0.62rem;
+            color: var(--accent, #5fb8ff);
+            margin-bottom: 0.2rem;
+            line-height: 1.25;
+        }
+        .sched-cell.sched-cell-locked .sched-lock-badge {
+            display: block;
+        }
+        .sched-template-cell .sch-template-enable-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin-bottom: 0.35rem;
+            color: var(--text);
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        .sched-template-cell.sched-template-off .sch-slot-wrap {
+            opacity: 0.45;
+        }
         .sched-template-cell .sch-template-hint {
             font-size: 0.68rem;
             color: var(--muted);
@@ -1514,7 +1544,8 @@
                             默认规则：未配置日期且未设长期默认时禁止签到。<br />
                             勾选全天开放：当日随时可签；<br />
                             不勾选：需设置开始时间与开放时长，仅规定时段内可签。<br />
-                            各分部「长期默认」：未单独配置的日期将自动沿用该分部长期规则。<br />
+                            各分部「长期默认」：勾选启用后，下方日期格将锁定并统一沿用该规则；取消勾选后可逐日单独配置。<br />
+                            生效优先级：单日覆盖 &gt; 长期默认 &gt; 未配置（禁止签到）。启用长期默认保存时会清除该分部的单日覆盖，避免冲突。<br />
                             时段签到时，OOPZ 在线时长仅统计签到开放窗口内的时间。<br />
                             各分部签到积分可在分部标题旁单独设置，默认 1 分，签到成功自动加分。
                         </p>
@@ -3196,52 +3227,159 @@
                 return Math.min(1440, Math.max(1, n));
             }
 
-            function buildSchedSlotHtml(day, defM) {
+            function branchTemplateActiveFromConfig(tplDay) {
+                if (!tplDay || typeof tplDay !== 'object') return false;
+                if (tplDay.allDay === true || tplDay.allDay === 'true') return true;
+                return !!(tplDay.startTime != null && String(tplDay.startTime).trim());
+            }
+
+            function buildSchedSlotHtml(day, defM, opts) {
+                var o = opts && typeof opts === 'object' ? opts : {};
                 var stRaw = day.startTime != null ? String(day.startTime).trim() : '';
                 var duRaw = day.durationMinutes != null ? Number(day.durationMinutes) : 0;
                 var allDay = day.allDay === true || day.allDay === 'true';
                 var timeVal = allDay ? '' : padTimeForInput(stRaw);
                 var durVal = duRaw > 0 ? clampScheduleMinutes(duRaw) : defM;
+                var lockBadge = o.locked
+                    ? '<div class="sched-lock-badge" title="已启用长期默认，此日期不可单独修改">沿用长期默认</div>'
+                    : '';
                 return (
+                    lockBadge +
                     '<label class="sch-allday-wrap"><input type="checkbox" class="sch-allday"' +
                     (allDay ? ' checked' : '') +
+                    (o.locked ? ' disabled' : '') +
                     ' title="全天开放" /> <span title="全天开放">全天</span></label>' +
                     '<div class="sch-slot-wrap">' +
                     '<label class="sch-time-lbl" title="开始时刻（24小时制）">开始' +
                     '<input type="time" class="sch-time" step="300" title="24小时制" value="' +
                     esc(timeVal) +
-                    '" /></label>' +
+                    '"' +
+                    (o.locked ? ' disabled' : '') +
+                    ' /></label>' +
                     '<label class="sch-dur-lbl" title="开放持续时间（分钟）">持续时间' +
                     '<div class="sch-dur-row">' +
                     '<input type="number" class="sch-dur-inp sched-num-inp" min="1" max="1440" step="1" list="adminSchedDurOpts" title="开放时长（分钟），可点下箭头选常用值" value="' +
                     esc(String(durVal)) +
-                    '" />' +
+                    '"' +
+                    (o.locked ? ' disabled' : '') +
+                    ' />' +
                     '<span class="hint sch-dur-unit">分</span></div></label>' +
                     '</div>'
                 );
+            }
+
+            function buildSchedTemplateHtml(tplDay, defM) {
+                var enabled = branchTemplateActiveFromConfig(tplDay);
+                return (
+                    '<label class="sch-template-enable-wrap">' +
+                    '<input type="checkbox" class="sch-template-enabled"' +
+                    (enabled ? ' checked' : '') +
+                    ' title="启用后下方日期格锁定，统一沿用本规则" />' +
+                    '<span>启用长期默认</span></label>' +
+                    '<div class="sch-template-hint">启用后下方日期不可单独修改；需逐日配置时请先取消勾选。留空开始时间且未勾选全天视为未启用。</div>' +
+                    buildSchedSlotHtml(tplDay, defM, { locked: false })
+                );
+            }
+
+            function readSchedTemplateCell(tplTd) {
+                if (!tplTd) return { enabled: false, config: null };
+                var enabledEl = tplTd.querySelector('.sch-template-enabled');
+                var enabled = !!(enabledEl && enabledEl.checked);
+                if (!enabled) return { enabled: false, config: null };
+                if (tplTd.querySelector('.sch-allday').checked) {
+                    return { enabled: true, config: { allDay: true } };
+                }
+                var tim = padTimeForInput(tplTd.querySelector('.sch-time').value);
+                if (!tim) return { enabled: true, config: null, invalid: true };
+                var durInp = tplTd.querySelector('.sch-dur-inp');
+                var def = clampScheduleMinutes(document.getElementById('defDurInp') && document.getElementById('defDurInp').value);
+                var dur = clampScheduleMinutes(durInp ? durInp.value : def) || def;
+                return {
+                    enabled: true,
+                    config: { startTime: tim, durationMinutes: dur },
+                };
+            }
+
+            function bindOneScheduleCell(td) {
+                if (!td || td.classList.contains('sched-cell-locked')) return;
+                var alld = td.querySelector('.sch-allday');
+                var durInp = td.querySelector('.sch-dur-inp');
+                if (!alld || !durInp) return;
+                function syncAllDay() {
+                    td.classList.toggle('sch-cell-off', alld.checked);
+                    if (alld.checked) {
+                        var ti = td.querySelector('.sch-time');
+                        if (ti) ti.value = '';
+                    }
+                }
+                alld.addEventListener('change', syncAllDay);
+                syncAllDay();
+            }
+
+            function syncBranchDailyLockState(bid) {
+                var tplTd = document.querySelector(
+                    '#schedGrid td.sched-template-cell[data-sched-template="' + bid + '"]'
+                );
+                var tplState = readSchedTemplateCell(tplTd);
+                var locked = !!(tplState.enabled && tplState.config && !tplState.invalid);
+                var defM = clampScheduleMinutes(document.getElementById('defDurInp') && document.getElementById('defDurInp').value);
+                var dayCfg = locked ? tplState.config : {};
+                var sch = state.schedule || { branches: {} };
+                document.querySelectorAll('#schedGrid td.sched-cell[data-b="' + bid + '"]').forEach(function (td) {
+                    td.classList.toggle('sched-cell-locked', locked);
+                    td.classList.toggle('sched-cell-inherited', locked);
+                    if (locked) {
+                        td.setAttribute('title', '已启用长期默认，不可单独修改');
+                        td.innerHTML = buildSchedSlotHtml(dayCfg, defM, { locked: true });
+                        return;
+                    }
+                    var d = td.getAttribute('data-d');
+                    var explicit =
+                        sch.branches && sch.branches[bid] && sch.branches[bid][d]
+                            ? sch.branches[bid][d]
+                            : null;
+                    td.removeAttribute('title');
+                    td.innerHTML = buildSchedSlotHtml(explicit || {}, defM, { locked: false });
+                    bindOneScheduleCell(td);
+                });
+                if (tplTd) {
+                    var disableFields = !tplState.enabled;
+                    tplTd.classList.toggle('sched-template-off', disableFields);
+                    tplTd.querySelectorAll('.sch-allday-wrap input, .sch-slot-wrap input').forEach(function (inp) {
+                        inp.disabled = disableFields;
+                    });
+                    var tplAlld = tplTd.querySelector('.sch-allday');
+                    if (tplAlld && !disableFields) {
+                        tplTd.classList.toggle('sch-cell-off', tplAlld.checked);
+                    } else {
+                        tplTd.classList.remove('sch-cell-off');
+                    }
+                }
+            }
+
+            function bindScheduleCells() {
+                document.querySelectorAll('#schedGrid td.sched-cell[data-b]').forEach(function (td) {
+                    bindOneScheduleCell(td);
+                });
+                document.querySelectorAll('#schedGrid td.sched-template-cell').forEach(function (td) {
+                    var bid = td.getAttribute('data-sched-template');
+                    if (!bid) return;
+                    td.querySelectorAll('.sch-template-enabled, .sch-allday, .sch-time, .sch-dur-inp').forEach(function (inp) {
+                        inp.addEventListener('change', function () {
+                            syncBranchDailyLockState(bid);
+                        });
+                        inp.addEventListener('input', function () {
+                            syncBranchDailyLockState(bid);
+                        });
+                    });
+                    syncBranchDailyLockState(bid);
+                });
             }
 
             function clampSchedulePoints(raw) {
                 var n = Math.round(Number(raw));
                 if (!Number.isFinite(n)) return 1;
                 return Math.min(1000, Math.max(1, n));
-            }
-
-            function bindScheduleCells() {
-                document.querySelectorAll('#schedGrid td.sched-cell').forEach(function (td) {
-                    var alld = td.querySelector('.sch-allday');
-                    var durInp = td.querySelector('.sch-dur-inp');
-                    if (!alld || !durInp) return;
-                    function syncAllDay() {
-                        td.classList.toggle('sch-cell-off', alld.checked);
-                        if (alld.checked) {
-                            var ti = td.querySelector('.sch-time');
-                            if (ti) ti.value = '';
-                        }
-                    }
-                    alld.addEventListener('change', syncAllDay);
-                    syncAllDay();
-                });
             }
 
             async function loadScheduleUi() {
@@ -3321,19 +3459,21 @@
                         esc(String(pptBr)) +
                         '" /></label></span></span></td></tr>';
                     var tplDay = (sch.branchTemplates && sch.branchTemplates[br.id]) || {};
+                    var tplActive = branchTemplateActiveFromConfig(tplDay);
                     html +=
                         '<tr class="sched-branch-template-tr' +
                         (folded ? ' sched-branch-tr-collapsed' : '') +
                         '" data-sched-branch="' +
                         esc(br.id) +
                         '"><td class="sched-template-label" title="未单独配置日期时沿用此规则">长期默认</td>' +
-                        '<td class="sched-cell sched-template-cell" colspan="' +
+                        '<td class="sched-cell sched-template-cell' +
+                        (tplActive ? '' : ' sched-template-off') +
+                        '" colspan="' +
                         dates.length +
                         '" data-sched-template="' +
                         esc(br.id) +
                         '">' +
-                        '<div class="sch-template-hint">以下规则将应用于该分部所有未单独配置的日期；留空开始时间表示不启用长期默认。</div>' +
-                        buildSchedSlotHtml(tplDay, defM) +
+                        buildSchedTemplateHtml(tplDay, defM) +
                         '</td></tr>';
                     html +=
                         '<tr class="sched-branch-data-tr' +
@@ -3347,20 +3487,21 @@
                                 ? sch.branches[br.id][d]
                                 : null;
                         var tpl = (sch.branchTemplates && sch.branchTemplates[br.id]) || {};
-                        var day = explicit || tpl || {};
-                        var inherited =
-                            !explicit && tpl && (tpl.allDay === true || tpl.allDay === 'true' || tpl.startTime);
+                        var locked = tplActive;
+                        var day = locked ? tpl : explicit || {};
+                        var inherited = locked || (!explicit && tplActive);
                         html +=
                             '<td class="sched-cell' +
                             (inherited ? ' sched-cell-inherited' : '') +
+                            (locked ? ' sched-cell-locked' : '') +
                             '" data-b="' +
                             esc(br.id) +
                             '" data-d="' +
                             esc(d) +
                             '"' +
-                            (inherited ? ' title="沿用长期默认规则"' : '') +
+                            (locked ? ' title="已启用长期默认，不可单独修改"' : inherited ? ' title="沿用长期默认规则"' : '') +
                             '>' +
-                            buildSchedSlotHtml(day, defM) +
+                            buildSchedSlotHtml(day, defM, { locked: locked }) +
                             '</td>';
                     });
                     html += '</tr>';
@@ -3407,30 +3548,38 @@
                 });
                 var payloadBranches = { hq: {}, squad1: {}, uss: {}, ussprod: {} };
                 var branchTemplates = {};
+                var saveErrors = [];
                 ['hq', 'squad1', 'uss', 'ussprod'].forEach(function (bid) {
                     var tplTd = document.querySelector(
                         '#schedGrid td.sched-template-cell[data-sched-template="' + bid + '"]'
                     );
-                    if (tplTd) {
-                        if (tplTd.querySelector('.sch-allday').checked) {
-                            branchTemplates[bid] = { allDay: true };
+                    var tplState = readSchedTemplateCell(tplTd);
+                    if (tplState.enabled) {
+                        if (tplState.invalid || !tplState.config) {
+                            var branchLabel =
+                                bid === 'hq'
+                                    ? '总部'
+                                    : bid === 'squad1'
+                                      ? '一中队'
+                                      : bid === 'uss'
+                                        ? 'USS创伤舰队'
+                                        : 'USS生产队';
+                            saveErrors.push(branchLabel + '：已勾选启用长期默认，请填写开始时间或勾选全天');
+                            branchTemplates[bid] = null;
                         } else {
-                            var tplTim = padTimeForInput(tplTd.querySelector('.sch-time').value);
-                            if (!tplTim) {
-                                branchTemplates[bid] = null;
-                            } else {
-                                var tplDurInp = tplTd.querySelector('.sch-dur-inp');
-                                var tplDur = clampScheduleMinutes(tplDurInp ? tplDurInp.value : def) || def;
-                                branchTemplates[bid] = {
-                                    startTime: tplTim,
-                                    durationMinutes: tplDur,
-                                };
-                            }
+                            branchTemplates[bid] = tplState.config;
                         }
+                    } else {
+                        branchTemplates[bid] = null;
                     }
+                    var templateLocked = !!(tplState.enabled && tplState.config && !tplState.invalid);
                     state.dates.forEach(function (d) {
                         var td = document.querySelector('#schedGrid td.sched-cell[data-b="' + bid + '"][data-d="' + d + '"]');
                         if (!td) return;
+                        if (templateLocked) {
+                            payloadBranches[bid][d] = null;
+                            return;
+                        }
                         if (td.querySelector('.sch-allday').checked) {
                             payloadBranches[bid][d] = { allDay: true };
                             return;
@@ -3448,6 +3597,10 @@
                         };
                     });
                 });
+                if (saveErrors.length) {
+                    showErr('schedErr', saveErrors.join('；'));
+                    return;
+                }
                 showErr('schedErr', '');
                 try {
                     state.schedule = await window.UssAuthApi.adminPutSchedule(s.token, {
