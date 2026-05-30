@@ -11,6 +11,10 @@
         '<path fill="#AAB5BB" d="M76.022 2.138c0-1.373.623-1.997 1.99-1.997S80 .768 80 2.138c0 1.372-.622 2-1.989 2s-1.989-.628-1.989-2m3.677 0c0-1.17-.529-1.701-1.692-1.701s-1.692.527-1.692 1.7c0 1.17.53 1.702 1.692 1.702 1.167 0 1.692-.532 1.692-1.701m-.887-.34c0 .393-.103.554-.404.61l.45.717c.022.022.012.043-.02.043h-.373c-.046 0-.064-.01-.082-.046l-.44-.685h-.222v.692c0 .032-.003.036-.032.036h-.361c-.032 0-.036-.008-.036-.036V1.182c0-.022.007-.032.032-.032.24-.022.494-.025.723-.025.569 0 .765.153.765.674m-1.09-.302v.62H78c.287 0 .372-.053.372-.303 0-.257-.085-.317-.372-.317z"></path>' +
         '</svg>';
 
+    var SC_DISCLAIMER_EN =
+        'This is an unofficial Star Citizen website and has no affiliation with any companies under the Cloud Imperium group.';
+    var SC_DISCLAIMER_ZH = '本网站为星际公民非官方站点，与云帝国集团旗下各公司无任何隶属关系';
+
     var footer = document.createElement('footer');
     footer.id = 'ussSiteFooter';
     footer.className = 'uss-site-footer';
@@ -18,43 +22,63 @@
     footer.setAttribute('data-nosnippet', '');
     footer.innerHTML =
         '<div class="uss-site-footer-main">' +
-        '<div class="uss-site-footer-inner">' +
-        '<div class="uss-site-footer-col uss-site-footer-col--rsi">' +
-        '<a class="uss-footer-link-card uss-footer-link-card--rsi" href="https://robertsspaceindustries.com/en/" target="_blank" rel="noopener noreferrer">' +
-        '<span class="uss-footer-icon-slot">' +
-        RSI_LOGO_SVG +
+        '<div class="uss-site-footer-bar">' +
+        '<div class="uss-site-footer-seg uss-site-footer-seg--brand">' +
+        '<span class="uss-footer-sc-badge" tabindex="0" role="img" aria-label="' +
+        SC_DISCLAIMER_EN +
+        ' ' +
+        SC_DISCLAIMER_ZH +
+        '">' +
+        '<img class="uss-footer-sc-community-logo" src="sp/png/%E7%A4%BE%E5%8C%BA.png" alt="星际公民非官方站点标识" width="64" height="64" decoding="async">' +
+        '<span class="uss-footer-sc-badge-tip" role="tooltip">' +
+        '<span class="uss-footer-sc-badge-tip-en">' +
+        SC_DISCLAIMER_EN +
         '</span>' +
-        '<span class="uss-footer-link-title">星际公民</span>' +
-        '<span class="uss-footer-link-desc">Roberts Space Industries</span>' +
-        '</a>' +
+        '<span class="uss-footer-sc-badge-tip-zh">' +
+        SC_DISCLAIMER_ZH +
+        '</span>' +
+        '</span>' +
+        '</span>' +
         '</div>' +
-        '<div class="uss-site-footer-col">' +
-        '<a class="uss-footer-link-card" href="https://apps.microsoft.com/detail/9nf3swfwnkl1?launch=false&amp;mode=mini&amp;hl=zh-CN&amp;gl=CN" target="_blank" rel="noopener noreferrer">' +
-        '<span class="uss-footer-icon-slot"><img class="uss-footer-hanghua-logo" src="sp/png/hanghua.png" alt="SC汉化盒子" width="40" height="40" decoding="async"></span>' +
-        '<span class="uss-footer-link-title">SC汉化盒子</span>' +
-        '<span class="uss-footer-link-desc">Microsoft Store 下载</span>' +
-        '</a>' +
+        '<div class="uss-site-footer-vrule" aria-hidden="true"></div>' +
+        '<div class="uss-site-footer-seg uss-site-footer-seg--community">' +
+        '<nav class="uss-site-footer-seg-body" aria-label="社区链接">' +
+        '<ul class="uss-footer-link-list uss-footer-link-list--duo">' +
+        '<li><a class="uss-footer-link-row" href="https://apps.microsoft.com/detail/9nf3swfwnkl1?launch=false&amp;mode=mini&amp;hl=zh-CN&amp;gl=CN" target="_blank" rel="noopener noreferrer" aria-label="SC汉化盒子 · Microsoft Store">' +
+        '<span class="uss-footer-link-row-icon"><img class="uss-footer-hanghua-logo" src="sp/png/hanghua.png" alt="" width="32" height="32" decoding="async"><span class="uss-footer-link-desc-tip" role="tooltip">Microsoft Store</span></span>' +
+        '<span class="uss-footer-link-row-text"><span class="uss-footer-link-title">SC汉化盒子</span></span></a></li>' +
+        '<li><a class="uss-footer-link-row uss-footer-link-row--chub" href="https://citizenshub.app/app-settings" target="_blank" rel="noopener noreferrer" aria-label="Citizens\' Hub · CCU 路线规划">' +
+        '<span class="uss-footer-link-row-icon"><img class="uss-footer-chub-logo" src="sp/png/citizenshub.png" alt="" width="32" height="32" decoding="async"><span class="uss-footer-link-desc-tip" role="tooltip">CCU 路线规划</span></span>' +
+        '<span class="uss-footer-link-row-text"><span class="uss-footer-link-title">Citizens\' Hub</span></span></a></li>' +
+        '<li><a class="uss-footer-link-row uss-footer-link-row--erkul" href="https://www.erkul.games/live/calculator" target="_blank" rel="noopener noreferrer" aria-label="DPS 计算器 · Erkul.games">' +
+        '<span class="uss-footer-link-row-icon"><img class="uss-footer-erkul-logo" src="sp/png/erkul.png" alt="" width="32" height="32" decoding="async"><span class="uss-footer-link-desc-tip" role="tooltip">Erkul.games</span></span>' +
+        '<span class="uss-footer-link-row-text"><span class="uss-footer-link-title">DPS 计算器</span></span></a></li>' +
+        '</ul>' +
+        '</nav>' +
         '</div>' +
-        '<div class="uss-site-footer-col">' +
-        '<a class="uss-footer-link-card uss-footer-link-card--bc" href="hangzhou-barcitizen.html">' +
-        '<span class="uss-footer-icon-slot"><span class="uss-footer-bc-badge" aria-hidden="true">BC</span></span>' +
-        '<span class="uss-footer-link-title">杭州BARCITIZEN</span>' +
-        '<span class="uss-footer-link-desc">U.S.S 杭州线下活动</span>' +
-        '</a>' +
+        '<div class="uss-site-footer-vrule" aria-hidden="true"></div>' +
+        '<div class="uss-site-footer-seg uss-site-footer-seg--official">' +
+        '<nav class="uss-site-footer-seg-body" aria-label="官方">' +
+        '<ul class="uss-footer-link-list uss-footer-link-list--middle">' +
+        '<li><a class="uss-footer-link-row uss-footer-link-row--rsi" href="https://robertsspaceindustries.com/en/" target="_blank" rel="noopener noreferrer" aria-label="星际公民 · Roberts Space Industries">' +
+        '<span class="uss-footer-link-row-icon uss-footer-link-row-icon--rsi">' +
+        RSI_LOGO_SVG +
+        '<span class="uss-footer-link-desc-tip" role="tooltip">Roberts Space Industries</span>' +
+        '</span>' +
+        '<span class="uss-footer-link-row-text"><span class="uss-footer-link-title">星际公民</span></span>' +
+        '</a></li>' +
+        '</ul>' +
+        '</nav>' +
         '</div>' +
-        '<div class="uss-site-footer-col">' +
-        '<a class="uss-footer-link-card uss-footer-link-card--erkul" href="https://www.erkul.games/live/calculator" target="_blank" rel="noopener noreferrer">' +
-        '<span class="uss-footer-icon-slot"><img class="uss-footer-erkul-logo" src="sp/png/erkul.png" alt="Erkul DPS 计算器" width="40" height="40" decoding="async"></span>' +
-        '<span class="uss-footer-link-title">DPS 计算器</span>' +
-        '<span class="uss-footer-link-desc">Erkul.games 舰船配置</span>' +
-        '</a>' +
-        '</div>' +
-        '<div class="uss-site-footer-col">' +
-        '<a class="uss-footer-link-card uss-footer-link-card--chub" href="https://citizenshub.app/app-settings" target="_blank" rel="noopener noreferrer">' +
-        '<span class="uss-footer-icon-slot"><img class="uss-footer-chub-logo" src="sp/png/citizenshub.png" alt="Citizens\' Hub" width="40" height="40" decoding="async"></span>' +
-        '<span class="uss-footer-link-title">Citizens\' Hub</span>' +
-        '<span class="uss-footer-link-desc">CCU路线规划</span>' +
-        '</a>' +
+        '<div class="uss-site-footer-vrule" aria-hidden="true"></div>' +
+        '<div class="uss-site-footer-seg uss-site-footer-seg--fleet">' +
+        '<nav class="uss-site-footer-seg-body" aria-label="舰队活动">' +
+        '<ul class="uss-footer-link-list uss-footer-link-list--middle">' +
+        '<li><a class="uss-footer-link-row uss-footer-link-row--bc" href="hangzhou-barcitizen.html" aria-label="杭州 BARCITIZEN · U.S.S 杭州线下活动">' +
+        '<span class="uss-footer-link-row-icon"><span class="uss-footer-bc-badge" aria-hidden="true">BC</span><span class="uss-footer-link-desc-tip" role="tooltip">U.S.S 杭州线下活动</span></span>' +
+        '<span class="uss-footer-link-row-text"><span class="uss-footer-link-title">杭州 BARCITIZEN</span></span></a></li>' +
+        '</ul>' +
+        '</nav>' +
         '</div>' +
         '</div>' +
         '</div>' +

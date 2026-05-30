@@ -439,18 +439,17 @@
         var opts = options || {};
         var localFresh = readLocalCache(false);
         var localStale = readLocalCache(true);
+        var localAny = localFresh || localStale;
+        var skipNetwork = localFresh && !opts.forceNetwork && !opts.revalidate;
 
-        if (localFresh && !opts.forceNetwork) {
+        if (skipNetwork) {
             render(localFresh);
             return;
         }
 
-        if (!localFresh && !opts.forceNetwork && localStale) {
-            render(localStale);
-            return;
-        }
-
-        if (!localStale && !opts.silent) {
+        if (localAny && !opts.silent) {
+            render(localAny);
+        } else if (!localAny && !opts.silent) {
             renderLoading();
         }
 
@@ -458,8 +457,8 @@
             var data = await fetchFromBackend();
             render(data);
         } catch (err) {
-            if (localStale) {
-                render(localStale);
+            if (localAny) {
+                render(localAny);
                 return;
             }
             renderError((err && err.message) || '获取资金统计失败');
@@ -481,7 +480,7 @@
         updatedEl = document.getElementById('rsiFundingUpdated');
         if (!fundsEl || !fansEl || !chartEl) return;
         renderTabs();
-        loadStats();
+        loadStats({ revalidate: true });
         scheduleRefresh();
         window.addEventListener('resize', function () {
             clearTimeout(resizeTimer);

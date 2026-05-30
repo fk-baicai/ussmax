@@ -73,7 +73,6 @@
         { id: 'broadcast', title: '播报', badge: '播', badgeTitle: '语音播报' },
         { id: 'checkin', title: '签到', badge: '签', badgeTitle: '签到' },
     ];
-    var LOG_SECTION_LIMIT = 20;
 
     function classifyLogKind(item) {
         if (!item || typeof item !== 'object') return 'broadcast';
@@ -424,12 +423,23 @@
         channelsRoot.innerHTML = html;
     }
 
-    var LOG_RETENTION_MS = 24 * 60 * 60 * 1000;
+    function shanghaiDateKey(d) {
+        try {
+            return new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Asia/Shanghai',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+            }).format(d || new Date());
+        } catch (e) {
+            return '';
+        }
+    }
 
     function isWithinLogRetention(at) {
         var t = new Date(at).getTime();
         if (!isFinite(t) || t <= 0) return false;
-        return Date.now() - t <= LOG_RETENTION_MS;
+        return shanghaiDateKey(new Date(t)) === shanghaiDateKey(new Date());
     }
 
     function buildLogsFromState(data) {
@@ -512,12 +522,12 @@
         LOG_SECTIONS.forEach(function (section) {
             var sectionList = buckets[section.id] || [];
             if (!sectionList.length) return;
-            var groups = groupLogsForDisplay(sectionList).slice(0, LOG_SECTION_LIMIT);
+            var groups = groupLogsForDisplay(sectionList);
             groupedTotal += groups.length;
             sectionPayloads.push({ section: section, groups: groups, count: sectionList.length });
         });
 
-        var html = '<div class="oopz-bridge-log-summary">近 24 小时 · 共 ' + list.length + ' 条';
+        var html = '<div class="oopz-bridge-log-summary">今日（北京时间）· 共 ' + list.length + ' 条';
         if (groupedTotal < list.length) {
             html += ' · 合并显示 ' + groupedTotal + ' 组';
         }
