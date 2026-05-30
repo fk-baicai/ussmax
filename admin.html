@@ -1639,6 +1639,15 @@
                         <option value="+0%" selected>正常</option>
                         <option value="+10%">较快</option>
                     </select>
+                    <span class="def-dur-sep" aria-hidden="true"></span>
+                    <label for="oopzTtsVolume">音量</label>
+                    <select id="oopzTtsVolume" aria-label="默认播报音量">
+                        <option value="+0%">正常</option>
+                        <option value="+10%">稍大</option>
+                        <option value="+20%">较大</option>
+                        <option value="+30%">很大</option>
+                        <option value="+50%">最大</option>
+                    </select>
                 </div>
                 <div class="oopz-tts-template-row">
                     <label for="oopzTtsDefaultTemplate">默认文案</label>
@@ -3768,6 +3777,27 @@
                 }).join('');
             }
 
+            function buildOopzTtsVolumeOptions(selectedVolume) {
+                var volumes = [
+                    { value: '+0%', label: '正常' },
+                    { value: '+10%', label: '稍大' },
+                    { value: '+20%', label: '较大' },
+                    { value: '+30%', label: '很大' },
+                    { value: '+50%', label: '最大' },
+                ];
+                var needle = String(selectedVolume || '+0%').trim();
+                var known = volumes.some(function (item) {
+                    return item.value === needle;
+                });
+                if (needle && !known) {
+                    volumes.push({ value: needle, label: needle });
+                }
+                return volumes.map(function (item) {
+                    return '<option value="' + item.value + '"' +
+                        (needle === item.value ? ' selected' : '') + '>' + item.label + '</option>';
+                }).join('');
+            }
+
             function normalizeOopzIdList(list) {
                 var seen = {};
                 var out = [];
@@ -3981,6 +4011,7 @@
                     var enabledEl = document.getElementById('oopzTtsEnabled');
                     var voiceEl = document.getElementById('oopzTtsVoice');
                     var rateEl = document.getElementById('oopzTtsRate');
+                    var volumeEl = document.getElementById('oopzTtsVolume');
                     var templateEl = document.getElementById('oopzTtsDefaultTemplate');
                     var cooldownEl = document.getElementById('oopzTtsCooldownSec');
                     var apiVoices = Array.isArray(cfg.voices) ? cfg.voices : [];
@@ -4047,6 +4078,7 @@
                         voiceEl.innerHTML = buildOopzTtsVoiceOptions(cfg.voiceId || 'voice_loli_xiaoyi', false);
                     }
                     if (rateEl) rateEl.value = cfg.rate || '+0%';
+                    if (volumeEl) volumeEl.innerHTML = buildOopzTtsVolumeOptions(cfg.volume || '+0%');
                     if (templateEl) {
                         templateEl.value = cfg.defaultTemplate || '欢迎 {user} 登舰成功';
                     }
@@ -4069,6 +4101,7 @@
                 var enabledEl = document.getElementById('oopzTtsEnabled');
                 var voiceEl = document.getElementById('oopzTtsVoice');
                 var rateEl = document.getElementById('oopzTtsRate');
+                var volumeEl = document.getElementById('oopzTtsVolume');
                 var templateEl = document.getElementById('oopzTtsDefaultTemplate');
                 var cooldownEl = document.getElementById('oopzTtsCooldownSec');
                 var memberRules = collectOopzTtsMemberRules().filter(function (rule) {
@@ -4088,6 +4121,7 @@
                         enabled: !!(enabledEl && enabledEl.checked),
                         voiceId: voiceIdVal,
                         rate: rateEl ? rateEl.value : '+0%',
+                        volume: volumeEl ? volumeEl.value : '+0%',
                         defaultTemplate: templateEl ? templateEl.value.trim() : '欢迎 {user} 登舰成功',
                         announceCooldownSec: announceCooldownSec,
                         noCooldownOopzIds: noCooldownOopzIds,
