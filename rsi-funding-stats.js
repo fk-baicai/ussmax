@@ -209,14 +209,36 @@
     function getChartMetrics() {
         var mobile =
             typeof window !== 'undefined' && window.matchMedia('(max-width: 600px)').matches;
+        var compact =
+            typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches;
+        var width = 760;
+        var height = compact ? (mobile ? 230 : 250) : 260;
+        var padL = mobile ? 14 : 18;
+        var padR = mobile ? 12 : 16;
+        var padT = mobile ? 12 : 18;
+        var padB = mobile ? 26 : 32;
+        var axisOffset = mobile ? 12 : 10;
+        var axisFont = mobile ? 14 : compact ? 12 : 11;
+
+        if (chartEl) {
+            var cs = window.getComputedStyle(chartEl);
+            var padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+            var padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+            var innerW = chartEl.clientWidth - padX;
+            var innerH = chartEl.clientHeight - padY;
+            if (innerW > 100) width = Math.max(280, Math.round(innerW));
+            if (innerH > 80) height = Math.max(160, Math.round(innerH));
+        }
+
         return {
-            width: 760,
-            height: mobile ? 188 : 260,
-            padL: mobile ? 14 : 18,
-            padR: mobile ? 12 : 16,
-            padT: mobile ? 14 : 22,
-            padB: mobile ? 20 : 34,
-            axisOffset: mobile ? 6 : 10,
+            width: width,
+            height: height,
+            padL: padL,
+            padR: padR,
+            padT: padT,
+            padB: padB,
+            axisOffset: axisOffset,
+            axisFont: axisFont,
         };
     }
 
@@ -247,9 +269,10 @@
         });
         var maxV = Math.max.apply(null, values.concat([1]));
         var minV = Math.min.apply(null, values.concat([0]));
-        var dataRange = Math.max(maxV - minV, maxV * 0.08, 1);
-        var yMin = minV;
-        var yMax = maxV + dataRange * 0.18;
+        var dataRange = Math.max(maxV - minV, maxV * 0.05, 1);
+        var yMargin = dataRange * 0.04;
+        var yMin = minV - yMargin;
+        var yMax = maxV + yMargin;
         var yRange = Math.max(yMax - yMin, 1);
 
         function xAt(i) {
@@ -328,6 +351,8 @@
                     labelX +
                     '" y="' +
                     (height - metrics.axisOffset) +
+                    '" font-size="' +
+                    metrics.axisFont +
                     '" class="rsi-funding-chart-axis" text-anchor="' +
                     anchor +
                     '">' +
@@ -345,7 +370,7 @@
             width +
             ' ' +
             height +
-            '" role="img" aria-label="众筹时间线">' +
+            '" preserveAspectRatio="xMidYMid meet" role="img" aria-label="众筹时间线">' +
             '<defs>' +
             '<linearGradient id="rsiFundingAreaGrad" x1="0" y1="0" x2="0" y2="1">' +
             '<stop offset="0%" stop-color="#5fb8ff" stop-opacity="0.16"/>' +
@@ -363,6 +388,17 @@
             dots +
             '</svg>';
         bindChartInteraction();
+
+        if (!chartEl._rsiLayoutRetry) {
+            chartEl._rsiLayoutRetry = true;
+            requestAnimationFrame(function () {
+                chartEl._rsiLayoutRetry = false;
+                var next = getChartMetrics();
+                if (Math.abs(next.height - height) > 6 || Math.abs(next.width - width) > 6) {
+                    renderChart(points, period);
+                }
+            });
+        }
     }
 
     function renderTabs() {

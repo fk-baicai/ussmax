@@ -1405,6 +1405,91 @@
             }
         }
 
+        function communityDmPinStorageKey() {
+            const s = loadAuthSession();
+            const bid = s && s.bindingId ? String(s.bindingId).trim().toLowerCase() : '';
+            return bid ? 'UssCommunityDmPin_v1:' + bid : null;
+        }
+
+        function loadCommunityDmPinOrder() {
+            const key = communityDmPinStorageKey();
+            if (!key) return {};
+            try {
+                const raw = localStorage.getItem(key);
+                if (!raw) return {};
+                const o = JSON.parse(raw);
+                if (!o || typeof o !== 'object') return {};
+                const out = {};
+                Object.keys(o).forEach(function (k) {
+                    const kk = String(k).trim().toLowerCase();
+                    const n = Number(o[k]);
+                    if (kk && Number.isFinite(n) && n > 0) out[kk] = n;
+                });
+                return out;
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function saveCommunityDmPinOrder(map) {
+            const key = communityDmPinStorageKey();
+            if (!key || !map || typeof map !== 'object') return;
+            try {
+                localStorage.setItem(key, JSON.stringify(map));
+            } catch (e) {
+                /* ignore */
+            }
+        }
+
+        /** 私聊往来后置顶该成员（时间戳越大越靠前） */
+        function touchCommunityDmPeer(peerBindingId, at) {
+            const k = String(peerBindingId || '').trim().toLowerCase();
+            if (!k || !communityDmPinStorageKey()) return false;
+            const ts = Number.isFinite(Number(at)) && Number(at) > 0 ? Number(at) : Date.now();
+            const pin = loadCommunityDmPinOrder();
+            if (pin[k] === ts) return false;
+            pin[k] = ts;
+            saveCommunityDmPinOrder(pin);
+            return true;
+        }
+
+        function bootstrapCommunityDmPinFromInbox(dmNorm) {
+            const pin = loadCommunityDmPinOrder();
+            const peers = Object.keys(dmNorm || {}).filter(function (peer) {
+                return (dmNorm[peer] || 0) > 0 && !pin[peer];
+            });
+            if (!peers.length) return false;
+            peers.sort(function (a, b) {
+                return (dmNorm[b] || 0) - (dmNorm[a] || 0);
+            });
+            const base = Date.now() - peers.length * 1000;
+            peers.forEach(function (peer, i) {
+                pin[peer] = base + (peers.length - i) * 1000;
+            });
+            saveCommunityDmPinOrder(pin);
+            return true;
+        }
+
+        function sortCommunityRosterMembersForDisplay(members) {
+            const pin = loadCommunityDmPinOrder();
+            return (Array.isArray(members) ? members : []).slice().sort(function (a, b) {
+                const ba = a && a.bindingId != null ? String(a.bindingId).trim().toLowerCase() : '';
+                const bb = b && b.bindingId != null ? String(b.bindingId).trim().toLowerCase() : '';
+                const ta = pin[ba] || 0;
+                const tb = pin[bb] || 0;
+                if (ta !== tb) return tb - ta;
+                return String(a && a.bindingId != null ? a.bindingId : '').localeCompare(
+                    String(b && b.bindingId != null ? b.bindingId : ''),
+                    'zh-CN'
+                );
+            });
+        }
+
+        function reorderCommunityChatRosterPeers() {
+            if (!communityChatRosterMembersList.length) return;
+            renderCommunityChatRosterFromMembers(communityChatRosterMembersList);
+        }
+
         function ensureCommunityReadBaseline(fleetMax, dmMap) {
             if (loadCommunityReadState()) return;
             const dmCopy = {};
@@ -1461,10 +1546,20 @@
                     if (kk && Number.isFinite(n) && n >= 0) dmNorm[kk] = Math.floor(n);
                 });
                 ensureCommunityReadBaseline(fleetMax, dmNorm);
+                const prevDm = communityInboxSnapshot.dmMaxByPeer || {};
+                let pinChanged = bootstrapCommunityDmPinFromInbox(dmNorm);
+                Object.keys(dmNorm).forEach(function (peer) {
+                    const next = dmNorm[peer] || 0;
+                    const prev = prevDm[peer] || 0;
+                    if (next > prev && touchCommunityDmPeer(peer)) {
+                        pinChanged = true;
+                    }
+                });
                 communityInboxSnapshot.fleetMaxSeq = fleetMax;
                 communityInboxSnapshot.dmMaxByPeer = dmNorm;
                 updateCommunityUnreadBadges();
                 syncCommunityFleetPollCursorFromInbox();
+                if (pinChanged) reorderCommunityChatRosterPeers();
             } catch (e) {
                 /* 静默 */
             }
@@ -2982,7 +3077,7 @@
         function renderCommunityChatRosterFromMembers(members) {
             const inner = document.getElementById('communityChatRosterInner');
             if (!inner) return;
-            const list = Array.isArray(members) ? members : [];
+            const list = sortCommunityRosterMembersForDisplay(members);
             communityChatRosterMembersList = list.slice();
             const sess = loadAuthSession();
             const me = sess && sess.bindingId ? String(sess.bindingId).trim().toLowerCase() : '';
@@ -3070,6 +3165,7 @@
             try {
                 const sess = loadAuthSession();
                 if (!sess || !sess.token) throw new Error('未登录');
+                await refreshCommunityInboxSnapshot();
                 const data = await window.UssAuthApi.communityRoster(sess.token);
                 renderCommunityChatRosterFromMembers(data.members || []);
             } catch (e) {
@@ -3103,6 +3199,8 @@
             communityChatDmPeer = peer;
             communityChatDmLabel = label || peer;
             communityDmMaxSeq = 0;
+            touchCommunityDmPeer(peer);
+            reorderCommunityChatRosterPeers();
             syncCommunityChatMainTitle();
             syncCommunityChatRosterActive();
             loadCommunityDmFull();
@@ -3271,6 +3369,8 @@
                         if (communityChatKind === 'dm') {
                             communityDmMaxSeq = Math.max(communityDmMaxSeq || 0, data.maxSeq);
                             markCommunityDmPeerRead(communityChatDmPeer, communityDmMaxSeq);
+                            touchCommunityDmPeer(communityChatDmPeer);
+                            reorderCommunityChatRosterPeers();
                         } else {
                             communityChatMaxSeq = Math.max(communityChatMaxSeq || 0, data.maxSeq);
                             markCommunityFleetRead(communityChatMaxSeq);

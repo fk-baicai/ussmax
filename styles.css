@@ -2330,8 +2330,10 @@ a.drawer-checkin-textlink:hover {
 
 .rsi-funding-chart-frame {
     position: relative;
+    display: flex;
+    flex-direction: column;
     min-height: 260px;
-    padding: 12px 14px 6px 10px;
+    padding: 12px 14px 8px 10px;
     border: 1px solid var(--home-surface-border);
     border-radius: 10px;
     background: var(--home-surface-tint);
@@ -2343,8 +2345,10 @@ a.drawer-checkin-textlink:hover {
 
 .rsi-funding-chart-svg {
     display: block;
+    flex: 1 1 auto;
     width: 100%;
-    height: auto;
+    height: 100%;
+    min-height: 0;
     overflow: visible;
 }
 
@@ -2432,8 +2436,8 @@ a.drawer-checkin-textlink:hover {
 }
 
 .rsi-funding-chart-axis {
-    fill: rgba(168, 216, 232, 0.72);
-    font-size: 9px;
+    fill: rgba(168, 216, 232, 0.82);
+    font-size: 11px;
     font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
     pointer-events: none;
 }
@@ -4092,10 +4096,24 @@ body.oopz-bind-open {
     }
 
     .community-chat-roster {
+        flex: 0 0 auto;
         width: 100%;
-        max-height: 220px;
+        min-width: 0;
+        max-height: clamp(300px, 46vh, 420px);
         border-right: none;
         border-bottom: 1px solid rgba(84, 173, 247, 0.15);
+        overflow: hidden;
+    }
+
+    .community-chat-roster-inner {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .community-chat-roster-sub {
+        margin: 10px 6px 6px;
     }
 }
 
@@ -6305,8 +6323,13 @@ a.community-author-avatar-link:focus-visible {
   .rsi-funding-chart-frame {
     grid-column: 1;
     grid-row: 4;
-    min-height: 0;
+    min-height: 260px;
     padding: 8px 8px 2px 6px;
+  }
+
+  .rsi-funding-page-body .rsi-funding-chart-frame {
+    min-height: 260px;
+    height: 260px;
   }
   .section-title {
     font-size: 28px;
@@ -6839,21 +6862,30 @@ a.community-author-avatar-link:focus-visible {
 }
 
 .uss-site-footer-copy {
+    display: block;
     margin: 0;
     font-size: 0.78rem;
     color: rgba(150, 180, 200, 0.58);
     letter-spacing: 0.04em;
     text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.uss-site-footer-copy:hover,
+.uss-site-footer-copy:focus-visible {
+    color: rgba(190, 228, 248, 0.92);
 }
 
 @media (max-width: 900px) {
     .uss-site-footer-bar {
         display: flex;
-        flex-wrap: wrap;
-        justify-content: flex-start;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
         width: 100%;
-        row-gap: var(--uss-footer-gap);
-        column-gap: var(--uss-footer-gap);
+        max-width: 100%;
         padding: var(--uss-footer-pad-y) 0 calc(0.95rem * var(--uss-footer-scale));
     }
 
@@ -6861,78 +6893,74 @@ a.community-author-avatar-link:focus-visible {
         display: none;
     }
 
-    .uss-site-footer-seg,
     .uss-site-footer-seg--brand {
         min-height: 0;
-        padding: 0;
+        width: 100%;
+        flex: none;
+        padding: 0 0 calc(0.65rem * var(--uss-footer-scale));
+        border-bottom: 1px solid rgba(95, 184, 255, 0.14);
+        box-sizing: border-box;
+        align-self: stretch;
+        justify-content: flex-start;
+        align-items: flex-start;
     }
 
     .uss-site-footer-seg--brand .uss-footer-sc-badge {
         height: auto;
+        justify-content: flex-start;
     }
 
     .uss-site-footer-seg--community,
     .uss-site-footer-seg--official,
     .uss-site-footer-seg--fleet {
-        min-width: 0;
-        flex: 1 1 11rem;
-        max-width: 100%;
+        display: contents;
     }
 
     .uss-site-footer-seg-body {
-        height: auto;
-        min-height: 0;
+        display: contents;
     }
 
-    .uss-footer-link-list {
-        height: auto;
-        min-height: 0;
-    }
-
-    .uss-footer-link-list--middle > li {
-        grid-row: auto;
-        align-self: auto;
-    }
-
+    .uss-footer-link-list,
     .uss-footer-link-list--duo {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto;
-        row-gap: 0.15rem;
+        display: contents;
     }
 
+    .uss-footer-link-list li,
     .uss-footer-link-list--duo > li:nth-child(1),
     .uss-footer-link-list--duo > li:nth-child(2),
-    .uss-footer-link-list--duo > li:nth-child(3) {
-        grid-column: 1;
-        grid-row: auto;
+    .uss-footer-link-list--duo > li:nth-child(3),
+    .uss-footer-link-list--middle > li {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        max-width: 100%;
+        min-height: var(--uss-footer-row-h);
+        padding: calc(0.55rem * var(--uss-footer-scale)) 0;
+        border-bottom: 1px solid rgba(95, 184, 255, 0.14);
+        box-sizing: border-box;
+    }
+
+    .uss-site-footer-seg--fleet .uss-footer-link-list li {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .uss-footer-link-row {
+        width: 100%;
+        max-width: 100%;
     }
 }
 
 @media (max-width: 520px) {
     .uss-site-footer {
-        --uss-footer-icon: 1.75rem;
-        --uss-footer-icon-slot: 2.55rem;
-        --uss-footer-row-h: 2.25rem;
-    }
-
-    .uss-site-footer-bar {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .uss-site-footer-seg,
-    .uss-site-footer-seg--brand {
-        width: 100%;
-        padding: 0;
-    }
-
-    .uss-site-footer-seg--brand .uss-footer-sc-badge {
-        justify-content: flex-start;
+        --uss-footer-icon: calc(1.75rem * var(--uss-footer-scale));
+        --uss-footer-icon-slot: calc(2.55rem * var(--uss-footer-scale));
+        --uss-footer-row-h: calc(2.25rem * var(--uss-footer-scale));
     }
 
     .uss-footer-sc-community-logo {
-        width: 3rem;
-        height: 3rem;
+        width: calc(var(--uss-footer-row-h) * 2 - 0.15rem);
+        height: calc(var(--uss-footer-row-h) * 2 - 0.15rem);
     }
 
     .uss-footer-sc-badge-tip {
@@ -6958,10 +6986,10 @@ a.community-author-avatar-link:focus-visible {
     }
 
     .uss-footer-link-title {
-        font-size: 0.8rem;
+        font-size: calc(0.8rem * var(--uss-footer-scale));
     }
 
     .uss-footer-link-desc {
-        font-size: 0.68rem;
+        font-size: calc(0.68rem * var(--uss-footer-scale));
     }
 }

@@ -1,7 +1,14 @@
 /* 行政机库计时器 — 大号科幻 HUD */
 body.exec-hangar-body {
+    --exec-font-ui: 'Rajdhani', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --exec-font-digit: 'Orbitron', 'Rajdhani', ui-monospace, 'Cascadia Mono', Consolas, monospace;
     background: var(--home-page-bg-light);
     color: #e8f4ff;
+}
+
+body.exec-hangar-body .exec-hangar-main,
+body.exec-hangar-body .exec-hangar-main * {
+    font-family: var(--exec-font-ui);
 }
 
 body.exec-hangar-body::before {
@@ -321,7 +328,7 @@ body.exec-hangar-body::before {
     justify-content: center;
     flex-wrap: wrap;
     gap: 0.2rem 0.5rem;
-    font-family: ui-monospace, 'Cascadia Mono', 'Consolas', monospace;
+    font-family: var(--exec-font-digit);
     line-height: 1;
     padding: 0.25rem 0;
 }
@@ -404,7 +411,7 @@ body.exec-hangar-body::before {
 
 .exec-meta-value {
     display: block;
-    font-family: ui-monospace, Consolas, monospace;
+    font-family: var(--exec-font-digit);
     font-size: clamp(0.95rem, 2.2vw, 1.18rem);
     font-weight: 700;
     color: #9ee8ff;
@@ -765,7 +772,7 @@ body.exec-hangar-body::before {
 
 .exec-phase-info-time {
     margin-left: 0;
-    font-family: ui-monospace, Consolas, monospace;
+    font-family: var(--exec-font-digit);
     font-size: 0.98rem;
     font-weight: 600;
     color: rgba(176, 218, 240, 0.88);
