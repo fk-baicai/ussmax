@@ -670,6 +670,11 @@
     transform: none;
 }
 
+.checkin-unit-side > .checkin-my-history-box {
+    min-height: 0;
+    overflow: hidden;
+}
+
 .checkin-my-history-box {
     margin: 0;
     display: flex;
@@ -813,12 +818,13 @@
     box-sizing: border-box;
     flex: 1 1 auto;
     min-height: 0;
-    max-height: none;
+    max-height: clamp(8.5rem, 30vh, 16rem);
     overflow-y: auto;
     overflow-x: hidden;
+    overscroll-behavior: contain;
     scrollbar-gutter: stable;
     scrollbar-width: thin;
-    scrollbar-color: rgba(95, 184, 255, 0.55) transparent;
+    scrollbar-color: rgba(95, 184, 255, 0.45) rgba(0, 0, 0, 0.22);
 }
 
 .checkin-my-history-row {
@@ -1000,9 +1006,12 @@
     scrollbar-color: rgba(95, 184, 255, 0.55) transparent;
 }
 
-.checkin-today-list::-webkit-scrollbar,
-.checkin-my-history-list::-webkit-scrollbar {
+.checkin-today-list::-webkit-scrollbar {
     width: 5px;
+}
+
+.checkin-my-history-list::-webkit-scrollbar {
+    width: 8px;
 }
 
 .checkin-today-list::-webkit-scrollbar-button,
@@ -1012,20 +1021,33 @@
     height: 0;
 }
 
-.checkin-today-list::-webkit-scrollbar-thumb,
-.checkin-my-history-list::-webkit-scrollbar-thumb {
+.checkin-today-list::-webkit-scrollbar-thumb {
     background: rgba(95, 184, 255, 0.55);
     border-radius: 999px;
 }
 
-.checkin-today-list::-webkit-scrollbar-thumb:hover,
-.checkin-my-history-list::-webkit-scrollbar-thumb:hover {
+.checkin-my-history-list::-webkit-scrollbar-thumb {
+    background: rgba(95, 184, 255, 0.42);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+.checkin-today-list::-webkit-scrollbar-thumb:hover {
     background: rgba(120, 210, 255, 0.72);
 }
 
-.checkin-today-list::-webkit-scrollbar-track,
-.checkin-my-history-list::-webkit-scrollbar-track {
+.checkin-my-history-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(120, 210, 255, 0.55);
+}
+
+.checkin-today-list::-webkit-scrollbar-track {
     background: transparent;
+}
+
+.checkin-my-history-list::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.22);
+    border-radius: 4px;
 }
 
 .checkin-today-row {
@@ -1278,7 +1300,7 @@
 
     .checkin-my-history-list {
         flex: none;
-        max-height: min(40vh, 14rem);
+        max-height: min(36vh, 14rem);
     }
 
     .checkin-hub-cards {
