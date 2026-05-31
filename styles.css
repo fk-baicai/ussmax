@@ -3519,21 +3519,13 @@ body.oopz-bind-open {
     line-height: 1;
 }
 
+.oopz-bridge-log-row--broadcast .oopz-bridge-log-row-type,
 .oopz-bridge-log-row--enter .oopz-bridge-log-row-type,
-.oopz-bridge-log-row--enter_announced .oopz-bridge-log-row-type {
+.oopz-bridge-log-row--enter_announced .oopz-bridge-log-row-type,
+.oopz-bridge-log-row--enter_skipped .oopz-bridge-log-row-type,
+.oopz-bridge-log-row--voice .oopz-bridge-log-row-type {
     color: #c9b8ff;
     background: rgba(167, 139, 250, 0.14);
-}
-
-.oopz-bridge-log-row--enter_skipped .oopz-bridge-log-row-type {
-    color: #ffc896;
-    background: rgba(255, 180, 100, 0.14);
-}
-
-.oopz-bridge-log-row--broadcast .oopz-bridge-log-row-type,
-.oopz-bridge-log-row--voice .oopz-bridge-log-row-type {
-    color: #9ee8ff;
-    background: rgba(94, 233, 255, 0.12);
 }
 
 .oopz-bridge-log-row--checkin .oopz-bridge-log-row-type {

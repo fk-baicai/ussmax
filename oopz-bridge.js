@@ -69,36 +69,28 @@
     }
 
     var LOG_SECTIONS = [
-        { id: 'enter_announced', title: '入语音播报', badge: '播', badgeTitle: '进房已播报' },
-        { id: 'enter_skipped', title: '入语音未播报', badge: '入', badgeTitle: '进房未播报' },
-        { id: 'broadcast', title: '其它播报', badge: '其', badgeTitle: '其它语音播报' },
+        { id: 'broadcast', title: '播报', badge: '播', badgeTitle: '语音播报' },
         { id: 'checkin', title: '签到', badge: '签', badgeTitle: '签到' },
     ];
 
     function classifyLogKind(item) {
         if (!item || typeof item !== 'object') return 'broadcast';
         var type = String(item.type || '').trim();
-        if (type === 'checkin' || type === 'enter_announced' || type === 'enter_skipped' || type === 'broadcast') {
-            return type;
-        }
-        if (type === 'enter') return 'enter_announced';
-        if (type === 'voice' || type === 'broadcast') {
-            var text = String(item.text || '').trim();
-            var userName = String(item.userName || '').trim();
-            if (userName === '合并播报' || /欢迎大家加入/.test(text)) return 'enter_announced';
-            if (/欢迎/.test(text) && /加入语音|进入语音|登舰|语音频道|登舰成功/.test(text)) return 'enter_announced';
-            if (userName && userName !== '合并播报' && /欢迎/.test(text) && text.indexOf(userName) >= 0) {
-                return 'enter_announced';
-            }
-            return 'broadcast';
-        }
+        if (type === 'checkin') return 'checkin';
         return 'broadcast';
+    }
+
+    function isSkippedEnterLog(item) {
+        if (!item || typeof item !== 'object') return false;
+        return Boolean(String(item.skipReason || '').trim());
     }
 
     function normalizeLogItem(item) {
         if (!item || typeof item !== 'object') return null;
         var copy = Object.assign({}, item);
-        copy.type = classifyLogKind(copy);
+        var section = classifyLogKind(copy);
+        copy._logSection = section;
+        copy.type = section;
         return copy;
     }
 
@@ -106,46 +98,42 @@
         for (var i = 0; i < LOG_SECTIONS.length; i++) {
             if (LOG_SECTIONS[i].id === type) return LOG_SECTIONS[i];
         }
-        return LOG_SECTIONS[1];
+        return LOG_SECTIONS[0];
     }
 
     function logGroupKey(item) {
-        var type = classifyLogKind(item);
-        if (type === 'checkin') {
+        if (classifyLogKind(item) === 'checkin') {
             return (
                 'checkin:' +
                 String(item.id || item.userName + '|' + (item.branch || '') + '|' + (item.at || ''))
             );
         }
-        if (type === 'enter_skipped') {
-            return (
-                'enter_skipped:' +
-                String(item.userName || '') +
-                '|' +
-                String(item.channelName || '') +
-                '|' +
-                String(item.skipReason || item.text || '')
-            );
-        }
-        return type + ':' + String(item.text || '').trim();
+        var who = String(item.userName || '').trim();
+        var msg = logDisplayText(item);
+        return 'broadcast:' + who + '|' + msg;
     }
 
     function logDisplayText(item) {
-        if (item.type === 'checkin') {
+        if (classifyLogKind(item) === 'checkin') {
             var who = item.userName || item.bindingId || '成员';
             var branch = item.branchLabel || item.branch || '';
             var pts = item.points != null ? item.points : 1;
             var tag = item.oopzAuto ? ' · OOPZ自动' : item.adminMakeup ? ' · 补签' : '';
             return who + ' 签到 ' + branch + ' (+' + pts + ')' + tag;
         }
-        if (classifyLogKind(item) === 'enter_skipped') {
+        if (isSkippedEnterLog(item)) {
             if (item.text) return String(item.text).trim();
             var skipWho = item.userName || '成员';
             var skipCh = item.channelName ? ' · ' + item.channelName : '';
             var skipReason = item.skipReason || '未播报';
             return skipWho + ' 进入语音' + skipCh + '（' + skipReason + '）';
         }
-        return String(item.text || '').trim() || '—';
+        var text = String(item.text || '').trim();
+        var name = String(item.userName || '').trim();
+        if (name && name !== '合并播报' && text && text.indexOf(name) < 0) {
+            return name + ' · ' + text;
+        }
+        return text || '—';
     }
 
     /** 相同文案合并为一行，减少重复刷屏 */
@@ -479,7 +467,6 @@
                     userName: item.userName,
                     audioUrl: item.audioUrl,
                 };
-                row.type = classifyLogKind(row);
                 return row;
             });
         }
@@ -531,7 +518,7 @@
             return;
         }
 
-        var buckets = { enter_announced: [], enter_skipped: [], broadcast: [], checkin: [] };
+        var buckets = { broadcast: [], checkin: [] };
         list.forEach(function (item) {
             var kind = classifyLogKind(item);
             if (!buckets[kind]) buckets[kind] = [];
