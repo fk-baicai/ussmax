@@ -1,13 +1,13 @@
 /**
- * 服务器 IP / 状态页面（需登录）
+ * 服务器 IP / 状态页面（未登录可访问，IP 以 ****** 代替）
  */
 (function () {
     if (typeof document === 'undefined') return;
 
     var AUTH_KEY = 'ussHangzhouAuthSession';
     var pollTimer = null;
+    var MASKED_IP = '******';
 
-    var gateEl = document.getElementById('serverIpGate');
     var mainEl = document.getElementById('serverIpMain');
     var valueEl = document.getElementById('serverIpValue');
     var metaEl = document.getElementById('serverIpMeta');
@@ -78,12 +78,12 @@
         titleEl.className = 'server-ip-detail-title';
         titleEl.textContent = title;
 
-        var valueEl = document.createElement('span');
-        valueEl.className = 'server-ip-detail-value';
-        valueEl.textContent = value;
+        var detailValueEl = document.createElement('span');
+        detailValueEl.className = 'server-ip-detail-value';
+        detailValueEl.textContent = value;
 
         head.appendChild(titleEl);
-        head.appendChild(valueEl);
+        head.appendChild(detailValueEl);
         card.appendChild(head);
 
         if (opts.percent != null && isFinite(Number(opts.percent))) {
@@ -122,11 +122,6 @@
         var metrics = (data && data.metrics) || {};
         var hw = (data && data.hardware) || {};
 
-        if (!data || !data.ok || !data.ip) {
-            detailsEl.hidden = true;
-            return;
-        }
-
         detailsEl.hidden = false;
 
         detailsEl.appendChild(
@@ -161,22 +156,34 @@
         );
     }
 
-    function render(data) {
+    function render(data, opts) {
+        opts = opts || {};
         if (!valueEl) return;
-        if (data && data.ok && data.ip) {
-            valueEl.textContent = data.ip;
+
+        if (data && data.ok) {
+            valueEl.textContent = opts.maskIp ? MASKED_IP : data.ip || '—';
             if (metaEl) {
                 var parts = [];
                 var updated = formatUpdatedAt(data.updatedAt);
                 if (updated) parts.push(updated);
+                if (opts.maskIp) parts.push('登录后可见真实 IP');
                 metaEl.textContent = parts.join(' · ') || '已上报';
             }
             renderDetails(data);
             hideError();
+            return;
+        }
+
+        valueEl.textContent = opts.maskIp ? MASKED_IP : '—';
+        if (metaEl) {
+            var waitMsg = (data && data.message) || '等待本机上报';
+            metaEl.textContent = opts.maskIp ? '登录后可见真实 IP · ' + waitMsg : waitMsg;
+        }
+        renderDetails(null);
+        if (data && data.message && data.message !== '尚未上报公网 IP') {
+            showError(data.message);
         } else {
-            valueEl.textContent = '—';
-            if (metaEl) metaEl.textContent = '等待本机上报';
-            renderDetails(null);
+            hideError();
         }
     }
 
@@ -190,29 +197,48 @@
 
         return window.UssAuthApi.getClientPublicIp(sess.token)
             .then(function (data) {
-                render(data);
+                render(data, { maskIp: false });
             })
             .catch(function (e) {
-                render(null);
-                showError(e.message || '加载失败');
+                render({ ok: false, message: e.message || '加载失败' }, { maskIp: false });
+            });
+    }
+
+    function fetchGuestStatus() {
+        if (!window.UssAuthApi) {
+            render(null, { maskIp: true });
+            showError('认证模块未加载');
+            return Promise.resolve();
+        }
+
+        return window.UssAuthApi.getClientPublicIpStatus()
+            .then(function (data) {
+                render(data, { maskIp: true });
+            })
+            .catch(function (e) {
+                render({ ok: false, message: e.message || '加载失败' }, { maskIp: true });
             });
     }
 
     function syncView() {
-        var loggedIn = isLoggedIn();
-        if (gateEl) gateEl.hidden = loggedIn;
-        if (mainEl) mainEl.hidden = !loggedIn;
+        if (mainEl) mainEl.hidden = false;
         if (window.UssNavTools && typeof window.UssNavTools.refresh === 'function') {
             window.UssNavTools.refresh();
         }
-        if (loggedIn) fetchServerIp();
+        if (isLoggedIn()) {
+            fetchServerIp();
+        } else {
+            fetchGuestStatus();
+        }
     }
 
     function start() {
+        renderDetails(null);
         syncView();
         if (pollTimer) clearInterval(pollTimer);
         pollTimer = setInterval(function () {
             if (isLoggedIn()) fetchServerIp();
+            else fetchGuestStatus();
         }, 30000);
     }
 

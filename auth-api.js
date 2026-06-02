@@ -89,6 +89,16 @@
             return data;
         },
 
+        async getClientPublicIpStatus() {
+            var r = await fetch(joinUrl('/api/client-public-ip/status'));
+            var data = await parseJson(r);
+            if (r.status === 404) {
+                return { ok: false, message: (data && data.message) || '尚未上报公网 IP' };
+            }
+            if (!r.ok) throw new Error((data && data.message) || '加载服务器状态失败');
+            return data;
+        },
+
         async getClientPublicIp(token) {
             var r = await fetch(joinUrl('/api/client-public-ip'), {
                 headers: { Authorization: 'Bearer ' + token },

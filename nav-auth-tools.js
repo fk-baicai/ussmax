@@ -1,5 +1,5 @@
 /**
- * 登录后显示顶栏「工具」菜单
+ * 顶栏「工具」菜单：始终可见
  */
 (function () {
     if (typeof document === 'undefined') return;
@@ -23,8 +23,8 @@
 
     function syncToolsNav() {
         var wrap = document.getElementById('navToolsWrap');
-        if (!wrap) return;
-        wrap.hidden = !isLoggedIn();
+        if (wrap) wrap.hidden = false;
+
     }
 
     syncToolsNav();
@@ -41,5 +41,5 @@
         /* ignore */
     }
 
-    window.UssNavTools = { refresh: syncToolsNav };
+    window.UssNavTools = { refresh: syncToolsNav, isLoggedIn: isLoggedIn };
 })();

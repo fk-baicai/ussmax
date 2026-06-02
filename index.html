@@ -57,7 +57,7 @@
                     <span class="nav-dropdown-caret" aria-hidden="true"></span>
                 </button>
             </div>
-            <div class="nav-dropdown nav-tools-gated" id="navToolsWrap" hidden>
+            <div class="nav-dropdown nav-tools-gated" id="navToolsWrap">
                 <button
                     type="button"
                     class="nav-dropdown-toggle"
@@ -106,7 +106,7 @@
                     <li>
                         <a href="server-ip.html" class="nav-mega-link">
                             <span class="nav-mega-link-title">服务器 IP</span>
-                            <span class="nav-mega-link-desc">查看本机上报的公网 IP</span>
+                            <span class="nav-mega-link-desc">服务器运行状态/IP地址</span>
                         </a>
                     </li>
                     <li>
@@ -162,10 +162,10 @@
     <div class="hero">
         <div class="video-container">
             <video id="myVideo1" class="video-player" autoplay muted playsinline preload="auto">
-                <source src="sp/a1.mp4" type="video/mp4">
+                <source type="video/mp4">
             </video>
-            <video id="myVideo2" class="video-player" muted playsinline preload="auto">
-                <source src="sp/a2.mp4" type="video/mp4">
+            <video id="myVideo2" class="video-player" muted playsinline preload="metadata">
+                <source type="video/mp4">
             </video>
             <div class="progress-container">
                 <div class="progress-controls-row">
@@ -338,7 +338,7 @@
                                             class="community-chat-input"
                                             rows="1"
                                             maxlength="400"
-                                            placeholder="发言，或发送：红后 帮助"
+                                            placeholder=""
                                             autocomplete="off"
                                             aria-label="聊天消息输入"
                                             disabled
@@ -381,8 +381,9 @@
                         </div>
                         <div id="communityChatGuestLock" class="community-chat-guest-lock" hidden>
                             <div class="community-chat-guest-lock-inner">
-                                <p class="community-chat-guest-lock-title">登录后参与聊天</p>
-                                <p class="community-chat-guest-lock-desc">舰员频道仅对已登录成员开放，请使用右上角登录或注册。</p>
+                                <div class="community-chat-guest-lock-icon" aria-hidden="true">!</div>
+                                <p class="community-chat-guest-lock-title">未经授权的访问区域</p>
+                                <p class="community-chat-guest-lock-desc">LOGIN REQUIRED // ACCESS LOCKED</p>
                             </div>
                         </div>
                     </div>
@@ -392,8 +393,9 @@
                     <div class="community-panel-head">
                         <span class="community-panel-title">贴子</span>
                     </div>
+                    <div class="community-forum-body">
                     <div class="community-composer community-composer-inline community-dropzone">
-                        <div id="communityAuthHint" class="community-auth-hint">请先登录后再发帖与回复（右上角登录/注册）。</div>
+                        <div id="communityAuthHint" class="community-auth-hint" hidden>请先登录后再发帖与回复（右上角登录/注册）。</div>
                         <div class="community-post-compose-row">
                             <div class="community-post-input-wrap">
                                 <textarea
@@ -435,6 +437,14 @@
                     </div>
                     <div class="community-feed community-scroller community-scroller-feed" id="communityFeed">
                         <div class="community-feed-loading" id="communityFeedLoading">正在加载帖子…</div>
+                    </div>
+                    <div id="communityForumGuestLock" class="community-chat-guest-lock" hidden>
+                        <div class="community-chat-guest-lock-inner">
+                            <div class="community-chat-guest-lock-icon" aria-hidden="true">!</div>
+                            <p class="community-chat-guest-lock-title">未经授权的访问区域</p>
+                            <p class="community-chat-guest-lock-desc">LOGIN REQUIRED // ACCESS LOCKED</p>
+                        </div>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -708,6 +718,7 @@
 
     <script src="material-icons-svg.js"></script>
     <script src="pw-toggle-icons.js"></script>
+    <script src="bilibili-hero.js"></script>
     <script src="script.js"></script>
     <script src="rsi-client.js"></script>
     <script src="rsi-sync.js"></script>
@@ -1782,6 +1793,97 @@
             return String(url || '').replace(/[.,;:!?，。；：！？、）」』\]]+$/u, '');
         }
 
+        function extractBilibiliBvid(url) {
+            const u = normalizeCommunityUrl(String(url || ''));
+            let m = u.match(/\/video\/(BV[1-9A-HJ-NP-Za-km-z]{10})/i);
+            if (m) return m[1];
+            m = u.match(/[?&]bvid=(BV[1-9A-HJ-NP-Za-km-z]{10})/i);
+            return m ? m[1] : null;
+        }
+
+        function extractBilibiliShareUrl(text) {
+            const raw = String(text != null ? text : '');
+            const m =
+                raw.match(/https?:\/\/(?:www\.|m\.)?bilibili\.com\/video\/[^\s<>"']+/i) ||
+                raw.match(/https?:\/\/b23\.tv\/[^\s<>"']+/i);
+            return m ? normalizeCommunityUrl(m[0]) : null;
+        }
+
+        function communityBilibiliStreamUrl(bvid) {
+            const base =
+                (typeof window !== 'undefined' && window.USS_AUTH_API_BASE) || 'http://127.0.0.1:3789';
+            return String(base).replace(/\/$/, '') + '/api/bilibili/hero-stream?bvid=' + encodeURIComponent(bvid);
+        }
+
+        function insertTextAtCommunityChatInput(text) {
+            const input = document.getElementById('communityChatInput');
+            if (!input) return;
+            const insert = String(text != null ? text : '');
+            const v = String(input.value || '');
+            const start = input.selectionStart != null ? input.selectionStart : v.length;
+            const end = input.selectionEnd != null ? input.selectionEnd : start;
+            input.value = v.slice(0, start) + insert + v.slice(end);
+            const np = start + insert.length;
+            try {
+                input.setSelectionRange(np, np);
+            } catch (ignore) {}
+            input.focus();
+            syncCommunityChatMentionFromInput();
+        }
+
+        function appendCommunityChatVideoEmbed(parent, bvid) {
+            const wrap = document.createElement('div');
+            wrap.className = 'community-chat-video';
+            const video = document.createElement('video');
+            video.className = 'community-chat-video-player';
+            video.controls = true;
+            video.playsInline = true;
+            video.preload = 'metadata';
+            video.src = communityBilibiliStreamUrl(bvid);
+            wrap.appendChild(video);
+            parent.appendChild(wrap);
+        }
+
+        function buildCommunityChatImageCell(src) {
+            const wrap = document.createElement('div');
+            wrap.className = 'community-chat-img-wrap community-chat-img-wrap--censored';
+
+            const im = document.createElement('img');
+            im.className = 'community-chat-img';
+            im.loading = 'lazy';
+            im.alt = '聊天图片';
+            im.src = src;
+
+            const mask = document.createElement('button');
+            mask.type = 'button';
+            mask.className = 'community-chat-img-reveal';
+            mask.setAttribute('aria-label', '点击查看图片');
+            mask.innerHTML =
+                '<svg class="community-chat-img-reveal-icon" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false">' +
+                '<path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>' +
+                '</svg>';
+
+            function revealImage(ev) {
+                if (ev) ev.stopPropagation();
+                wrap.classList.remove('community-chat-img-wrap--censored');
+                if (mask.parentNode) mask.remove();
+            }
+
+            mask.addEventListener('click', revealImage);
+            im.addEventListener('click', function (e) {
+                if (wrap.classList.contains('community-chat-img-wrap--censored')) {
+                    revealImage(e);
+                    return;
+                }
+                e.stopPropagation();
+                openCommunityImageLightbox(im.src);
+            });
+
+            wrap.appendChild(im);
+            wrap.appendChild(mask);
+            return wrap;
+        }
+
         function appendCommunityTextWithLinks(parent, text) {
             const raw = String(text != null ? text : '');
             if (!raw) return;
@@ -1794,13 +1896,18 @@
                 }
                 const href = normalizeCommunityUrl(match[0]);
                 if (href && /^https?:\/\//i.test(href)) {
-                    const link = document.createElement('a');
-                    link.className = 'community-text-link';
-                    link.href = href;
-                    link.target = '_blank';
-                    link.rel = 'noopener noreferrer';
-                    link.textContent = match[0];
-                    parent.appendChild(link);
+                    const bvid = extractBilibiliBvid(href);
+                    if (bvid && /bilibili\.com\/video\//i.test(href)) {
+                        appendCommunityChatVideoEmbed(parent, bvid);
+                    } else {
+                        const link = document.createElement('a');
+                        link.className = 'community-text-link';
+                        link.href = href;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        link.textContent = match[0];
+                        parent.appendChild(link);
+                    }
                 } else {
                     parent.appendChild(document.createTextNode(match[0]));
                 }
@@ -2005,7 +2112,7 @@
             });
         }
 
-        async function ingestCommunityChatFiles(files) {
+        async function ingestCommunityChatFiles(files, fromClipboard) {
             if (!isLoggedIn()) {
                 setCommunityChatHint('请先登录后再添加图片。');
                 return;
@@ -2019,7 +2126,14 @@
                     break;
                 }
                 const f = list[i];
-                if (!f.type || f.type.indexOf('image/') !== 0) {
+                const mime = String(f.type || '').toLowerCase();
+                const mimeOk = !mime || mime.indexOf('image/') === 0
+                    || (fromClipboard && mime === 'application/octet-stream');
+                if (!mimeOk) {
+                    setCommunityChatHint('仅支持图片文件。');
+                    continue;
+                }
+                if (!mime && !fromClipboard) {
                     setCommunityChatHint('仅支持图片文件。');
                     continue;
                 }
@@ -2647,34 +2761,26 @@
             const bodyText = String(m.text != null ? m.text : '').trim();
             const imgs = Array.isArray(m.images) ? m.images : [];
 
-            function appendChatImages(targetLine) {
-                if (!imgs.length) return;
+            function buildCommunityChatImageGrid() {
+                if (!imgs.length) return null;
                 const grid = document.createElement('div');
                 grid.className = 'community-chat-images';
                 imgs.forEach(function (rel) {
                     if (typeof rel !== 'string' || rel.indexOf('/community-uploads/') !== 0) return;
-                    const im = document.createElement('img');
-                    im.className = 'community-chat-img';
-                    im.loading = 'lazy';
-                    im.alt = '聊天图片';
-                    im.style.cursor = 'pointer';
-                    im.src =
+                    const src =
                         window.UssAuthApi && typeof window.UssAuthApi.resolveAssetUrl === 'function'
                             ? window.UssAuthApi.resolveAssetUrl(rel)
                             : rel;
-                    im.addEventListener('click', function (e) {
-                        e.stopPropagation();
-                        openCommunityImageLightbox(im.src);
-                    });
-                    grid.appendChild(im);
+                    grid.appendChild(buildCommunityChatImageCell(src));
                 });
-                if (grid.childNodes.length) targetLine.appendChild(grid);
+                return grid.childNodes.length ? grid : null;
             }
 
-            if (isMine) {
-                const shell = document.createElement('div');
-                shell.className = 'community-chat-line-mine-shell';
+            const imageGrid = buildCommunityChatImageGrid();
+            const mediaOnly = !!imageGrid && !bodyText;
+            if (mediaOnly) line.classList.add('community-chat-line--media-only');
 
+            if (isMine) {
                 const mainRow = document.createElement('div');
                 mainRow.className = 'community-chat-line-mine-main';
 
@@ -2684,12 +2790,14 @@
                     applyCommunityChatTextWithMentions(txt, bodyText, m.mentionBindingIds, m.mentionEveryone);
                     mainRow.appendChild(txt);
                 }
+                if (imageGrid) {
+                    if (mediaOnly) mainRow.classList.add('community-chat-line-mine-main--media');
+                    mainRow.appendChild(imageGrid);
+                }
                 const avCell = buildCommunityChatAvatarCell(m.bindingId, m.avatarUrl, '');
                 mainRow.appendChild(avCell);
 
-                shell.appendChild(mainRow);
-                line.appendChild(shell);
-                appendChatImages(line);
+                line.appendChild(mainRow);
             } else {
                 const avatarRsiHref = communityRsiCitizenProfileUrl(m.bindingId);
                 line.appendChild(
@@ -2708,7 +2816,7 @@
                     applyCommunityChatTextWithMentions(txt, bodyText, m.mentionBindingIds, m.mentionEveryone);
                     line.appendChild(txt);
                 }
-                appendChatImages(line);
+                if (imageGrid) line.appendChild(imageGrid);
             }
 
             if (communityChatHasContextActions(m, kind)) {
@@ -2857,6 +2965,11 @@
         async function loadCommunityPosts() {
             const feed = document.getElementById('communityFeed');
             if (!feed || !window.UssAuthApi) return;
+            if (!isLoggedIn()) {
+                feed.innerHTML = '';
+                syncCommunityFeedLayout(false);
+                return;
+            }
             try {
                 const data = await window.UssAuthApi.communityListPosts(50);
                 renderCommunityPosts(data.posts || []);
@@ -3340,7 +3453,7 @@
                 return x.dataUrl;
             });
             if (!text && !imgs.length) {
-                setCommunityChatHint('请输入文字或添加图片。');
+                setCommunityChatHint('请输入文字、粘贴 B 站视频链接或添加图片。');
                 return;
             }
             const btn = document.getElementById('communityChatSendBtn');
@@ -3442,8 +3555,96 @@
 
         function updateCommunityChatInputPlaceholder() {
             const chatInput = document.getElementById('communityChatInput');
-            if (!chatInput) return;
-            chatInput.placeholder = '';
+            if (chatInput) chatInput.placeholder = '';
+        }
+
+        function dataUrlToImageFile(dataUrl) {
+            const m = String(dataUrl || '').match(/^data:([^;]+);base64,([A-Za-z0-9+/=\s]+)$/);
+            if (!m) return null;
+            const mime = m[1].toLowerCase();
+            if (mime.indexOf('image/') !== 0) return null;
+            try {
+                const bin = atob(m[2].replace(/\s/g, ''));
+                const arr = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+                const ext = mime.indexOf('jpeg') !== -1 || mime.indexOf('jpg') !== -1 ? 'jpg' : 'png';
+                return new File([arr], 'pasted-' + Date.now() + '.' + ext, { type: mime });
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function collectClipboardImageDataUrls(clipboardData) {
+            if (!clipboardData) return [];
+            const urls = [];
+            const plain = String(clipboardData.getData('text/plain') || '').trim();
+            if (plain.indexOf('data:image/') === 0 && urls.indexOf(plain) === -1) urls.push(plain);
+            const html = clipboardData.getData('text/html') || '';
+            if (!html) return urls;
+            const re = /src\s*=\s*["']?(data:image\/[^"'\s>]+)/gi;
+            let match;
+            while ((match = re.exec(html)) !== null) {
+                if (urls.indexOf(match[1]) === -1) urls.push(match[1]);
+            }
+            return urls;
+        }
+
+        function collectClipboardImageFiles(clipboardData) {
+            if (!clipboardData) return [];
+            const out = [];
+            const seen = new Set();
+
+            function pushFile(file) {
+                if (!file || !file.size) return;
+                const mime = String(file.type || '').toLowerCase();
+                if (mime && mime.indexOf('image/') !== 0 && mime !== 'application/octet-stream') return;
+                const key = file.size + ':' + file.lastModified + ':' + mime;
+                if (seen.has(key)) return;
+                seen.add(key);
+                const outMime = mime.indexOf('image/') === 0 ? mime : 'image/png';
+                if (!file.name) {
+                    const ext = outMime.indexOf('jpeg') !== -1 || outMime.indexOf('jpg') !== -1 ? 'jpg' : 'png';
+                    out.push(new File([file], 'pasted-' + Date.now() + '-' + out.length + '.' + ext, {
+                        type: outMime,
+                    }));
+                } else {
+                    out.push(file);
+                }
+            }
+
+            if (clipboardData.items && clipboardData.items.length) {
+                Array.from(clipboardData.items).forEach(function (item) {
+                    if (item.kind !== 'file') return;
+                    const file = item.getAsFile();
+                    if (!file || !file.size) return;
+                    const type = String(item.type || file.type || '').toLowerCase();
+                    if (type && type.indexOf('image/') !== 0 && type !== 'application/octet-stream') return;
+                    pushFile(file);
+                });
+            }
+            if (clipboardData.files && clipboardData.files.length) {
+                Array.from(clipboardData.files).forEach(pushFile);
+            }
+            if (!out.length) {
+                collectClipboardImageDataUrls(clipboardData).forEach(function (url) {
+                    const file = dataUrlToImageFile(url);
+                    if (file) pushFile(file);
+                });
+            }
+            return out;
+        }
+
+        function handleCommunityChatPaste(ev) {
+            const cd = ev.clipboardData;
+            if (!cd || !isLoggedIn()) return false;
+
+            const imageFiles = collectClipboardImageFiles(cd);
+            if (imageFiles.length) {
+                ev.preventDefault();
+                ingestCommunityChatFiles(imageFiles, true);
+                return true;
+            }
+            return false;
         }
 
         function refreshCommunitySessionUi() {
@@ -3458,9 +3659,11 @@
             const chatMenuBtn = document.getElementById('communityChatSendMenuBtn');
             const chatFileInput = document.getElementById('communityChatFileInput');
             const guestLock = document.getElementById('communityChatGuestLock');
+            const forumGuestLock = document.getElementById('communityForumGuestLock');
             const chatLog = document.getElementById('communityChatLog');
 
             if (guestLock) guestLock.hidden = !!logged;
+            if (forumGuestLock) forumGuestLock.hidden = !!logged;
             if (!logged) {
                 closeCommunitySendMenus();
                 renderCommunityChatGuestPreview();
@@ -3481,7 +3684,7 @@
                 loadCommunityRoster();
             }
 
-            if (hint) hint.hidden = logged;
+            if (hint) hint.hidden = true;
             if (ta) {
                 ta.disabled = !logged;
                 ta.placeholder = '';
@@ -3686,6 +3889,26 @@
                 chatInput.addEventListener('blur', function () {
                     window.setTimeout(closeCommunityChatMentionPicker, 200);
                 });
+                chatInput.addEventListener('paste', function (ev) {
+                    if (ev.defaultPrevented) return;
+
+                    const cd = ev.clipboardData;
+                    if (!cd || !isLoggedIn()) return;
+                    const clip = cd.getData('text/plain') || '';
+                    if (!clip || !clip.trim()) return;
+                    const url = extractBilibiliShareUrl(clip);
+                    if (!url) return;
+                    if (clip.trim() === url) return;
+                    ev.preventDefault();
+                    insertTextAtCommunityChatInput(url);
+                });
+            }
+
+            const chatCompose = document.querySelector('.community-chat-compose');
+            if (chatCompose) {
+                chatCompose.addEventListener('paste', function (ev) {
+                    handleCommunityChatPaste(ev);
+                }, true);
             }
 
             installCommunityDropzones();
