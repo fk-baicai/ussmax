@@ -1,6 +1,5 @@
 /**
- * 登录/注册后由服务端抓取 RSI 并全量覆盖用户资料；同一用户每个自然日登录仅强制刷新一次。
- * 支持失败重试（指数退避）。
+ * 登录/注册后同步 RSI 资料：优先用户浏览器抓取（走用户 IP），失败则服务端 Headless Edge 抓取。
  */
 (function (global) {
     'use strict';
@@ -11,10 +10,38 @@
         });
     }
 
+    function clientScrapedLooksUsable(scraped) {
+        if (!scraped || typeof scraped !== 'object') return false;
+        if (scraped.citizenAvatarUrl) return true;
+        if (Array.isArray(scraped.citizenAvatarUrls) && scraped.citizenAvatarUrls.length) return true;
+        return !!(
+            (scraped.rsiRankLabel && String(scraped.rsiRankLabel).trim()) ||
+            (scraped.rsiOrgSid && String(scraped.rsiOrgSid).trim()) ||
+            (scraped.rsiEnlisted && String(scraped.rsiEnlisted).trim())
+        );
+    }
+
     /**
-     * POST /api/me/rsi-sync → 服务端重新抓取 RSI 并覆盖写库
+     * 用户浏览器内抓取 RSI → POST /api/me/rsi-sync（不强制服务端再抓）
      * @param {string} token
-     * @returns {Promise<object|null>} 更新后的用户对象
+     * @param {string} handle
+     */
+    async function syncUserRsiFromBrowserClient(token, handle) {
+        if (!token || !handle || !global.UssRsiClient || !global.UssAuthApi) return null;
+        try {
+            const scraped = await global.UssRsiClient.scrapeCitizenPublicProfile(handle);
+            if (!clientScrapedLooksUsable(scraped)) return null;
+            return await global.UssAuthApi.syncRsiProfile(token, scraped);
+        } catch (e) {
+            console.warn('[rsi] 浏览器抓取失败，改走服务端', e && e.message ? e.message : e);
+            return null;
+        }
+    }
+
+    /**
+     * POST /api/me/rsi-sync → 服务端 Headless Edge / Node 抓取
+     * @param {string} token
+     * @returns {Promise<object|null>}
      */
     async function refreshUserRsiOnAuth(token) {
         if (!token || !global.UssAuthApi) return null;
@@ -27,14 +54,21 @@
     }
 
     /**
-     * 带重试的 RSI 资料同步（个人信息抓取失败时使用）
+     * 浏览器优先，失败则服务端；带重试
      * @param {string} token
-     * @param {{ maxAttempts?: number, baseDelayMs?: number, onAttempt?: function }} options
+     * @param {{ maxAttempts?: number, baseDelayMs?: number, handle?: string, onAttempt?: function }} options
      */
     async function refreshUserRsiOnAuthWithRetry(token, options) {
         options = options || {};
         var maxAttempts = options.maxAttempts != null ? options.maxAttempts : 3;
         var baseDelayMs = options.baseDelayMs != null ? options.baseDelayMs : 1200;
+        var handle =
+            options.handle ||
+            (global.UssAuthSessionSync &&
+            typeof global.UssAuthSessionSync.loadAuthSession === 'function' &&
+            global.UssAuthSessionSync.loadAuthSession() &&
+            global.UssAuthSessionSync.loadAuthSession().bindingId) ||
+            '';
         var lastErr = null;
 
         for (var attempt = 1; attempt <= maxAttempts; attempt += 1) {
@@ -44,8 +78,14 @@
                 } catch (ignore) {}
             }
             try {
-                if (!token || !global.UssAuthApi) return null;
-                var user = await global.UssAuthApi.refreshRsiProfile(token);
+                if (!token) return null;
+                var user = null;
+                if (handle) {
+                    user = await syncUserRsiFromBrowserClient(token, handle);
+                }
+                if (!user) {
+                    user = await refreshUserRsiOnAuth(token);
+                }
                 if (user && typeof user === 'object') return user;
             } catch (e) {
                 lastErr = e;
@@ -70,6 +110,7 @@
     }
 
     global.UssRsiSync = {
+        syncUserRsiFromBrowserClient: syncUserRsiFromBrowserClient,
         refreshUserRsiOnAuth: refreshUserRsiOnAuth,
         refreshUserRsiOnAuthWithRetry: refreshUserRsiOnAuthWithRetry,
         syncUserRsiFromBrowser: syncUserRsiFromBrowser,

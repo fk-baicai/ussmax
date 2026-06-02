@@ -1327,6 +1327,7 @@
                     const user = await window.UssRsiSync.refreshUserRsiOnAuthWithRetry(sess.token, {
                         maxAttempts: 3,
                         baseDelayMs: 1500,
+                        handle: sess.bindingId,
                     });
                     if (user) {
                         saveAuthSessionFromUser(sess.token, user, undefined, sess);
@@ -4710,7 +4711,20 @@
 
             try {
                 clearRegisterFormHint();
-                const res = await window.UssAuthApi.register({ bindingId, email, password });
+                var rsiProfile = null;
+                if (window.UssRsiClient && typeof window.UssRsiClient.scrapeCitizenPublicProfile === 'function') {
+                    try {
+                        rsiProfile = await window.UssRsiClient.scrapeCitizenPublicProfile(bindingId);
+                    } catch (rsiClientErr) {
+                        console.warn('[rsi] 注册前浏览器抓取跳过', rsiClientErr && rsiClientErr.message ? rsiClientErr.message : rsiClientErr);
+                    }
+                }
+                const res = await window.UssAuthApi.register({
+                    bindingId,
+                    email,
+                    password,
+                    rsiProfile: rsiProfile || undefined,
+                });
                 const loginAt = new Date().toISOString();
                 saveAuthSession({
                     token: res.token,
