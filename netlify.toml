@@ -1,4 +1,4 @@
-﻿# Netlify base directory: frontend
+# Netlify base directory: frontend
 # Proxy API requests to backend (HTTPS site cannot call http://IP directly)
 
 [build]
