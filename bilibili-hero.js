@@ -1,15 +1,7 @@
 (function () {
-    const HERO_BVIDS = ['BV1MqVr6KESA', 'BV1uqVr6KETK'];
+    /** 首页舰船宣传视频（本地静态资源，原 B 站 BV1MqVr6KESA / BV1uqVr6KETK） */
+    const HERO_SOURCES = ['videos/hero-1.mp4', 'videos/hero-2.mp4'];
     const END_EPSILON = 0.08;
-
-    function apiBase() {
-        const base = (typeof window !== 'undefined' && window.USS_AUTH_API_BASE) || 'http://127.0.0.1:3789';
-        return String(base).replace(/\/$/, '');
-    }
-
-    function heroStreamUrl(bvid) {
-        return `${apiBase()}/api/bilibili/hero-stream?bvid=${encodeURIComponent(bvid)}`;
-    }
 
     function setProgressScale(el, ratio) {
         if (!el) return;
@@ -23,10 +15,10 @@
         const progressFill = document.querySelector('.progress-fill');
         const nextVideoBtn = document.querySelector('.next-video');
 
-        if (!video1 || !video2 || !HERO_BVIDS.length) return;
+        if (!video1 || !video2 || !HERO_SOURCES.length) return;
 
         const videos = [video1, video2];
-        const bvids = HERO_BVIDS.slice(0, videos.length);
+        const sources = HERO_SOURCES.slice(0, videos.length);
         let currentIndex = 0;
         let progressRaf = 0;
 
@@ -35,7 +27,7 @@
             video.playsInline = true;
             video.loop = false;
             video.preload = index === 0 ? 'auto' : 'metadata';
-            video.dataset.bvid = bvids[index] || bvids[0];
+            video.dataset.heroSrc = sources[index] || sources[0];
         });
 
         let currentVideo = video1;
@@ -80,15 +72,15 @@
         }
 
         function attachSource(video) {
-            const bvid = video.dataset.bvid;
-            if (!bvid || video.dataset.loadedBvid === bvid) return;
+            const src = video.dataset.heroSrc;
+            if (!src || video.dataset.loadedSrc === src) return;
             const source = video.querySelector('source');
             if (source) {
-                source.src = heroStreamUrl(bvid);
+                source.src = src;
             } else {
-                video.src = heroStreamUrl(bvid);
+                video.src = src;
             }
-            video.dataset.loadedBvid = bvid;
+            video.dataset.loadedSrc = src;
             video.load();
         }
 
@@ -124,7 +116,7 @@
             const temp = currentVideo;
             currentVideo = nextVideo;
             nextVideo = temp;
-            currentIndex = (currentIndex + 1) % bvids.length;
+            currentIndex = (currentIndex + 1) % sources.length;
 
             currentVideo.classList.add('active');
             playCurrentVideo(true);
