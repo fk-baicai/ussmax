@@ -313,9 +313,16 @@
         }
     }
 
+    function formatErr(data, err, fallback) {
+        var code = (data && data.code) || (err && err.code) || fallback || 'SRV_001';
+        if (typeof UssApiError !== 'undefined') return UssApiError.formatUserError(code);
+        if (err && err.message && /^错误代码：/.test(err.message)) return err.message;
+        return '错误代码：' + code;
+    }
+
     function applyServerPayload(data) {
         if (!data || !data.ok) {
-            showError((data && data.message) || '无法获取周期状态');
+            showError(formatErr(data, null, 'SRV_001'));
             return;
         }
         hideError();
@@ -328,13 +335,17 @@
         return fetch(url, { cache: 'no-store' })
             .then(function (r) {
                 return r.json().then(function (j) {
-                    if (!r.ok) throw new Error((j && j.message) || 'HTTP ' + r.status);
+                    if (!r.ok) {
+                        var err = new Error(formatErr(j, null, 'SRV_001'));
+                        err.code = (j && j.code) || 'SRV_001';
+                        throw err;
+                    }
                     return j;
                 });
             })
             .then(applyServerPayload)
             .catch(function (e) {
-                showError(e.message || '连接后端失败');
+                showError(formatErr(null, e, 'NET_E001'));
             });
     }
 

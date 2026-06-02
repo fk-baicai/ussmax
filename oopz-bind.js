@@ -137,7 +137,11 @@
             }
             alert('OOPZ ID 绑定成功');
         } catch (e) {
-            alert(e.message || '绑定失败');
+            alert(
+                typeof UssApiError !== 'undefined'
+                    ? UssApiError.sanitizeUserMessage(e)
+                    : e.message || '错误代码：OOPZ_001'
+            );
         } finally {
             if (submitBtn) submitBtn.disabled = false;
         }

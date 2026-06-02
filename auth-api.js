@@ -5,6 +5,7 @@
  */
 (function () {
     var AUTH_API_BASE = (typeof window !== 'undefined' && window.USS_AUTH_API_BASE) || 'http://127.0.0.1:3789';
+    var Err = typeof UssApiError !== 'undefined' ? UssApiError : null;
 
     function joinUrl(path) {
         return AUTH_API_BASE.replace(/\/$/, '') + path;
@@ -18,6 +19,21 @@
         }
     }
 
+    /** 非 2xx 时抛出仅含错误码的用户可见 Error */
+    function throwIfNotOk(r, data, fallbackCode) {
+        if (r.ok) return;
+        var err;
+        if (Err) err = Err.createApiError(r.status, data, fallbackCode);
+        else {
+            var code = (data && data.code) || fallbackCode || 'NET_E001';
+            err = new Error('错误代码：' + code);
+            err.code = code;
+        }
+        err.status = r.status;
+        err.httpStatus = r.status;
+        throw err;
+    }
+
     async function fetchCheckinBranchUnit(token, branch, year, month) {
         var parts = ['branch=' + encodeURIComponent(branch)];
         if (year != null && month != null) {
@@ -29,7 +45,7 @@
             headers: { Authorization: 'Bearer ' + token },
         });
         var data = await parseJson(r);
-        if (!r.ok) throw new Error(data.message || '加载分部数据失败');
+        throwIfNotOk(r, data, 'CHK_001');
         return data;
     }
 
@@ -38,7 +54,7 @@
         var headers = Object.assign({}, init.headers || {}, { Authorization: 'Bearer ' + token });
         var r = await fetch(joinUrl(path), Object.assign({}, init, { headers: headers }));
         var data = await parseJson(r);
-        if (!r.ok) throw new Error(data.message || '请求失败');
+        throwIfNotOk(r, data, 'ADM_001');
         return data;
     }
 
@@ -65,7 +81,7 @@
                 body: JSON.stringify(body)
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '注册失败');
+            throwIfNotOk(r, data, 'AUTH_R006');
             return data;
         },
 
@@ -75,8 +91,20 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             });
-            var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '登录失败');
+            var raw = '';
+            try {
+                raw = await r.text();
+            } catch (ignore) {}
+            var data = {};
+            if (raw) {
+                try {
+                    data = JSON.parse(raw);
+                } catch (ignore) {}
+            }
+            if (!r.ok) {
+                var fb = r.status === 401 ? 'AUTH_L001' : r.status >= 502 ? 'NET_E' + r.status : 'SRV_001';
+                throwIfNotOk(r, data, fb);
+            }
             return data;
         },
 
@@ -85,7 +113,7 @@
                 headers: { Authorization: 'Bearer ' + token }
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '会话无效');
+            throwIfNotOk(r, data, 'AUTH_S001');
             return data;
         },
 
@@ -93,9 +121,9 @@
             var r = await fetch(joinUrl('/api/client-public-ip/status'));
             var data = await parseJson(r);
             if (r.status === 404) {
-                return { ok: false, message: (data && data.message) || '尚未上报公网 IP' };
+                return { ok: false, code: (data && data.code) || 'IP_001' };
             }
-            if (!r.ok) throw new Error((data && data.message) || '加载服务器状态失败');
+            throwIfNotOk(r, data, 'SRV_001');
             return data;
         },
 
@@ -105,9 +133,9 @@
             });
             var data = await parseJson(r);
             if (r.status === 404) {
-                return { ok: false, message: (data && data.message) || '尚未上报公网 IP' };
+                return { ok: false, code: (data && data.code) || 'IP_001' };
             }
-            if (!r.ok) throw new Error((data && data.message) || '加载服务器 IP 失败');
+            throwIfNotOk(r, data, 'SRV_001');
             return data;
         },
 
@@ -126,7 +154,7 @@
                 body: JSON.stringify(payload || { refreshFromWeb: true }),
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '同步 RSI 资料失败');
+            throwIfNotOk(r, data, 'AUTH_H002');
             return data;
         },
 
@@ -140,7 +168,7 @@
                 body: JSON.stringify(body || {}),
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '修改密码失败');
+            throwIfNotOk(r, data, 'AUTH_C001');
             return data;
         },
 
@@ -149,7 +177,7 @@
                 headers: { Authorization: 'Bearer ' + token },
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '加载 OOPZ 绑定失败');
+            throwIfNotOk(r, data, 'OOPZ_001');
             return data;
         },
 
@@ -163,12 +191,7 @@
                 body: JSON.stringify({ oopzId: oopzId }),
             });
             var data = await parseJson(r);
-            if (!r.ok) {
-                var err = new Error(data.message || '绑定失败');
-                if (data.cooldownSec != null) err.cooldownSec = data.cooldownSec;
-                if (data.canChangeAt != null) err.canChangeAt = data.canChangeAt;
-                throw err;
-            }
+            throwIfNotOk(r, data, 'OOPZ_001');
             return data;
         },
 
@@ -182,7 +205,7 @@
                 body: JSON.stringify({ enabled: !!enabled }),
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '保存播报设置失败');
+            throwIfNotOk(r, data, 'OOPZ_005');
             return data;
         },
 
@@ -193,11 +216,7 @@
                 body: JSON.stringify({ email: email }),
             });
             var data = await parseJson(r);
-            if (!r.ok) {
-                var err = new Error(data.message || '发送验证码失败');
-                if (data.cooldownSec != null) err.cooldownSec = data.cooldownSec;
-                throw err;
-            }
+            throwIfNotOk(r, data, 'AUTH_P008');
             return data;
         },
 
@@ -208,7 +227,7 @@
                 body: JSON.stringify(body || {}),
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '重置密码失败');
+            throwIfNotOk(r, data, 'AUTH_P006');
             return data;
         },
 
@@ -226,7 +245,7 @@
                 headers: { Authorization: 'Bearer ' + token },
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '加载状态失败');
+            throwIfNotOk(r, data, 'CHK_001');
             return data;
         },
 
@@ -235,7 +254,7 @@
                 headers: { Authorization: 'Bearer ' + token },
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '加载中心失败');
+            throwIfNotOk(r, data, 'CHK_001');
             return data;
         },
 
@@ -250,7 +269,7 @@
                 headers: { Authorization: 'Bearer ' + token },
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '加载验证失败');
+            throwIfNotOk(r, data, 'CHK_010');
             return data;
         },
 
@@ -260,7 +279,7 @@
                 headers: { Authorization: 'Bearer ' + token },
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '加载拼图失败');
+            throwIfNotOk(r, data, 'CHK_011');
             return data;
         },
 
@@ -274,7 +293,7 @@
                 body: JSON.stringify(body || {}),
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '签到现在不可用');
+            throwIfNotOk(r, data, 'CHK_002');
             return data;
         },
 
@@ -392,7 +411,7 @@
         async rsiServerStatus() {
             var r = await fetch(joinUrl('/api/rsi-server-status'));
             var data = await parseJson(r);
-            if (!r.ok) throw new Error((data && data.message) || '获取 RSI 状态失败');
+            throwIfNotOk(r, data, 'RSI_001');
             return data;
         },
 
@@ -404,7 +423,7 @@
             }
             var r = await fetch(joinUrl('/api/community/posts') + q);
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '加载帖子失败');
+            throwIfNotOk(r, data, 'COMM_P002');
             return data;
         },
 
@@ -412,8 +431,8 @@
         async communityGetPost(postId) {
             var r = await fetch(joinUrl('/api/community/posts/' + encodeURIComponent(postId)));
             var data = await parseJson(r);
-            if (r.status === 404) throw new Error((data && data.message) || '帖子不存在');
-            if (!r.ok) throw new Error((data && data.message) || '加载帖子失败');
+            if (r.status === 404) throwIfNotOk(r, data, 'COMM_P002');
+            throwIfNotOk(r, data, 'COMM_P002');
             return data;
         },
 
@@ -428,7 +447,7 @@
                 body: JSON.stringify(body || {}),
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '发帖失败');
+            throwIfNotOk(r, data, 'COMM_P003');
             return data;
         },
 
@@ -438,7 +457,7 @@
                 headers: { Authorization: 'Bearer ' + token },
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '删除失败');
+            throwIfNotOk(r, data, 'COMM_P014');
             return data;
         },
 
@@ -452,7 +471,7 @@
                 body: JSON.stringify({ content: content }),
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '回复失败');
+            throwIfNotOk(r, data, 'COMM_P008');
             return data;
         },
 
@@ -470,7 +489,7 @@
                 }
             );
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '删除失败');
+            throwIfNotOk(r, data, 'COMM_P013');
             return data;
         },
 
@@ -481,11 +500,7 @@
             }
             var r = await fetch(joinUrl('/api/community/chat') + q);
             var data = await parseJson(r);
-            if (!r.ok) {
-                var err = new Error(data.message || '加载聊天失败');
-                err.status = r.status;
-                throw err;
-            }
+            throwIfNotOk(r, data, 'SRV_001');
             return data;
         },
 
@@ -506,7 +521,7 @@
                 }),
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '发送失败');
+            throwIfNotOk(r, data, 'COMM_C001');
             return data;
         },
 
@@ -516,7 +531,7 @@
                 headers: { Authorization: 'Bearer ' + token },
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '删除失败');
+            throwIfNotOk(r, data, 'COMM_C006');
             return data;
         },
 
@@ -530,7 +545,7 @@
                 body: JSON.stringify({ messageId: messageId || null }),
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '置顶失败');
+            throwIfNotOk(r, data, 'COMM_C007');
             return data;
         },
 
@@ -539,7 +554,7 @@
                 headers: { Authorization: 'Bearer ' + token },
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '加载成员列表失败');
+            throwIfNotOk(r, data, 'AUTH_S003');
             return data;
         },
 
@@ -548,7 +563,7 @@
                 headers: { Authorization: 'Bearer ' + token },
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '加载摘要失败');
+            throwIfNotOk(r, data, 'AUTH_S003');
             return data;
         },
 
@@ -561,11 +576,7 @@
                 headers: { Authorization: 'Bearer ' + token },
             });
             var data = await parseJson(r);
-            if (!r.ok) {
-                var err = new Error(data.message || '加载私信失败');
-                err.status = r.status;
-                throw err;
-            }
+            throwIfNotOk(r, data, 'COMM_D001');
             return data;
         },
 
@@ -587,7 +598,7 @@
                 }),
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '发送失败');
+            throwIfNotOk(r, data, 'COMM_C001');
             return data;
         },
 
@@ -597,7 +608,7 @@
                 headers: { Authorization: 'Bearer ' + token },
             });
             var data = await parseJson(r);
-            if (!r.ok) throw new Error(data.message || '删除失败');
+            throwIfNotOk(r, data, 'COMM_C006');
             return data;
         },
     };

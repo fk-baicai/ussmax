@@ -159,7 +159,10 @@
             data = {};
         }
         if (!r.ok || !data.ok) {
-            throw new Error((data && data.message) || '获取状态失败');
+            var code = (data && data.code) || 'RSI_001';
+            throw new Error(
+                typeof UssApiError !== 'undefined' ? UssApiError.formatUserError(code) : '错误代码：' + code
+            );
         }
         writeLocalCache(data);
         return data;

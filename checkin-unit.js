@@ -93,13 +93,12 @@
     }
 
     function safeUserFacingMessage(msg) {
-        if (msg == null || typeof msg !== 'string') return '操作失败，请稍后再试。';
-        var t = msg.trim();
-        if (!t) return '操作失败，请稍后再试。';
-        if (/https?:\/\//i.test(t)) return '操作失败，请稍后再试或联系管理员。';
-        if (/\b\d{1,3}(?:\.\d{1,3}){3}\b/.test(t)) return '操作失败，请稍后再试或联系管理员。';
-        if (/:\d{2,5}\b/.test(t)) return '操作失败，请稍后再试或联系管理员。';
-        return t;
+        if (typeof UssApiError !== 'undefined') {
+            return UssApiError.sanitizeUserMessage(msg);
+        }
+        var s = msg == null ? '' : String(msg).trim();
+        if (/^错误代码：[A-Z0-9_]+$/.test(s)) return s;
+        return '错误代码：NET_E001';
     }
 
     function setPanelHidden(el, hidden) {
@@ -972,7 +971,7 @@
         } catch (e) {
             var msg = e && e.message ? e.message : '';
             await loadSummary();
-            showAlert(safeUserFacingMessage(msg) || '签到失败，请稍后再试。');
+            showAlert(safeUserFacingMessage(msg));
         }
     }
 

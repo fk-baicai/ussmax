@@ -465,7 +465,10 @@
             data = {};
         }
         if (!r.ok || !data.ok) {
-            throw new Error((data && data.message) || '获取资金统计失败');
+            var code = (data && data.code) || 'RSI_002';
+            throw new Error(
+                typeof UssApiError !== 'undefined' ? UssApiError.formatUserError(code) : '错误代码：' + code
+            );
         }
         writeLocalCache(data);
         return data;

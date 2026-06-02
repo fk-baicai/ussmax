@@ -176,20 +176,29 @@
 
         valueEl.textContent = opts.maskIp ? MASKED_IP : '—';
         if (metaEl) {
-            var waitMsg = (data && data.message) || '等待本机上报';
+            var waitCode = (data && data.code) || 'IP_001';
+            var waitMsg =
+                typeof UssApiError !== 'undefined'
+                    ? UssApiError.formatUserError(waitCode)
+                    : '错误代码：IP_001';
             metaEl.textContent = opts.maskIp ? '登录后可见真实 IP · ' + waitMsg : waitMsg;
         }
         renderDetails(null);
-        if (data && data.message && data.message !== '尚未上报公网 IP') {
-            showError(data.message);
-        } else {
-            hideError();
+        hideError();
+    }
+
+    function apiErrText(data, err) {
+        if (typeof UssApiError !== 'undefined') {
+            if (err) return UssApiError.sanitizeUserMessage(err);
+            if (data && data.code) return UssApiError.formatUserError(data.code);
         }
+        if (err && err.message && /^错误代码：/.test(err.message)) return err.message;
+        return '错误代码：IP_001';
     }
 
     function fetchServerIp() {
         if (!window.UssAuthApi) {
-            showError('认证模块未加载');
+            showError('错误代码：NET_E001');
             return Promise.resolve();
         }
         var sess = loadSession();
@@ -200,14 +209,15 @@
                 render(data, { maskIp: false });
             })
             .catch(function (e) {
-                render({ ok: false, message: e.message || '加载失败' }, { maskIp: false });
+                render({ ok: false, code: (e && e.code) || 'SRV_001' }, { maskIp: false });
+                showError(apiErrText(null, e));
             });
     }
 
     function fetchGuestStatus() {
         if (!window.UssAuthApi) {
             render(null, { maskIp: true });
-            showError('认证模块未加载');
+            showError('错误代码：NET_E001');
             return Promise.resolve();
         }
 
@@ -216,7 +226,8 @@
                 render(data, { maskIp: true });
             })
             .catch(function (e) {
-                render({ ok: false, message: e.message || '加载失败' }, { maskIp: true });
+                render({ ok: false, code: (e && e.code) || 'SRV_001' }, { maskIp: true });
+                showError(apiErrText(null, e));
             });
     }
 
