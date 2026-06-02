@@ -41,32 +41,120 @@
         }
     }
 
+    function isEmptyProfileValue(val) {
+        if (val === undefined || val === null) return true;
+        if (typeof val === 'string' && val.trim() === '') return true;
+        return false;
+    }
+
+    /** 抓取失败或服务端返回空值时保留 prev 中的旧资料 */
+    function mergeProfileField(next, prev) {
+        if (isEmptyProfileValue(next)) {
+            return prev !== undefined ? prev : next;
+        }
+        return next;
+    }
+
+    var PROFILE_CACHE_KEY = 'ussHangzhouProfileCache';
+
+    function loadProfileCache(bindingId) {
+        var bid = String(bindingId || '')
+            .trim()
+            .toLowerCase();
+        if (!bid) return null;
+        try {
+            var raw = localStorage.getItem(PROFILE_CACHE_KEY);
+            if (!raw) return null;
+            var all = JSON.parse(raw);
+            if (!all || typeof all !== 'object') return null;
+            return all[bid] || null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function saveProfileCache(bindingId, profile) {
+        var bid = String(bindingId || '')
+            .trim()
+            .toLowerCase();
+        if (!bid || !profile || typeof profile !== 'object') return;
+        try {
+            var raw = localStorage.getItem(PROFILE_CACHE_KEY);
+            var all = raw ? JSON.parse(raw) : {};
+            if (!all || typeof all !== 'object') all = {};
+            all[bid] = profile;
+            localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(all));
+        } catch (e) {
+            /* quota / private mode */
+        }
+    }
+
+    function snapshotProfileFields(sess) {
+        sess = sess || {};
+        return {
+            avatarUrl: sess.avatarUrl,
+            rsiCitizenAvatarSourceUrl: sess.rsiCitizenAvatarSourceUrl,
+            rsiProfileHandle: sess.rsiProfileHandle,
+            rsiRankIconUrl: sess.rsiRankIconUrl,
+            rsiRankLabel: sess.rsiRankLabel,
+            rsiEnlisted: sess.rsiEnlisted,
+            rsiLocation: sess.rsiLocation,
+            rsiFluency: sess.rsiFluency,
+            rsiOrgName: sess.rsiOrgName,
+            rsiOrgSid: sess.rsiOrgSid,
+            rsiOrgHref: sess.rsiOrgHref,
+            rsiOrgPageUrl: sess.rsiOrgPageUrl,
+            rsiOrgLogoUrl: sess.rsiOrgLogoUrl,
+            rsiOrgRoleLabel: sess.rsiOrgRoleLabel,
+            rsiOrgRankSlots: sess.rsiOrgRankSlots,
+        };
+    }
+
+    function profileCacheHasContent(profile) {
+        if (!profile) return false;
+        return !!(
+            (profile.rsiEnlisted && String(profile.rsiEnlisted).trim()) ||
+            (profile.rsiLocation && String(profile.rsiLocation).trim()) ||
+            (profile.rsiRankLabel && String(profile.rsiRankLabel).trim()) ||
+            (profile.rsiProfileHandle && String(profile.rsiProfileHandle).trim()) ||
+            (profile.rsiOrgSid && String(profile.rsiOrgSid).trim()) ||
+            (profile.rsiOrgName && String(profile.rsiOrgName).trim())
+        );
+    }
+
     function mergeUserIntoSession(token, user, prev) {
         prev = prev || {};
         user = user || {};
-        return {
+        var cached = loadProfileCache(user.bindingId || prev.bindingId);
+        if (cached) {
+            prev = Object.assign({}, cached, prev);
+        }
+        var merged = {
             token: token,
             bindingId: user.bindingId != null ? user.bindingId : prev.bindingId,
             email: user.email != null ? user.email : prev.email,
             loginAt: prev.loginAt || new Date().toISOString(),
-            avatarUrl: user.avatarUrl != null ? user.avatarUrl : prev.avatarUrl,
-            rsiCitizenAvatarSourceUrl:
-                user.rsiCitizenAvatarSourceUrl !== undefined
-                    ? user.rsiCitizenAvatarSourceUrl
-                    : prev.rsiCitizenAvatarSourceUrl,
-            rsiProfileHandle: user.rsiProfileHandle !== undefined ? user.rsiProfileHandle : prev.rsiProfileHandle,
-            rsiRankIconUrl: user.rsiRankIconUrl !== undefined ? user.rsiRankIconUrl : prev.rsiRankIconUrl,
-            rsiRankLabel: user.rsiRankLabel !== undefined ? user.rsiRankLabel : prev.rsiRankLabel,
-            rsiEnlisted: user.rsiEnlisted !== undefined ? user.rsiEnlisted : prev.rsiEnlisted,
-            rsiLocation: user.rsiLocation !== undefined ? user.rsiLocation : prev.rsiLocation,
-            rsiFluency: user.rsiFluency !== undefined ? user.rsiFluency : prev.rsiFluency,
-            rsiOrgName: user.rsiOrgName !== undefined ? user.rsiOrgName : prev.rsiOrgName,
-            rsiOrgSid: user.rsiOrgSid !== undefined ? user.rsiOrgSid : prev.rsiOrgSid,
-            rsiOrgHref: user.rsiOrgHref !== undefined ? user.rsiOrgHref : prev.rsiOrgHref,
-            rsiOrgPageUrl: user.rsiOrgPageUrl !== undefined ? user.rsiOrgPageUrl : prev.rsiOrgPageUrl,
-            rsiOrgLogoUrl: user.rsiOrgLogoUrl !== undefined ? user.rsiOrgLogoUrl : prev.rsiOrgLogoUrl,
-            rsiOrgRoleLabel: user.rsiOrgRoleLabel !== undefined ? user.rsiOrgRoleLabel : prev.rsiOrgRoleLabel,
-            rsiOrgRankSlots: user.rsiOrgRankSlots !== undefined ? user.rsiOrgRankSlots : prev.rsiOrgRankSlots,
+            avatarUrl: mergeProfileField(user.avatarUrl, prev.avatarUrl),
+            rsiCitizenAvatarSourceUrl: mergeProfileField(
+                user.rsiCitizenAvatarSourceUrl,
+                prev.rsiCitizenAvatarSourceUrl
+            ),
+            rsiProfileHandle: mergeProfileField(user.rsiProfileHandle, prev.rsiProfileHandle),
+            rsiRankIconUrl: mergeProfileField(user.rsiRankIconUrl, prev.rsiRankIconUrl),
+            rsiRankLabel: mergeProfileField(user.rsiRankLabel, prev.rsiRankLabel),
+            rsiEnlisted: mergeProfileField(user.rsiEnlisted, prev.rsiEnlisted),
+            rsiLocation: mergeProfileField(user.rsiLocation, prev.rsiLocation),
+            rsiFluency: mergeProfileField(user.rsiFluency, prev.rsiFluency),
+            rsiOrgName: mergeProfileField(user.rsiOrgName, prev.rsiOrgName),
+            rsiOrgSid: mergeProfileField(user.rsiOrgSid, prev.rsiOrgSid),
+            rsiOrgHref: mergeProfileField(user.rsiOrgHref, prev.rsiOrgHref),
+            rsiOrgPageUrl: mergeProfileField(user.rsiOrgPageUrl, prev.rsiOrgPageUrl),
+            rsiOrgLogoUrl: mergeProfileField(user.rsiOrgLogoUrl, prev.rsiOrgLogoUrl),
+            rsiOrgRoleLabel: mergeProfileField(user.rsiOrgRoleLabel, prev.rsiOrgRoleLabel),
+            rsiOrgRankSlots:
+                user.rsiOrgRankSlots !== undefined && user.rsiOrgRankSlots !== null
+                    ? user.rsiOrgRankSlots
+                    : prev.rsiOrgRankSlots,
             isAdmin: user.isAdmin !== undefined ? !!user.isAdmin : !!prev.isAdmin,
             isSuperAdmin: user.isSuperAdmin !== undefined ? !!user.isSuperAdmin : !!prev.isSuperAdmin,
             oopzId: user.oopzId !== undefined ? user.oopzId : prev.oopzId,
@@ -78,6 +166,16 @@
                 user.oopzChangeCooldownSec !== undefined ? user.oopzChangeCooldownSec : prev.oopzChangeCooldownSec,
             oopzCanChangeAt: user.oopzCanChangeAt !== undefined ? user.oopzCanChangeAt : prev.oopzCanChangeAt,
         };
+        if (profileCacheHasContent(snapshotProfileFields(merged))) {
+            saveProfileCache(merged.bindingId, snapshotProfileFields(merged));
+        }
+        return merged;
+    }
+
+    function sleep(ms) {
+        return new Promise(function (resolve) {
+            setTimeout(resolve, ms);
+        });
     }
 
     /** 仅从服务端刷新会话，不访问 RSI */
@@ -107,11 +205,32 @@
         return merged;
     }
 
+    /** /api/me 失败时指数退避重试 */
+    async function refreshAuthSessionFromServerWithRetry(options) {
+        options = options || {};
+        var maxAttempts = options.maxAttempts != null ? options.maxAttempts : 3;
+        var baseDelayMs = options.baseDelayMs != null ? options.baseDelayMs : 800;
+        for (var attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            var merged = await refreshAuthSessionFromServer(options);
+            if (merged) return merged;
+            if (attempt < maxAttempts) {
+                await sleep(Math.min(8000, baseDelayMs * Math.pow(2, attempt - 1)));
+            }
+        }
+        return null;
+    }
+
     global.UssAuthSessionSync = {
         AUTH_SESSION_KEY: AUTH_SESSION_KEY,
+        PROFILE_CACHE_KEY: PROFILE_CACHE_KEY,
         loadAuthSession: loadAuthSession,
         saveAuthSession: saveAuthSession,
         mergeUserIntoSession: mergeUserIntoSession,
+        mergeProfileField: mergeProfileField,
+        snapshotProfileFields: snapshotProfileFields,
+        loadProfileCache: loadProfileCache,
+        saveProfileCache: saveProfileCache,
         refreshAuthSessionFromServer: refreshAuthSessionFromServer,
+        refreshAuthSessionFromServerWithRetry: refreshAuthSessionFromServerWithRetry,
     };
 })(typeof window !== 'undefined' ? window : globalThis);

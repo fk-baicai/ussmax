@@ -220,9 +220,31 @@
         });
     }
 
+    function scheduleInit() {
+        var start = function () {
+            if (window.UssLazyMedia && typeof window.UssLazyMedia.runWhenIdle === 'function') {
+                window.UssLazyMedia.runWhenIdle(init, 1200);
+            } else {
+                setTimeout(init, 1200);
+            }
+        };
+        if (window.__ussPageReady) {
+            start();
+            return;
+        }
+        window.addEventListener(
+            'uss:page-ready',
+            function onReady() {
+                window.removeEventListener('uss:page-ready', onReady);
+                start();
+            },
+            { once: true }
+        );
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', scheduleInit);
     } else {
-        init();
+        scheduleInit();
     }
 })();

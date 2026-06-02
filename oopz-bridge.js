@@ -598,6 +598,39 @@
     setupChannelToggleDelegation();
     setupMemberTipFloat();
     setupMemberIdCopy();
-    fetchState();
-    setInterval(fetchState, POLL_MS);
+
+    function startPolling() {
+        fetchState();
+        setInterval(fetchState, POLL_MS);
+    }
+
+    function scheduleBridgeInit() {
+        var run = function () {
+            if (window.UssHomeBoot && typeof window.UssHomeBoot.scheduleIdle === 'function') {
+                window.UssHomeBoot.scheduleIdle(startPolling, 900);
+            } else if (window.UssLazyMedia && typeof window.UssLazyMedia.runWhenIdle === 'function') {
+                window.UssLazyMedia.runWhenIdle(startPolling, 900);
+            } else {
+                setTimeout(startPolling, 900);
+            }
+        };
+        if (window.UssHomeBoot && typeof window.UssHomeBoot.whenPageReady === 'function') {
+            window.UssHomeBoot.whenPageReady(run);
+            return;
+        }
+        if (window.__ussPageReady) {
+            run();
+            return;
+        }
+        window.addEventListener(
+            'uss:page-ready',
+            function onReady() {
+                window.removeEventListener('uss:page-ready', onReady);
+                run();
+            },
+            { once: true }
+        );
+    }
+
+    scheduleBridgeInit();
 })();

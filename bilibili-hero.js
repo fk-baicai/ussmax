@@ -2,6 +2,39 @@
     /** 首页舰船宣传视频（本地静态资源，原 B 站 BV1MqVr6KESA / BV1uqVr6KETK） */
     const HERO_SOURCES = ['videos/hero-1.mp4', 'videos/hero-2.mp4'];
     const END_EPSILON = 0.08;
+    let started = false;
+
+    function deferHeroStart() {
+        if (started) return;
+        started = true;
+        initHeroVideos();
+    }
+
+    function scheduleHeroVideos() {
+        if (started) return;
+        const run = function () {
+            if (window.UssLazyMedia && typeof window.UssLazyMedia.runWhenIdle === 'function') {
+                window.UssLazyMedia.runWhenIdle(deferHeroStart, 900);
+            } else {
+                setTimeout(deferHeroStart, 900);
+            }
+        };
+        if (window.__ussPageReady) {
+            run();
+            return;
+        }
+        window.addEventListener(
+            'uss:page-ready',
+            function onReady() {
+                window.removeEventListener('uss:page-ready', onReady);
+                run();
+            },
+            { once: true }
+        );
+        setTimeout(function () {
+            if (!started) run();
+        }, 4000);
+    }
 
     function setProgressScale(el, ratio) {
         if (!el) return;
@@ -26,7 +59,7 @@
             video.muted = true;
             video.playsInline = true;
             video.loop = false;
-            video.preload = index === 0 ? 'auto' : 'metadata';
+            video.preload = 'none';
             video.dataset.heroSrc = sources[index] || sources[0];
         });
 
@@ -84,6 +117,12 @@
             video.load();
         }
 
+        function preloadNextVideo() {
+            if (!nextVideo || nextVideo === currentVideo) return;
+            if (nextVideo.dataset.loadedSrc) return;
+            attachSource(nextVideo);
+        }
+
         function playCurrentVideo(fromStart) {
             attachSource(currentVideo);
             if (fromStart) {
@@ -98,6 +137,11 @@
                 playPromise
                     .then(function () {
                         startProgressLoop();
+                        if (window.UssLazyMedia) {
+                            window.UssLazyMedia.runWhenIdle(preloadNextVideo, 1200);
+                        } else {
+                            setTimeout(preloadNextVideo, 1200);
+                        }
                     })
                     .catch(function () {});
             }
@@ -156,8 +200,8 @@
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initHeroVideos);
+        document.addEventListener('DOMContentLoaded', scheduleHeroVideos);
     } else {
-        initHeroVideos();
+        scheduleHeroVideos();
     }
 })();

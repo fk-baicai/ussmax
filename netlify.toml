@@ -1,8 +1,33 @@
 # Netlify base directory: frontend
 # Proxy API requests to backend (HTTPS site cannot call http://IP directly)
+#
+# === API 直连（已启用）===
+# 前端 auth-config.js 生产环境默认请求 https://api.ussxc.org
+# 下方 /api /avatars 反代保留作兜底（本地预览或未配 SSL 时）
+# 阿里云需：deploy/nginx-api.conf + certbot + backend/.env TRUST_PROXY_HOPS=1
 
 [build]
   publish = "."
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/videos/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000, immutable"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
 
 [[redirects]]
   from = "/api/*"

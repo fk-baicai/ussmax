@@ -294,5 +294,18 @@
     }
 
     window.refreshOopzUserPrefs = refreshOopzUserPrefs;
-    refreshOopzUserPrefs();
+    if (window.UssHomeBoot && typeof window.UssHomeBoot.afterPageReadyIdle === 'function') {
+        window.UssHomeBoot.afterPageReadyIdle(refreshOopzUserPrefs, 750);
+    } else if (window.UssLazyMedia && typeof window.UssLazyMedia.runWhenIdle === 'function') {
+        window.addEventListener(
+            'uss:page-ready',
+            function onReady() {
+                window.removeEventListener('uss:page-ready', onReady);
+                window.UssLazyMedia.runWhenIdle(refreshOopzUserPrefs, 750);
+            },
+            { once: true }
+        );
+    } else {
+        refreshOopzUserPrefs();
+    }
 })();

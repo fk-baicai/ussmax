@@ -1680,6 +1680,13 @@ a.drawer-checkin-textlink:hover {
 }
 
 /* --- 首页 RSI 服务器状态 --- */
+body.home-page-body .rsi-status-section,
+body.home-page-body .oopz-bridge-section,
+body.home-page-body .community-section {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 480px;
+}
+
 .rsi-status-section {
     position: relative;
     z-index: 2;

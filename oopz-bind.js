@@ -166,7 +166,20 @@
 
     window.openOopzBindModal = openModal;
     window.refreshOopzBindSection = refreshAll;
-    refreshAll();
+    if (window.UssHomeBoot && typeof window.UssHomeBoot.afterPageReadyIdle === 'function') {
+        window.UssHomeBoot.afterPageReadyIdle(refreshAll, 800);
+    } else if (window.UssLazyMedia && typeof window.UssLazyMedia.runWhenIdle === 'function') {
+        window.addEventListener(
+            'uss:page-ready',
+            function onReady() {
+                window.removeEventListener('uss:page-ready', onReady);
+                window.UssLazyMedia.runWhenIdle(refreshAll, 800);
+            },
+            { once: true }
+        );
+    } else {
+        refreshAll();
+    }
 
     try {
         var p = new URLSearchParams(window.location.search || '');

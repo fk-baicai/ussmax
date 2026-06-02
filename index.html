@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>USSXC | 星际公民工具站|新手教程|服务器查询|机库计时|舰队攻略</title>
-    <link rel="stylesheet" href="styles.css?v=20260524-home">
+    <link rel="stylesheet" href="styles.css?v=20260602-home">
     <link rel="icon" href="/favicon.ico" sizes="48x48">
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -40,7 +40,7 @@
     <nav class="navbar">
         <div class="navbar-start">
         <div class="logo">
-            <a href="index.html" aria-label="首页"><img src="fleet-logo.jpg" alt="舰队 LOGO" decoding="async"></a>
+            <a href="index.html" aria-label="首页"><img src="fleet-logo.jpg" alt="舰队 LOGO" decoding="async" fetchpriority="high"></a>
         </div>
         <div class="nav-links" role="navigation" aria-label="站点导航">
             <div class="nav-dropdown">
@@ -161,10 +161,10 @@
 
     <div class="hero">
         <div class="video-container">
-            <video id="myVideo1" class="video-player" autoplay muted playsinline preload="auto">
+            <video id="myVideo1" class="video-player" autoplay muted playsinline preload="none">
                 <source type="video/mp4">
             </video>
-            <video id="myVideo2" class="video-player" muted playsinline preload="metadata">
+            <video id="myVideo2" class="video-player" muted playsinline preload="none">
                 <source type="video/mp4">
             </video>
             <div class="progress-container">
@@ -436,7 +436,7 @@
                         <p id="communityFormHint" class="community-form-hint" role="status"></p>
                     </div>
                     <div class="community-feed community-scroller community-scroller-feed" id="communityFeed">
-                        <div class="community-feed-loading" id="communityFeedLoading">正在加载帖子…</div>
+                        <div class="community-feed-loading" id="communityFeedLoading" hidden>正在加载帖子…</div>
                     </div>
                     <div id="communityForumGuestLock" class="community-chat-guest-lock" hidden>
                         <div class="community-chat-guest-lock-inner">
@@ -716,11 +716,13 @@
         </div>
     </div>
 
-    <script src="material-icons-svg.js"></script>
-    <script src="pw-toggle-icons.js"></script>
-    <script src="bilibili-hero.js"></script>
-    <script src="script.js"></script>
-    <script src="rsi-client.js"></script>
+    <script src="lazy-media.js"></script>
+    <script src="home-boot.js"></script>
+    <script defer src="material-icons-svg.js"></script>
+    <script defer src="pw-toggle-icons.js"></script>
+    <script defer src="bilibili-hero.js"></script>
+    <script defer src="script.js"></script>
+    <script defer src="rsi-client.js"></script>
     <script src="rsi-sync.js"></script>
     <script src="auth-session-sync.js"></script>
     <script src="api-error.js"></script>
@@ -813,6 +815,15 @@
             clearRegisterFormHint();
             refreshLoginDrawerView();
             syncOverlay();
+            if (isLoggedIn()) {
+                if (hydrateProfileCacheIfNeeded()) {
+                    refreshNavLoginState();
+                    refreshLoginDrawerView();
+                }
+                if (sessionProfileLooksIncomplete(loadAuthSession())) {
+                    ensureUserProfileWithRetry({ reason: 'drawer' });
+                }
+            }
         }
 
         function closeLoginDrawer() {
@@ -1179,6 +1190,12 @@
         }
 
         function authSessionPayloadFromUser(token, user, prev) {
+            if (
+                window.UssAuthSessionSync &&
+                typeof window.UssAuthSessionSync.mergeUserIntoSession === 'function'
+            ) {
+                return window.UssAuthSessionSync.mergeUserIntoSession(token, user, prev || {});
+            }
             const p = prev || {};
             const u = user || {};
             return {
@@ -1209,6 +1226,19 @@
             };
         }
 
+        /** 抓取全部失败时，用进入流程前的快照 + 本地资料缓存恢复展示 */
+        function restoreProfileFromSnapshot(token, snapshot, remember) {
+            if (!snapshot || !token) return null;
+            var cached =
+                window.UssAuthSessionSync && window.UssAuthSessionSync.loadProfileCache
+                    ? window.UssAuthSessionSync.loadProfileCache(snapshot.bindingId)
+                    : null;
+            var base = loadAuthSession() || {};
+            var merged = Object.assign({}, cached || {}, base, snapshot, { token: token });
+            saveAuthSession(merged, remember);
+            return merged;
+        }
+
         function saveAuthSessionFromUser(token, user, remember, prev) {
             const payload = authSessionPayloadFromUser(token, user, prev || loadAuthSession() || {});
             const useRemember =
@@ -1230,15 +1260,137 @@
             }
         }
 
+        /** 会话中 RSI 公民资料是否明显未抓取成功 */
+        function sessionProfileLooksIncomplete(sess) {
+            if (!sess || !sess.token || !sess.bindingId) return false;
+            const enlisted = sess.rsiEnlisted && String(sess.rsiEnlisted).trim();
+            const location = sess.rsiLocation && String(sess.rsiLocation).trim();
+            const rank = sess.rsiRankLabel && String(sess.rsiRankLabel).trim();
+            const handle = sess.rsiProfileHandle && String(sess.rsiProfileHandle).trim();
+            const orgSid = sess.rsiOrgSid && String(sess.rsiOrgSid).trim();
+            const orgName = sess.rsiOrgName && String(sess.rsiOrgName).trim();
+            const any = enlisted || location || rank || handle || orgSid || orgName;
+            if (!any) return true;
+            if (!enlisted && !location && !orgSid) return true;
+            return false;
+        }
+
+        let ensureUserProfilePromise = null;
+
+        /** 优先 /api/me，资料不全则 RSI 同步；均带重试 */
+        async function ensureUserProfileWithRetry(options) {
+            if (!isLoggedIn()) return null;
+            if (ensureUserProfilePromise) return ensureUserProfilePromise;
+            ensureUserProfilePromise = (async function () {
+                const opts = options || {};
+                const sess0 = loadAuthSession();
+                if (!sess0 || !sess0.token) return null;
+                const profileSnapshot =
+                    window.UssAuthSessionSync &&
+                    typeof window.UssAuthSessionSync.snapshotProfileFields === 'function'
+                        ? window.UssAuthSessionSync.snapshotProfileFields(sess0)
+                        : null;
+                if (profileSnapshot) profileSnapshot.bindingId = sess0.bindingId;
+                const remember = !!(
+                    localStorage.getItem(AUTH_SESSION_KEY) && !sessionStorage.getItem(AUTH_SESSION_KEY)
+                );
+
+                function onProfileUpdated() {
+                    refreshNavLoginState();
+                    refreshLoginDrawerView();
+                }
+
+                if (
+                    window.UssAuthSessionSync &&
+                    typeof window.UssAuthSessionSync.refreshAuthSessionFromServerWithRetry === 'function'
+                ) {
+                    await window.UssAuthSessionSync.refreshAuthSessionFromServerWithRetry({
+                        maxAttempts: 3,
+                        onUpdated: onProfileUpdated,
+                    });
+                } else if (window.UssAuthApi) {
+                    try {
+                        const me = await window.UssAuthApi.me(sess0.token);
+                        saveAuthSessionFromUser(sess0.token, me, undefined, sess0);
+                        onProfileUpdated();
+                    } catch (ignore) {}
+                }
+
+                let sess = loadAuthSession();
+                if (!sess || !sess.token) return null;
+                if (!sessionProfileLooksIncomplete(sess)) return sess;
+
+                if (
+                    window.UssRsiSync &&
+                    typeof window.UssRsiSync.refreshUserRsiOnAuthWithRetry === 'function'
+                ) {
+                    const user = await window.UssRsiSync.refreshUserRsiOnAuthWithRetry(sess.token, {
+                        maxAttempts: 3,
+                        baseDelayMs: 1500,
+                    });
+                    if (user) {
+                        saveAuthSessionFromUser(sess.token, user, undefined, sess);
+                        onProfileUpdated();
+                        return loadAuthSession();
+                    }
+                } else {
+                    const user = await refreshUserRsiFromServer(sess.token);
+                    if (user) {
+                        saveAuthSessionFromUser(sess.token, user, undefined, sess);
+                        onProfileUpdated();
+                        return loadAuthSession();
+                    }
+                }
+
+                sess = loadAuthSession();
+                if (sessionProfileLooksIncomplete(sess) && profileSnapshot) {
+                    restoreProfileFromSnapshot(sess0.token, profileSnapshot, remember);
+                    onProfileUpdated();
+                }
+                return loadAuthSession();
+            })().finally(function () {
+                ensureUserProfilePromise = null;
+            });
+            return ensureUserProfilePromise;
+        }
+
+        /** 进入页/打开抽屉时：若当前会话资料为空，先用 localStorage 里的历史资料填充展示 */
+        function hydrateProfileCacheIfNeeded() {
+            if (!isLoggedIn() || !window.UssAuthSessionSync) return false;
+            const sess = loadAuthSession();
+            if (!sess || !sess.token || !sessionProfileLooksIncomplete(sess)) return false;
+            const cached = window.UssAuthSessionSync.loadProfileCache(sess.bindingId);
+            if (!cached) return false;
+            const remember = !!(
+                localStorage.getItem(AUTH_SESSION_KEY) && !sessionStorage.getItem(AUTH_SESSION_KEY)
+            );
+            const merged = window.UssAuthSessionSync.mergeUserIntoSession(
+                sess.token,
+                {},
+                Object.assign({}, cached, sess)
+            );
+            saveAuthSession(merged, remember);
+            return true;
+        }
+
         async function validateAuthSession() {
             const s = loadAuthSession();
             if (!s || !s.token) return;
             try {
+                if (window.UssAuthSessionSync && typeof window.UssAuthSessionSync.refreshAuthSessionFromServerWithRetry === 'function') {
+                    await window.UssAuthSessionSync.refreshAuthSessionFromServerWithRetry({
+                        onUpdated: function () {
+                            refreshNavLoginState();
+                            refreshLoginDrawerView();
+                        },
+                    });
+                    return;
+                }
                 if (window.UssAuthSessionSync && typeof window.UssAuthSessionSync.refreshAuthSessionFromServer === 'function') {
                     await window.UssAuthSessionSync.refreshAuthSessionFromServer({
                         onUpdated: function () {
                             refreshNavLoginState();
-                            syncLoginDrawerPanel();
+                            refreshLoginDrawerView();
                         },
                     });
                     return;
@@ -1274,6 +1426,8 @@
                 avatarWrap.classList.remove('is-hidden');
                 btn.classList.add('is-logged-in');
                 btn.setAttribute('aria-label', '账户');
+                img.decoding = 'async';
+                img.fetchPriority = 'high';
                 img.src = sessionAvatarSrc();
                 img.alt = '用户头像';
             } else {
@@ -1853,9 +2007,14 @@
 
             const im = document.createElement('img');
             im.className = 'community-chat-img';
-            im.loading = 'lazy';
+            im.decoding = 'async';
             im.alt = '聊天图片';
-            im.src = src;
+            im.src =
+                'data:image/svg+xml,' +
+                encodeURIComponent(
+                    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 3" preserveAspectRatio="none"><rect width="4" height="3" fill="#1a2834"/></svg>'
+                );
+            im.dataset.src = src;
 
             const mask = document.createElement('button');
             mask.type = 'button';
@@ -1868,6 +2027,11 @@
 
             function revealImage(ev) {
                 if (ev) ev.stopPropagation();
+                if (window.UssLazyMedia) window.UssLazyMedia.loadNow(im);
+                else if (im.dataset.src) {
+                    im.src = im.dataset.src;
+                    delete im.dataset.src;
+                }
                 wrap.classList.remove('community-chat-img-wrap--censored');
                 if (mask.parentNode) mask.remove();
             }
@@ -2406,6 +2570,59 @@
             );
         }
 
+        function communityPrepareAvatarImg(img, bindingId, avatarUrl, authorLabel, eager) {
+            img.decoding = 'async';
+            img.loading = 'lazy';
+            const fallback = communityAvatarFallbackDataUri(
+                communityAuthorInitial(bindingId, authorLabel)
+            );
+            const remote = communityAvatarSrc(communityResolveAvatarUrl(bindingId, avatarUrl));
+            img.src = fallback;
+            if (!remote || remote === fallback) return;
+            if (eager || !window.UssLazyMedia) {
+                img.src = remote;
+                img.dataset.loadedSrc = remote;
+                return;
+            }
+            img.dataset.src = remote;
+        }
+
+        function bindCommunityChatAvatars(root, opts) {
+            if (!root || !window.UssLazyMedia) return;
+            const scroll = getCommunityChatScrollEl();
+            const options = opts || {};
+            const eagerLast = options.eagerLast != null ? options.eagerLast : 20;
+            const lines = root.querySelectorAll('.community-chat-line');
+            const startEager = Math.max(0, lines.length - eagerLast);
+            lines.forEach(function (line, idx) {
+                const eager = idx >= startEager;
+                line.querySelectorAll('.community-author-avatar-img[data-src]').forEach(function (img) {
+                    if (eager) window.UssLazyMedia.loadNow(img);
+                    else {
+                        window.UssLazyMedia.observe(img, {
+                            root: scroll,
+                            rootMargin: '180px 0px',
+                        });
+                    }
+                });
+            });
+            root.querySelectorAll('.community-chat-img[data-src]').forEach(function (img) {
+                window.UssLazyMedia.observe(img, { root: scroll, rootMargin: '240px 0px' });
+            });
+        }
+
+        function bindCommunityChatLineMedia(line, eagerAvatar) {
+            if (!line || !window.UssLazyMedia) return;
+            const scroll = getCommunityChatScrollEl();
+            line.querySelectorAll('.community-author-avatar-img[data-src]').forEach(function (img) {
+                if (eagerAvatar) window.UssLazyMedia.loadNow(img);
+                else window.UssLazyMedia.observe(img, { root: scroll, rootMargin: '180px 0px' });
+            });
+            line.querySelectorAll('.community-chat-img[data-src]').forEach(function (img) {
+                window.UssLazyMedia.observe(img, { root: scroll, rootMargin: '240px 0px' });
+            });
+        }
+
         function communityRsiCitizenProfileUrl(handle) {
             const h = String(handle || '').trim();
             if (!h) return '';
@@ -2427,8 +2644,7 @@
             const img = document.createElement('img');
             img.className = 'community-author-avatar-img';
             img.alt = displayName + ' 头像';
-            const src = communityAvatarSrc(communityResolveAvatarUrl(bindingId, avatarUrl));
-            img.src = src || communityAvatarFallbackDataUri(communityAuthorInitial(bindingId, authorLabel));
+            communityPrepareAvatarImg(img, bindingId, avatarUrl, authorLabel, false);
             const rsi =
                 authorLabel || String(bindingId || '').trim().toLowerCase() === '__honghou__'
                     ? ''
@@ -2714,14 +2930,13 @@
             );
         }
 
-        function buildCommunityChatAvatarCell(bindingId, avatarUrl, avatarRsiHref) {
+        function buildCommunityChatAvatarCell(bindingId, avatarUrl, avatarRsiHref, eagerAvatar) {
             const avWrap = document.createElement('div');
             avWrap.className = 'community-author-avatar';
             const img = document.createElement('img');
             img.className = 'community-author-avatar-img';
             img.alt = String(bindingId || '用户头像');
-            const src = communityAvatarSrc(communityResolveAvatarUrl(bindingId, avatarUrl));
-            img.src = src || communityAvatarFallbackDataUri(communityAuthorInitial(bindingId));
+            communityPrepareAvatarImg(img, bindingId, avatarUrl, null, !!eagerAvatar);
             const rsi = typeof avatarRsiHref === 'string' ? avatarRsiHref.trim() : '';
             if (rsi) {
                 const a = document.createElement('a');
@@ -2797,7 +3012,7 @@
                     if (mediaOnly) mainRow.classList.add('community-chat-line-mine-main--media');
                     mainRow.appendChild(imageGrid);
                 }
-                const avCell = buildCommunityChatAvatarCell(m.bindingId, m.avatarUrl, '');
+                const avCell = buildCommunityChatAvatarCell(m.bindingId, m.avatarUrl, '', true);
                 mainRow.appendChild(avCell);
 
                 line.appendChild(mainRow);
@@ -2850,6 +3065,7 @@
                 log.appendChild(buildCommunityChatLine(m, lineKind));
                 prev = m.createdAt;
             });
+            bindCommunityChatAvatars(log);
         }
 
         function syncCommunityFeedLayout(hasPosts) {
@@ -2948,8 +3164,19 @@
                         const thumb = document.createElement('img');
                         thumb.className = 'community-post-compact-thumb';
                         thumb.loading = 'lazy';
+                        thumb.decoding = 'async';
                         thumb.alt = '帖子配图';
-                        thumb.src = resolveCommunityAssetUrl(rel);
+                        const thumbUrl = resolveCommunityAssetUrl(rel);
+                        if (window.UssLazyMedia) {
+                            thumb.src =
+                                'data:image/svg+xml,' +
+                                encodeURIComponent(
+                                    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 3"><rect width="4" height="3" fill="#1a2834"/></svg>'
+                                );
+                            thumb.dataset.src = thumbUrl;
+                        } else {
+                            thumb.src = thumbUrl;
+                        }
                         footer.appendChild(thumb);
                     }
                 }
@@ -2963,6 +3190,11 @@
                 card.appendChild(inner);
                 feed.appendChild(card);
             });
+            if (window.UssLazyMedia) {
+                window.UssLazyMedia.observeAll('.community-post-compact-thumb[data-src]', {
+                    rootMargin: '200px 0px',
+                }, feed);
+            }
         }
 
         async function loadCommunityPosts() {
@@ -2973,10 +3205,13 @@
                 syncCommunityFeedLayout(false);
                 return;
             }
+            const loading = document.getElementById('communityFeedLoading');
+            if (loading) loading.hidden = false;
             try {
                 const data = await window.UssAuthApi.communityListPosts(50);
                 renderCommunityPosts(data.posts || []);
             } catch (e) {
+                if (loading) loading.hidden = true;
                 feed.innerHTML = '';
                 syncCommunityFeedLayout(false);
                 const err = document.createElement('div');
@@ -3004,6 +3239,8 @@
                 log.appendChild(buildCommunityChatTimeDivider(m.createdAt));
             }
             log.appendChild(buildCommunityChatLine(m, lk));
+            const line = log.querySelector('.community-chat-line[data-seq="' + seqKey + '"][data-chat-kind="' + lk + '"]');
+            bindCommunityChatLineMedia(line, communityChatNearBottom);
         }
 
         function scrollCommunityChatToBottom(force) {
@@ -3050,6 +3287,7 @@
                     renderCommunityChatMessagesToLog(log, list, 'fleet');
                 }
                 scrollCommunityChatToBottom(true);
+                bindCommunityChatAvatars(log);
                 markCommunityFleetRead(communityChatMaxSeq);
             } catch (e) {
                 log.innerHTML = '';
@@ -3093,6 +3331,7 @@
                     renderCommunityChatMessagesToLog(log, list, 'dm');
                 }
                 scrollCommunityChatToBottom(true);
+                bindCommunityChatAvatars(log);
                 if (communityChatDmPeer) {
                     markCommunityDmPeerRead(communityChatDmPeer, communityDmMaxSeq);
                 }
@@ -3650,7 +3889,9 @@
             return false;
         }
 
-        function refreshCommunitySessionUi() {
+        function refreshCommunitySessionUi(opts) {
+            opts = opts || {};
+            const deferNetwork = !!opts.deferNetwork || !window.__ussPageReady;
             const logged = isLoggedIn();
             const hint = document.getElementById('communityAuthHint');
             const ta = document.getElementById('communityText');
@@ -3679,12 +3920,19 @@
                 communityInboxSnapshot = { fleetMaxSeq: 0, dmMaxByPeer: {} };
                 stopCommunityChatPoll();
                 syncCommunityChatMainTitle();
-                loadCommunityRoster();
             } else {
                 if (chatLog) delete chatLog.dataset.guestPreview;
-                startCommunityChatPoll();
+                if (!deferNetwork) {
+                    startCommunityChatPoll();
+                }
                 updateCommunityChatInputPlaceholder();
-                loadCommunityRoster();
+                if (!deferNetwork) {
+                    if (window.UssLazyMedia) {
+                        window.UssLazyMedia.runWhenIdle(loadCommunityRoster, 700);
+                    } else {
+                        setTimeout(loadCommunityRoster, 700);
+                    }
+                }
             }
 
             if (hint) hint.hidden = true;
@@ -3921,8 +4169,8 @@
             installCommunityChatContextMenu();
             installCommunityChatPinBar();
             wireCommunityChatRoster();
-            refreshCommunitySessionUi();
-            refreshCommunityAll();
+            refreshCommunitySessionUi({ deferNetwork: true });
+            installCommunityChatScrollLazyReload();
 
             document.addEventListener('visibilitychange', function () {
                 if (document.visibilityState === 'visible') {
@@ -3932,6 +4180,52 @@
                     if (isLoggedIn()) startCommunityChatPoll();
                 }
             });
+        }
+
+        function installCommunityChatScrollLazyReload() {
+            const sc = getCommunityChatScrollEl();
+            if (!sc || sc.dataset.lazyMedia === '1') return;
+            sc.dataset.lazyMedia = '1';
+            var ticking = false;
+            sc.addEventListener('scroll', function () {
+                if (ticking || !window.UssLazyMedia) return;
+                ticking = true;
+                requestAnimationFrame(function () {
+                    ticking = false;
+                    bindCommunityChatAvatars(document.getElementById('communityChatLog'), { eagerLast: 8 });
+                });
+            });
+        }
+
+        async function bootHomeAfterAuth() {
+            if (isLoggedIn()) hydrateProfileCacheIfNeeded();
+            refreshNavLoginState();
+            refreshLoginDrawerView();
+            if (isLoggedIn()) {
+                await ensureUserProfileWithRetry({ reason: 'boot' });
+            }
+            if (window.UssHomeBoot && typeof window.UssHomeBoot.markPageReady === 'function') {
+                window.UssHomeBoot.markPageReady();
+            } else {
+                window.__ussPageReady = true;
+                window.dispatchEvent(new CustomEvent('uss:page-ready'));
+            }
+            if (!isLoggedIn()) return;
+            await loadCommunityChatFull();
+            startCommunityChatPoll();
+            refreshCommunitySessionUi();
+            var scheduleIdle =
+                window.UssHomeBoot && typeof window.UssHomeBoot.scheduleIdle === 'function'
+                    ? window.UssHomeBoot.scheduleIdle.bind(window.UssHomeBoot)
+                    : window.UssLazyMedia && typeof window.UssLazyMedia.runWhenIdle === 'function'
+                      ? window.UssLazyMedia.runWhenIdle.bind(window.UssLazyMedia)
+                      : function (fn, ms) {
+                            setTimeout(fn, ms == null ? 500 : ms);
+                        };
+            scheduleIdle(function () {
+                loadCommunityPosts();
+                loadCommunityRoster();
+            }, 500);
         }
 
         /** 舰队职务等级：每级一颗 SVG 图标（与抽屉青色风格一致） */
@@ -4039,6 +4333,11 @@
                         rankRow.hidden = false;
                         const resolvedIcon = sessionRankIconSrc(sess);
                         if (resolvedIcon) {
+                            rankIcon.onerror = function () {
+                                rankIcon.onerror = null;
+                                rankIcon.removeAttribute('src');
+                                rankIcon.hidden = true;
+                            };
                             rankIcon.src = resolvedIcon;
                             rankIcon.hidden = false;
                         } else {
@@ -4490,6 +4789,9 @@
                 );
                 refreshNavLoginState();
                 loadCommunityChatFull();
+                ensureUserProfileWithRetry({ reason: 'login' }).then(function () {
+                    refreshLoginDrawerView();
+                });
                 if (loginBtn) {
                     loginBtn.classList.remove('rsi-submit-btn--loading');
                     loginBtn.removeAttribute('aria-busy');
@@ -4526,19 +4828,13 @@
             }, AUTH_BUTTON_FEEDBACK_MS);
         }
 
-        refreshNavLoginState();
         initCommunityBoard();
-        validateAuthSession().finally(function () {
-            refreshNavLoginState();
-            refreshLoginDrawerView();
-            loadCommunityPosts();
-            if (isLoggedIn()) loadCommunityChatFull();
-        });
+        validateAuthSession().finally(bootHomeAfterAuth);
     </script>
-    <script src="oopz-bind.js"></script>
-    <script src="oopz-user-prefs.js"></script>
-    <script src="rsi-server-status.js"></script>
-    <script src="oopz-bridge.js"></script>
-    <script src="site-footer.js"></script>
+    <script defer src="oopz-bind.js"></script>
+    <script defer src="oopz-user-prefs.js"></script>
+    <script defer src="rsi-server-status.js"></script>
+    <script defer src="oopz-bridge.js"></script>
+    <script defer src="site-footer.js"></script>
 </body>
 </html> 
