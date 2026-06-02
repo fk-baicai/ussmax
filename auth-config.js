@@ -1,8 +1,8 @@
 /**
  * 认证 API 根地址（先于 auth-api.js 执行）。
  * - localhost / 127.0.0.1 / file://：连本机 backend（127.0.0.1:3789）
- * - 生产站点（ussxc.org / Netlify）：默认直连 https://api.ussxc.org（Cloudflare 灰云 → 阿里云 Nginx）
- * - 覆盖：window.USS_API_DIRECT_BASE = '' 可退回同源 Netlify 反代；window.USS_AUTH_API_BASE 强制指定
+ * - 生产站点（ussxc.org / Netlify）：默认同源 /api（Netlify 反代 → 阿里云）
+ * - 可选直连：window.USS_API_DIRECT_BASE = 'https://api.ussxc.org'（须 DNS + HTTPS 就绪）
  */
 (function () {
     if (typeof window === 'undefined') return;
@@ -10,7 +10,6 @@
 
     var h = (window.location && window.location.hostname) || '';
     var PRODUCTION_SITE_HOSTS = ['ussxc.org', 'www.ussxc.org'];
-    var DEFAULT_API_DIRECT = 'https://api.ussxc.org';
 
     var isLocal =
         h === 'localhost' ||
@@ -29,10 +28,7 @@
         return;
     }
 
-    if (window.USS_API_DIRECT_BASE === undefined && isProductionSite) {
-        window.USS_API_DIRECT_BASE = DEFAULT_API_DIRECT;
-    }
-
+    /** 仅当显式设置 USS_API_DIRECT_BASE 时才直连 api 子域名（须 Cloudflare 有 api 记录 + 服务器 HTTPS） */
     var directBase = window.USS_API_DIRECT_BASE;
     if (directBase && /^https:\/\//i.test(String(directBase))) {
         window.USS_AUTH_API_BASE = String(directBase).replace(/\/$/, '');
