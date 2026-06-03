@@ -2600,7 +2600,7 @@ body.home-page-body .community-section {
 .oopz-user-prefs__layout {
     display: flex;
     flex-wrap: wrap;
-    align-items: stretch;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 10px 16px;
 }
@@ -2610,9 +2610,9 @@ body.home-page-body .community-section {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    align-self: stretch;
-    gap: 0;
+    justify-content: flex-start;
+    align-self: flex-start;
+    gap: 8px;
     font-size: 1rem;
 }
 
@@ -2627,9 +2627,9 @@ body.home-page-body .community-section {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    justify-content: space-between;
-    align-self: stretch;
-    gap: 4px;
+    justify-content: flex-start;
+    align-self: flex-start;
+    gap: 8px;
     text-align: right;
     font-size: 0.88rem;
 }
@@ -2640,12 +2640,13 @@ body.home-page-body .community-section {
     }
 
     .oopz-user-prefs__main {
+        flex: 0 0 auto;
         justify-content: flex-start;
         gap: 8px;
     }
 
     .oopz-user-prefs__checkin {
-        flex: 1 1 100%;
+        flex: 0 0 auto;
         width: 100%;
         max-width: 100%;
         margin-left: 0;
@@ -2695,12 +2696,13 @@ body.home-page-body .community-section {
 
 @media (max-width: 640px) {
     .oopz-user-prefs__main {
+        flex: 0 0 auto;
         justify-content: flex-start;
         gap: 8px;
     }
 
     .oopz-user-prefs__checkin {
-        flex: 1 1 100%;
+        flex: 0 0 auto;
         width: 100%;
         max-width: 100%;
         margin-left: 0;
@@ -2803,10 +2805,9 @@ body.home-page-body .community-section {
 .oopz-user-prefs__checkin-single {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: flex-end;
     gap: 4px;
-    min-height: 100%;
     width: 100%;
 }
 
@@ -2826,18 +2827,17 @@ body.home-page-body .community-section {
 .oopz-user-prefs__checkin-cards {
     display: flex;
     flex-direction: row;
-    align-items: stretch;
+    align-items: flex-start;
     justify-content: flex-end;
     flex-wrap: nowrap;
     gap: 0;
-    min-height: 100%;
 }
 
 .oopz-user-prefs__checkin-card {
     flex: 0 0 auto;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: flex-end;
     gap: 4px;
     padding-left: 12px;
