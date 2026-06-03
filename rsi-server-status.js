@@ -145,7 +145,7 @@
 
         if (updatedEl && data.fetchedAt) {
             var when = formatFetchedAt(data.fetchedAt);
-            updatedEl.textContent = when || '';
+            updatedEl.textContent = when ? '更新于 ' + when : '';
             updatedEl.hidden = !when;
         }
     }

@@ -1702,11 +1702,6 @@ body.home-page-body .community-section {
 }
 
 .rsi-status-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 12px 20px;
     margin-bottom: clamp(14px, 2.2vw, 20px);
 }
 
@@ -1718,8 +1713,16 @@ body.home-page-body .community-section {
     letter-spacing: 0.04em;
 }
 
+.rsi-status-lead-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 10px;
+    margin-top: 6px;
+}
+
 .rsi-status-lead {
-    margin: 6px 0 0;
+    margin: 0;
     font-size: 0.92rem;
     color: rgba(168, 216, 232, 0.72);
 }
@@ -2056,16 +2059,11 @@ body.home-page-body .community-section {
 }
 
 .rsi-status-updated {
-    position: absolute;
-    right: 0;
-    top: 100%;
     margin: 0;
-    padding-top: 6px;
-    font-size: 0.78rem;
+    padding: 0;
+    font-size: 0.82rem;
     color: rgba(168, 216, 232, 0.55);
-    text-align: right;
     white-space: nowrap;
-    pointer-events: none;
 }
 
 /* --- RSI 众筹资金统计（工具页） --- */
@@ -2519,7 +2517,7 @@ body.home-page-body .community-section {
 
 .oopz-bridge-head-actions {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: flex-start;
     gap: 8px 10px;
@@ -2636,6 +2634,65 @@ body.home-page-body .community-section {
     font-size: 0.88rem;
 }
 
+@media (max-width: 900px) {
+    .oopz-user-prefs__layout {
+        flex-direction: column;
+    }
+
+    .oopz-user-prefs__main {
+        justify-content: flex-start;
+        gap: 8px;
+    }
+
+    .oopz-user-prefs__checkin {
+        flex: 1 1 100%;
+        width: 100%;
+        max-width: 100%;
+        margin-left: 0;
+        padding-left: 0;
+        padding-top: 10px;
+        border-left: none;
+        border-top: 1px solid rgba(94, 233, 255, 0.12);
+        justify-content: flex-start;
+        gap: 8px;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .oopz-user-prefs__checkin-title,
+    .oopz-user-prefs__checkin-remain,
+    .oopz-user-prefs__checkin-branches {
+        text-align: left;
+    }
+
+    .oopz-user-prefs__checkin-single {
+        align-items: flex-start;
+    }
+
+    .oopz-user-prefs__checkin-cards {
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    .oopz-user-prefs__checkin-card {
+        margin-left: 0;
+        padding-left: 0;
+        border-left: none;
+        border-top: 1px solid rgba(94, 233, 255, 0.12);
+        padding-top: 8px;
+        align-items: flex-start;
+        text-align: left;
+        white-space: normal;
+    }
+
+    .oopz-user-prefs__checkin-card:first-child {
+        border-top: none;
+        padding-top: 0;
+    }
+}
+
 @media (max-width: 640px) {
     .oopz-user-prefs__main {
         justify-content: flex-start;
@@ -2653,8 +2710,41 @@ body.home-page-body .community-section {
         border-top: 1px solid rgba(94, 233, 255, 0.12);
         justify-content: flex-start;
         gap: 8px;
-        align-items: flex-end;
-        text-align: right;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .oopz-user-prefs__checkin-title,
+    .oopz-user-prefs__checkin-remain,
+    .oopz-user-prefs__checkin-branches {
+        text-align: left;
+    }
+
+    .oopz-user-prefs__checkin-single {
+        align-items: flex-start;
+    }
+
+    .oopz-user-prefs__checkin-cards {
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    .oopz-user-prefs__checkin-card {
+        margin-left: 0;
+        padding-left: 0;
+        border-left: none;
+        border-top: 1px solid rgba(94, 233, 255, 0.12);
+        padding-top: 8px;
+        align-items: flex-start;
+        text-align: left;
+        white-space: normal;
+    }
+
+    .oopz-user-prefs__checkin-card:first-child {
+        border-top: none;
+        padding-top: 0;
     }
 }
 
@@ -6609,9 +6699,6 @@ a.community-author-avatar-link:focus-visible {
   }
   .rsi-status-grid {
     grid-template-columns: 1fr;
-  }
-  .rsi-status-head {
-    align-items: flex-start;
   }
   .rsi-funding-body {
     grid-template-columns: 1fr;
