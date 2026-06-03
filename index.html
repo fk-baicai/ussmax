@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>USSXC | 星际公民工具站|新手教程|服务器查询|机库计时|舰队攻略</title>
-    <link rel="stylesheet" href="styles.css?v=20260603h">
+    <link rel="stylesheet" href="styles.css?v=20260603u">
     <link rel="icon" href="/favicon.ico" sizes="48x48">
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -334,12 +334,24 @@
                             </div>
                             <div class="community-chat-compose community-dropzone">
                                 <div class="community-chat-compose-row">
+                                    <button
+                                        type="button"
+                                        id="communityChatEmojiBtn"
+                                        class="community-chat-emoji-btn"
+                                        disabled
+                                        aria-label="插入表情"
+                                        aria-expanded="false"
+                                        aria-controls="communityChatEmojiPop"
+                                        title="表情"
+                                    >
+                                        <span aria-hidden="true">😊</span>
+                                    </button>
                                     <div class="community-chat-input-wrap">
                                         <textarea
                                             id="communityChatInput"
                                             class="community-chat-input"
                                             rows="1"
-                                            maxlength="400"
+                                            maxlength="3000"
                                             placeholder=""
                                             autocomplete="off"
                                             aria-label="聊天消息输入"
@@ -352,6 +364,15 @@
                                             role="listbox"
                                             aria-label="选择要艾特的成员"
                                         ></div>
+                                        <div
+                                            id="communityChatEmojiPop"
+                                            class="community-chat-emoji-pop"
+                                            hidden
+                                            role="dialog"
+                                            aria-label="选择表情"
+                                        >
+                                            <div id="communityChatEmojiGrid" class="community-chat-emoji-pop__grid"></div>
+                                        </div>
                                     </div>
                                     <div class="community-send-split">
                                         <button type="button" class="primary-btn community-chat-send" id="communityChatSendBtn" disabled>发送</button>
@@ -481,6 +502,7 @@
         aria-label="聊天消息操作"
         hidden
     >
+        <button type="button" class="community-chat-context-menu__item" data-action="copy" role="menuitem">复制</button>
         <button type="button" class="community-chat-context-menu__item" data-action="recall" role="menuitem">撤回</button>
         <button type="button" class="community-chat-context-menu__item" data-action="pin" role="menuitem">置顶</button>
         <button type="button" class="community-chat-context-menu__item" data-action="unpin" role="menuitem">取消置顶</button>
@@ -972,6 +994,21 @@
             return '错误代码：NET_E001';
         }
 
+        function formatCommunityChatHintError(err) {
+            var code = '';
+            if (err && typeof err === 'object' && err.code) {
+                code = String(err.code).trim();
+            } else {
+                var s = err && err.message ? String(err.message) : String(err || '');
+                var m = s.match(/^错误代码：([A-Z0-9_]+)$/);
+                if (m) code = m[1];
+            }
+            if (code === 'COMM_C002') {
+                return '字数上限，无法发送';
+            }
+            return safeUserFacingMessage(err);
+        }
+
         function isLikelyNetworkError(msg) {
             if (!msg || typeof msg !== 'string') return false;
             const s = msg.toLowerCase();
@@ -1451,6 +1488,17 @@
         const COMMUNITY_MAX_IMAGES = 6;
         const COMMUNITY_MAX_IMAGE_BYTES = 5 * 1024 * 1024;
         const COMMUNITY_CHAT_POLL_MS = 3500;
+        const COMMUNITY_CHAT_MAX_TEXT = 3000;
+        const COMMUNITY_CHAT_EMOJIS = [
+            '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '😊', '😇', '🥰', '😍', '🤩', '😘',
+            '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏',
+            '😒', '🙄', '😬', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🥵', '🥶',
+            '😎', '🤓', '🥳', '😤', '😠', '😡', '🤬', '😭', '😱', '😨', '😰', '😥', '😓', '🤯', '😵',
+            '👍', '👎', '👊', '✊', '🤝', '👏', '🙌', '🙏', '💪', '👋', '🤞', '✌️', '🤟', '🤘', '👌',
+            '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💔', '💕', '💖', '💘', '💯', '✨', '⭐',
+            '🔥', '🎉', '🎊', '🍻', '🚀', '🛸', '⚔️', '🎯', '✅', '❌', '❗', '❓', '💤', '🫡', '🤡',
+        ];
+        let communityChatEmojiOpen = false;
         let communityPendingImages = [];
         let communityChatPendingImages = [];
         let communityChatMaxSeq = 0;
@@ -1810,6 +1858,63 @@
             }
         }
 
+        function closeCommunityChatEmojiPicker() {
+            const pop = document.getElementById('communityChatEmojiPop');
+            const btn = document.getElementById('communityChatEmojiBtn');
+            if (pop) pop.hidden = true;
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+            communityChatEmojiOpen = false;
+        }
+
+        function toggleCommunityChatEmojiPicker() {
+            const pop = document.getElementById('communityChatEmojiPop');
+            const btn = document.getElementById('communityChatEmojiBtn');
+            const input = document.getElementById('communityChatInput');
+            if (!pop || !btn || btn.disabled) return;
+            const opening = pop.hidden;
+            closeCommunityChatMentionPicker();
+            var chatMenu = document.getElementById('communityChatSendMenu');
+            var cmb = document.getElementById('communityChatSendMenuBtn');
+            if (chatMenu) chatMenu.hidden = true;
+            if (cmb) cmb.setAttribute('aria-expanded', 'false');
+            if (opening) {
+                pop.hidden = false;
+                btn.setAttribute('aria-expanded', 'true');
+                communityChatEmojiOpen = true;
+                if (input) input.focus();
+            } else {
+                closeCommunityChatEmojiPicker();
+            }
+        }
+
+        function installCommunityChatEmojiPicker() {
+            const grid = document.getElementById('communityChatEmojiGrid');
+            const btn = document.getElementById('communityChatEmojiBtn');
+            if (!grid || grid.childNodes.length) return;
+            COMMUNITY_CHAT_EMOJIS.forEach(function (em) {
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'community-chat-emoji-pop__item';
+                item.textContent = em;
+                item.setAttribute('aria-label', '插入表情 ' + em);
+                item.addEventListener('click', function (ev) {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    insertTextAtCommunityChatInput(em);
+                    const input = document.getElementById('communityChatInput');
+                    if (input) input.focus();
+                });
+                grid.appendChild(item);
+            });
+            if (btn) {
+                btn.addEventListener('click', function (ev) {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    toggleCommunityChatEmojiPicker();
+                });
+            }
+        }
+
         function communityMentionShowEveryoneOption(q) {
             const qq = String(q || '').trim().toLowerCase();
             if (!qq) return true;
@@ -1887,6 +1992,7 @@
                     pop.appendChild(b);
                 }
             );
+            closeCommunityChatEmojiPicker();
             pop.hidden = false;
             communityMentionUI.open = true;
         }
@@ -1948,6 +2054,68 @@
         }
 
         const COMMUNITY_URL_RE = /(https?:\/\/[^\s<>"']+)/gi;
+        const COMMUNITY_EMOJI_GLYPH_RE = /\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*/gu;
+
+        function communityChatTextIsEmojiOnly(text) {
+            const s = String(text || '').trim();
+            if (!s) return false;
+            return !/[^\s\p{Extended_Pictographic}\u200d\ufe0f]/u.test(s);
+        }
+
+        function appendCommunityTextWithEmojiSpans(parent, text) {
+            const raw = String(text != null ? text : '');
+            if (!raw) return;
+            let lastIndex = 0;
+            COMMUNITY_EMOJI_GLYPH_RE.lastIndex = 0;
+            let match;
+            while ((match = COMMUNITY_EMOJI_GLYPH_RE.exec(raw)) !== null) {
+                if (match.index > lastIndex) {
+                    parent.appendChild(document.createTextNode(raw.slice(lastIndex, match.index)));
+                }
+                const span = document.createElement('span');
+                span.className = 'community-chat-emoji-glyph';
+                span.textContent = match[0];
+                parent.appendChild(span);
+                lastIndex = match.index + match[0].length;
+            }
+            if (lastIndex < raw.length) {
+                parent.appendChild(document.createTextNode(raw.slice(lastIndex)));
+            }
+        }
+
+        function appendCommunityChatTextWithLinks(parent, text) {
+            const raw = String(text != null ? text : '');
+            if (!raw) return;
+            let lastIndex = 0;
+            COMMUNITY_URL_RE.lastIndex = 0;
+            let match;
+            while ((match = COMMUNITY_URL_RE.exec(raw)) !== null) {
+                if (match.index > lastIndex) {
+                    appendCommunityTextWithEmojiSpans(parent, raw.slice(lastIndex, match.index));
+                }
+                const href = normalizeCommunityUrl(match[0]);
+                if (href && /^https?:\/\//i.test(href)) {
+                    const bvid = extractBilibiliBvid(href);
+                    if (bvid && /bilibili\.com\/video\//i.test(href)) {
+                        appendCommunityChatVideoEmbed(parent, bvid);
+                    } else {
+                        const link = document.createElement('a');
+                        link.className = 'community-text-link';
+                        link.href = href;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        link.textContent = match[0];
+                        parent.appendChild(link);
+                    }
+                } else {
+                    appendCommunityTextWithEmojiSpans(parent, match[0]);
+                }
+                lastIndex = match.index + match[0].length;
+            }
+            if (lastIndex < raw.length) {
+                appendCommunityTextWithEmojiSpans(parent, raw.slice(lastIndex));
+            }
+        }
 
         function normalizeCommunityUrl(url) {
             return String(url || '').replace(/[.,;:!?，。；：！？、）」』\]]+$/u, '');
@@ -2123,7 +2291,7 @@
                     span.textContent = part;
                     el.appendChild(span);
                 } else if (part) {
-                    appendCommunityTextWithLinks(el, part);
+                    appendCommunityChatTextWithLinks(el, part);
                 }
             }
         }
@@ -2775,16 +2943,46 @@
             menu.style.top = top + 'px';
         }
 
+        function communityChatGetCopyText(m) {
+            return String(m && m.text != null ? m.text : '').trim();
+        }
+
+        async function copyCommunityChatMessageText(m) {
+            const text = communityChatGetCopyText(m);
+            if (!text) return;
+            try {
+                if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                    await navigator.clipboard.writeText(text);
+                    return;
+                }
+            } catch (ignore) {}
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.setAttribute('readonly', '');
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+            } catch (ignore) {}
+        }
+
         function showCommunityChatContextMenu(ev, m, chatKind) {
-            if (!m || !m.id) return;
+            if (!m || !isLoggedIn()) return;
+            const copyText = communityChatGetCopyText(m);
             const opts = getCommunityChatContextOptions(m, chatKind);
-            if (!opts.canRecall && !opts.canDelete && !opts.canPin) return;
+            const hasStaffActions = opts.canRecall || opts.canDelete || opts.canPin;
+            if (!copyText && !hasStaffActions) return;
             const menu = document.getElementById('communityChatContextMenu');
             if (!menu) return;
+            const copyBtn = menu.querySelector('[data-action="copy"]');
             const recallBtn = menu.querySelector('[data-action="recall"]');
             const deleteBtn = menu.querySelector('[data-action="delete"]');
             const pinBtn = menu.querySelector('[data-action="pin"]');
             const unpinBtn = menu.querySelector('[data-action="unpin"]');
+            if (copyBtn) copyBtn.hidden = !copyText;
             if (recallBtn) recallBtn.hidden = !opts.canRecall;
             if (deleteBtn) deleteBtn.hidden = !opts.canDelete;
             const isThisPinned =
@@ -2814,10 +3012,14 @@
                     const state = communityChatContextMenuState;
                     const action = btn.getAttribute('data-action');
                     closeCommunityChatContextMenu();
-                    if (!state || !state.m || !state.m.id) return;
-                    if (action === 'delete' || action === 'recall') {
+                    if (!state || !state.m) return;
+                    if (action === 'copy') {
+                        copyCommunityChatMessageText(state.m);
+                    } else if (action === 'delete' || action === 'recall') {
+                        if (!state.m.id) return;
                         handleCommunityChatDelete(state.m.id, state.chatKind);
                     } else if (action === 'pin') {
+                        if (!state.m.id) return;
                         handleCommunityChatPin(state.m.id, state.chatKind);
                     } else if (action === 'unpin') {
                         handleCommunityChatUnpin(state.chatKind);
@@ -2966,32 +3168,6 @@
             );
         }
 
-        function buildCommunityChatAvatarCell(bindingId, avatarUrl, avatarRsiHref, eagerAvatar) {
-            const avWrap = document.createElement('div');
-            avWrap.className = 'community-author-avatar';
-            const img = document.createElement('img');
-            img.className = 'community-author-avatar-img';
-            img.alt = String(bindingId || '用户头像');
-            communityPrepareAvatarImg(img, bindingId, avatarUrl, null, !!eagerAvatar);
-            const rsi = typeof avatarRsiHref === 'string' ? avatarRsiHref.trim() : '';
-            if (rsi) {
-                const a = document.createElement('a');
-                a.className = 'community-author-avatar-link';
-                a.href = rsi;
-                a.target = '_blank';
-                a.rel = 'noopener noreferrer';
-                a.setAttribute('aria-label', '在 RSI 打开 ' + String(bindingId || '玩家') + ' 的个人页');
-                a.addEventListener('click', function (ev) {
-                    ev.stopPropagation();
-                });
-                a.appendChild(img);
-                avWrap.appendChild(a);
-            } else {
-                avWrap.appendChild(img);
-            }
-            return avWrap;
-        }
-
         function buildCommunityChatLine(m, lineKind) {
             const kind = lineKind != null ? lineKind : communityChatKind;
             const line = document.createElement('div');
@@ -3034,50 +3210,40 @@
             const mediaOnly = !!imageGrid && !bodyText;
             if (mediaOnly) line.classList.add('community-chat-line--media-only');
 
-            if (isMine) {
-                const mainRow = document.createElement('div');
-                mainRow.className = 'community-chat-line-mine-main';
-
-                if (bodyText) {
-                    const txt = document.createElement('div');
-                    txt.className = 'community-chat-text';
-                    applyCommunityChatTextWithMentions(txt, bodyText, m.mentionBindingIds, m.mentionEveryone);
-                    mainRow.appendChild(txt);
+            const avatarRsiHref =
+                isBotLine || (m.authorLabel != null && String(m.authorLabel).trim())
+                    ? ''
+                    : communityRsiCitizenProfileUrl(m.bindingId);
+            line.appendChild(
+                buildCommunityAuthorRow(
+                    m.bindingId,
+                    m.avatarUrl,
+                    m.createdAt,
+                    null,
+                    avatarRsiHref,
+                    m.authorLabel,
+                    isMine
+                )
+            );
+            const bubble = document.createElement('div');
+            bubble.className = 'community-chat-bubble';
+            if (bodyText) {
+                const txt = document.createElement('div');
+                txt.className = 'community-chat-text';
+                if (communityChatTextIsEmojiOnly(bodyText)) {
+                    txt.classList.add('community-chat-text--emoji-only');
+                    line.classList.add('community-chat-line--emoji-only');
                 }
-                if (imageGrid) {
-                    if (mediaOnly) mainRow.classList.add('community-chat-line-mine-main--media');
-                    mainRow.appendChild(imageGrid);
-                }
-                const avCell = buildCommunityChatAvatarCell(m.bindingId, m.avatarUrl, '', true);
-                mainRow.appendChild(avCell);
-
-                line.appendChild(mainRow);
-            } else {
-                const avatarRsiHref = communityRsiCitizenProfileUrl(m.bindingId);
-                line.appendChild(
-                    buildCommunityAuthorRow(
-                        m.bindingId,
-                        m.avatarUrl,
-                        m.createdAt,
-                        null,
-                        avatarRsiHref,
-                        m.authorLabel
-                    )
-                );
-                if (bodyText) {
-                    const txt = document.createElement('div');
-                    txt.className = 'community-chat-text';
-                    applyCommunityChatTextWithMentions(txt, bodyText, m.mentionBindingIds, m.mentionEveryone);
-                    line.appendChild(txt);
-                }
-                if (imageGrid) line.appendChild(imageGrid);
+                applyCommunityChatTextWithMentions(txt, bodyText, m.mentionBindingIds, m.mentionEveryone);
+                bubble.appendChild(txt);
             }
+            if (imageGrid) bubble.appendChild(imageGrid);
+            if (bubble.childNodes.length) line.appendChild(bubble);
 
-            if (communityChatHasContextActions(m, kind)) {
-                line.addEventListener('contextmenu', function (ev) {
-                    showCommunityChatContextMenu(ev, m, kind);
-                });
-            }
+            line.addEventListener('contextmenu', function (ev) {
+                if (line.classList.contains('community-chat-line--guest-preview')) return;
+                showCommunityChatContextMenu(ev, m, kind);
+            });
 
             return line;
         }
@@ -3731,6 +3897,7 @@
             if (!window.UssAuthApi) return;
             clearCommunityChatHint();
             closeCommunityChatMentionPicker();
+            closeCommunityChatEmojiPicker();
             const sess = loadAuthSession();
             if (!sess || !sess.token) {
                 setCommunityChatHint('请先登录后再发言。');
@@ -3742,7 +3909,10 @@
                 return x.dataUrl;
             });
             if (!text && !imgs.length) {
-                setCommunityChatHint('请输入文字、粘贴 B 站视频链接或添加图片。');
+                return;
+            }
+            if (text.length > COMMUNITY_CHAT_MAX_TEXT) {
+                setCommunityChatHint('字数上限，无法发送');
                 return;
             }
             const btn = document.getElementById('communityChatSendBtn');
@@ -3781,7 +3951,7 @@
                 }
                 scrollCommunityChatToBottom(true);
             } catch (e) {
-                setCommunityChatHint(safeUserFacingMessage(e));
+                setCommunityChatHint(formatCommunityChatHintError(e));
             } finally {
                 refreshCommunitySessionUi();
             }
@@ -3948,6 +4118,7 @@
             const chatInput = document.getElementById('communityChatInput');
             const chatBtn = document.getElementById('communityChatSendBtn');
             const chatMenuBtn = document.getElementById('communityChatSendMenuBtn');
+            const chatEmojiBtn = document.getElementById('communityChatEmojiBtn');
             const chatFileInput = document.getElementById('communityChatFileInput');
             const guestLock = document.getElementById('communityChatGuestLock');
             const forumGuestLock = document.getElementById('communityForumGuestLock');
@@ -3957,6 +4128,7 @@
             if (forumGuestLock) forumGuestLock.hidden = !!logged;
             if (!logged) {
                 closeCommunitySendMenus();
+                closeCommunityChatEmojiPicker();
                 renderCommunityChatGuestPreview();
                 communityChatMaxSeq = 0;
                 communityDmMaxSeq = 0;
@@ -3996,6 +4168,7 @@
             }
             if (chatBtn) chatBtn.disabled = !logged;
             if (chatMenuBtn) chatMenuBtn.disabled = !logged;
+            if (chatEmojiBtn) chatEmojiBtn.disabled = !logged;
             if (chatFileInput) chatFileInput.disabled = !logged;
         }
 
@@ -4008,6 +4181,7 @@
             if (postMenu) postMenu.hidden = true;
             if (cmb) cmb.setAttribute('aria-expanded', 'false');
             if (pmb) pmb.setAttribute('aria-expanded', 'false');
+            closeCommunityChatEmojiPicker();
         }
 
         function installCommunitySendMenus() {
@@ -4062,6 +4236,8 @@
             document.addEventListener('click', function (e) {
                 if (e.target.closest && e.target.closest('.community-send-menu')) return;
                 if (e.target.closest && e.target.closest('.community-send-split__more')) return;
+                if (e.target.closest && e.target.closest('.community-chat-emoji-pop')) return;
+                if (e.target.closest && e.target.closest('.community-chat-emoji-btn')) return;
                 closeCommunitySendMenus();
             });
             document.addEventListener('keydown', function (e) {
@@ -4127,6 +4303,11 @@
             if (chatInput) {
                 chatInput.addEventListener('keydown', function (ev) {
                     if (ev.isComposing) return;
+                    if (ev.key === 'Escape' && communityChatEmojiOpen) {
+                        ev.preventDefault();
+                        closeCommunityChatEmojiPicker();
+                        return;
+                    }
                     const isEnter = ev.key === 'Enter' || ev.key === 'NumpadEnter';
                     if (isEnter && (ev.ctrlKey || ev.metaKey)) {
                         ev.preventDefault();
@@ -4160,6 +4341,10 @@
                         }
                         if (ev.key === 'Escape') {
                             ev.preventDefault();
+                            if (communityChatEmojiOpen) {
+                                closeCommunityChatEmojiPicker();
+                                return;
+                            }
                             closeCommunityChatMentionPicker();
                             return;
                         }
@@ -4211,6 +4396,7 @@
 
             installCommunityDropzones();
             installCommunitySendMenus();
+            installCommunityChatEmojiPicker();
 
             installCommunityChatScrollGuard();
             installCommunityChatContextMenu();
