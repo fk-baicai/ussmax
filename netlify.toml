@@ -1,4 +1,4 @@
-# Use when Netlify Base directory = frontend (publish = this folder)
+﻿# Use when Netlify Base directory = frontend (publish = this folder)
 [build]
   publish = "."
 
@@ -21,6 +21,18 @@
   for = "/*.html"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/api/rsi-server-status"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    Netlify-CDN-Cache-Control = "no-store"
+
+[[headers]]
+  for = "/api/rsi-funding-stats"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    Netlify-CDN-Cache-Control = "no-store"
 
 [[redirects]]
   from = "/oopz-bridge.html"

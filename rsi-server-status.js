@@ -1,14 +1,15 @@
 /**
  * 首页 RSI 服务器状态展示（Platform / PU / AC）
  *
- * 经本站 /api/rsi-server-status 读取；前端 localStorage 5 分钟缓存，降低后端压力。
+ * 经本站 /api/rsi-server-status 读取；前端 localStorage 30 分钟缓存，与后端 RSI 抓取间隔一致。
  */
 (function () {
     'use strict';
 
-    var REFRESH_MS = 5 * 60 * 1000;
-    var LOCAL_CACHE_MS = 5 * 60 * 1000;
+    var REFRESH_MS = 30 * 60 * 1000;
+    var LOCAL_CACHE_MS = 30 * 60 * 1000;
     var LOCAL_CACHE_KEY = 'ussRsiServerStatusCache';
+    var LOCAL_CACHE_VERSION = 3;
     var RSI_STATUS_URL = 'https://status.robertsspaceindustries.com/';
 
     var gridEl = null;
@@ -29,10 +30,29 @@
         try {
             var d = new Date(iso);
             if (isNaN(d.getTime())) return '';
-            return d.toLocaleString('zh-CN', { hour12: false });
+            return d.toLocaleString('zh-CN', {
+                hour12: false,
+                timeZone: 'Asia/Shanghai',
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            });
         } catch (e) {
             return '';
         }
+    }
+
+    function componentsAllUnknown(components) {
+        return (
+            Array.isArray(components) &&
+            components.length > 0 &&
+            components.every(function (row) {
+                return !row || row.status === 'unknown';
+            })
+        );
     }
 
     function readLocalCache(allowStale) {
@@ -40,7 +60,8 @@
             var raw = localStorage.getItem(LOCAL_CACHE_KEY);
             if (!raw) return null;
             var o = JSON.parse(raw);
-            if (!o || !o.fetchedAt || !Array.isArray(o.components)) return null;
+            if (!o || o.v !== LOCAL_CACHE_VERSION || !o.fetchedAt || !Array.isArray(o.components)) return null;
+            if (componentsAllUnknown(o.components)) return null;
             var age = Date.now() - new Date(o.fetchedAt).getTime();
             if (!Number.isFinite(age) || age < 0) return null;
             var fresh = age <= LOCAL_CACHE_MS;
@@ -65,6 +86,7 @@
             localStorage.setItem(
                 LOCAL_CACHE_KEY,
                 JSON.stringify({
+                    v: LOCAL_CACHE_VERSION,
                     source: data.source || RSI_STATUS_URL,
                     fetchedAt: data.fetchedAt || new Date().toISOString(),
                     components: data.components,
@@ -151,7 +173,7 @@
     }
 
     async function fetchFromBackend() {
-        var r = await fetch(apiBase() + '/api/rsi-server-status');
+        var r = await fetch(apiBase() + '/api/rsi-server-status', { cache: 'no-store' });
         var data = {};
         try {
             data = await r.json();

@@ -8,6 +8,7 @@
     var REFRESH_MS = 60 * 60 * 1000;
     var LOCAL_CACHE_MS = 60 * 60 * 1000;
     var LOCAL_CACHE_KEY = 'ussRsiFundingCache';
+    var LOCAL_CACHE_VERSION = 2;
     var PERIODS = [
         { id: 'hour', label: '小时' },
         { id: 'day', label: '天' },
@@ -67,7 +68,16 @@
         try {
             var d = new Date(iso);
             if (isNaN(d.getTime())) return '';
-            return d.toLocaleString('zh-CN', { hour12: false });
+            return d.toLocaleString('zh-CN', {
+                hour12: false,
+                timeZone: 'Asia/Shanghai',
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            });
         } catch (e) {
             return '';
         }
@@ -78,7 +88,8 @@
             var raw = localStorage.getItem(LOCAL_CACHE_KEY);
             if (!raw) return null;
             var o = JSON.parse(raw);
-            if (!o || !o.fetchedAt || !o.periods) return null;
+            if (!o || o.v !== LOCAL_CACHE_VERSION || !o.fetchedAt || !o.periods) return null;
+            if (!isFinite(Number(o.fundsUsd)) || !isFinite(Number(o.fans))) return null;
             var age = Date.now() - new Date(o.fetchedAt).getTime();
             if (!isFinite(age) || age < 0) return null;
             var fresh = age <= LOCAL_CACHE_MS;
@@ -105,6 +116,7 @@
             localStorage.setItem(
                 LOCAL_CACHE_KEY,
                 JSON.stringify({
+                    v: LOCAL_CACHE_VERSION,
                     source: data.source,
                     fetchedAt: data.fetchedAt || new Date().toISOString(),
                     fundsUsd: data.fundsUsd,
@@ -457,7 +469,7 @@
     }
 
     async function fetchFromBackend() {
-        var r = await fetch(apiBase() + '/api/rsi-funding-stats');
+        var r = await fetch(apiBase() + '/api/rsi-funding-stats', { cache: 'no-store' });
         var data = {};
         try {
             data = await r.json();

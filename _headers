@@ -32,6 +32,14 @@
 /*.html
   Cache-Control: public, max-age=0, must-revalidate
 
+/api/rsi-server-status
+  Cache-Control: no-store, no-cache, must-revalidate
+  Netlify-CDN-Cache-Control: no-store
+
+/api/rsi-funding-stats
+  Cache-Control: no-store, no-cache, must-revalidate
+  Netlify-CDN-Cache-Control: no-store
+
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
