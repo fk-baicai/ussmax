@@ -21,5 +21,3 @@
 为何不在纯前端生成拼图？
    - 缺口横坐标 targetX 必须只存在服务端，否则可被脚本直接读取
    - 前端只负责显示后端返回的 bgDataUrl / pieceDataUrl
-
-调试：frontend/captcha-art.js 可用 Canvas 预览同风格底图（不参与正式校验）
