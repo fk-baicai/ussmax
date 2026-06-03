@@ -111,9 +111,22 @@
         }
     }
 
-    function authorInitial(bindingId) {
+    function authorInitial(bindingId, authorLabel) {
+        if (authorLabel) {
+            var label = String(authorLabel).trim();
+            if (label) return label.charAt(0);
+        }
         var s = String(bindingId || '').trim();
+        if (s === '__honghou__') return '红';
         return s ? s.charAt(0).toUpperCase() : '?';
+    }
+
+    function resolveAvatarUrl(bindingId, avatarUrl) {
+        if (avatarUrl) return avatarUrl;
+        if (String(bindingId || '').trim().toLowerCase() === '__honghou__') {
+            return window.USS_HONGHOU_AVATAR || '/avatars/honghou.jpg';
+        }
+        return null;
     }
 
     function avatarSrc(avatarUrl) {
@@ -174,20 +187,51 @@
         appendTextWithLinks(el, text);
     }
 
-    function buildAuthorRow(bindingId, avatarUrl, createdAt, trailingEl) {
+    function rsiCitizenProfileUrl(handle) {
+        var h = String(handle || '').trim();
+        if (!h || h === '__honghou__') return '';
+        return 'https://robertsspaceindustries.com/en/citizens/' + encodeURIComponent(h);
+    }
+
+    function buildAuthorRow(bindingId, avatarUrl, createdAt, trailingEl, authorLabel) {
         var row = document.createElement('div');
         row.className = 'community-author-row';
+        var displayName =
+            authorLabel != null && String(authorLabel).trim()
+                ? String(authorLabel).trim()
+                : String(bindingId || '—');
+        if (String(bindingId || '').trim().toLowerCase() === '__honghou__' || authorLabel) {
+            row.classList.add('community-author-row--bot');
+        }
         var avWrap = document.createElement('div');
         avWrap.className = 'community-author-avatar';
         var img = document.createElement('img');
         img.className = 'community-author-avatar-img';
-        img.alt = String(bindingId || '用户头像');
-        var src = avatarSrc(avatarUrl);
-        img.src = src || avatarFallback(authorInitial(bindingId));
-        avWrap.appendChild(img);
+        img.alt = displayName + ' 头像';
+        img.decoding = 'async';
+        img.loading = 'lazy';
+        var remote = avatarSrc(resolveAvatarUrl(bindingId, avatarUrl));
+        var fallback = avatarFallback(authorInitial(bindingId, authorLabel));
+        img.src = fallback;
+        if (remote && remote !== fallback && remote !== (window.USS_DEFAULT_AVATAR || 'default-avatar.png')) {
+            img.src = remote;
+        }
+        var rsi = rsiCitizenProfileUrl(bindingId);
+        if (rsi) {
+            var a = document.createElement('a');
+            a.className = 'community-author-avatar-link';
+            a.href = rsi;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.setAttribute('aria-label', '在 RSI 打开 ' + String(bindingId || '玩家') + ' 的个人页');
+            a.appendChild(img);
+            avWrap.appendChild(a);
+        } else {
+            avWrap.appendChild(img);
+        }
         var idEl = document.createElement('span');
         idEl.className = 'community-author-id';
-        idEl.textContent = String(bindingId || '—');
+        idEl.textContent = displayName;
         var timeEl = document.createElement('time');
         timeEl.className = 'community-author-time';
         timeEl.dateTime = createdAt || '';
@@ -299,9 +343,11 @@
                     del.disabled = false;
                 }
             });
-            head.appendChild(buildAuthorRow(p.bindingId, p.avatarUrl, p.createdAt, del));
+            head.appendChild(
+                buildAuthorRow(p.bindingId, p.avatarUrl, p.createdAt, del, p.authorLabel)
+            );
         } else {
-            head.appendChild(buildAuthorRow(p.bindingId, p.avatarUrl, p.createdAt));
+            head.appendChild(buildAuthorRow(p.bindingId, p.avatarUrl, p.createdAt, null, p.authorLabel));
         }
 
         main.appendChild(head);
@@ -368,7 +414,9 @@
                         }
                     });
                 }
-                item.appendChild(buildAuthorRow(r.bindingId, r.avatarUrl, r.createdAt, replyDelBtn));
+                item.appendChild(
+                    buildAuthorRow(r.bindingId, r.avatarUrl, r.createdAt, replyDelBtn, r.authorLabel)
+                );
                 var replyBody = document.createElement('div');
                 replyBody.className = 'community-reply-body';
                 applyPlainTextWithLinks(replyBody, String(r.content != null ? r.content : ''));

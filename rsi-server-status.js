@@ -173,27 +173,23 @@
         var opts = options || {};
         var localFresh = readLocalCache(false);
         var localStale = readLocalCache(true);
+        var localAny = localFresh || localStale;
+        var skipNetwork = localFresh && !opts.forceNetwork && !opts.revalidate;
 
-        if (localFresh && !opts.forceNetwork) {
-            render(localFresh);
-            return;
-        }
-
-        if (!localFresh && !opts.forceNetwork && localStale) {
-            render(localStale);
-            return;
-        }
-
-        if (!localStale && !opts.silent) {
+        if (localAny && !opts.silent) {
+            render(localAny);
+        } else if (!localAny && !opts.silent) {
             renderLoading();
         }
+
+        if (skipNetwork) return;
 
         try {
             var data = await fetchFromBackend();
             render(data);
         } catch (err) {
-            if (localStale) {
-                render(localStale);
+            if (localAny) {
+                render(localAny);
                 return;
             }
             renderError((err && err.message) || '获取状态失败');
@@ -211,12 +207,11 @@
         gridEl = document.getElementById('rsiServerStatusGrid');
         updatedEl = document.getElementById('rsiServerStatusUpdated');
         if (!gridEl) return;
-        loadStatus();
+        loadStatus({ revalidate: true });
         scheduleRefresh();
         document.addEventListener('visibilitychange', function () {
             if (document.visibilityState !== 'visible') return;
-            if (readLocalCache(false)) return;
-            loadStatus({ silent: true });
+            loadStatus({ revalidate: true, silent: !!readLocalCache(false) });
         });
     }
 

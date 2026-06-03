@@ -531,8 +531,7 @@
         });
         document.addEventListener('visibilitychange', function () {
             if (document.visibilityState !== 'visible') return;
-            if (readLocalCache(false)) return;
-            loadStats({ silent: true });
+            loadStats({ revalidate: true, silent: !!readLocalCache(false) });
         });
     }
 

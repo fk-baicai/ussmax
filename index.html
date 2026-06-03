@@ -214,15 +214,15 @@
     <section class="oopz-bridge-section" id="oopz-bridge-section" aria-label="OOPZ语音">
         <div class="oopz-bridge-wrap">
             <header class="oopz-bridge-head">
-                <div class="oopz-bridge-head-left">
-                    <h2 class="oopz-bridge-title">OOPZ语音</h2>
+                <h2 class="oopz-bridge-title rsi-status-title">OOPZ语音</h2>
+                <div class="oopz-bridge-head-actions">
                     <div class="oopz-bind-head-block">
                         <button type="button" id="oopzBindOpenBtn" class="oopz-bind-head-btn">OOPZ 绑定</button>
                     </div>
-                </div>
-                <div class="oopz-bridge-status" aria-live="polite">
-                    <span id="oopzBridgeStatusDot" class="oopz-bridge-status-dot" aria-hidden="true"></span>
-                    <span id="oopzBridgeStatusText" class="oopz-bridge-status-text">连接中…</span>
+                    <div class="oopz-bridge-status" aria-live="polite">
+                        <span id="oopzBridgeStatusDot" class="oopz-bridge-status-dot" aria-hidden="true"></span>
+                        <span id="oopzBridgeStatusText" class="oopz-bridge-status-text">连接中…</span>
+                    </div>
                 </div>
             </header>
 
@@ -2588,6 +2588,33 @@
             img.dataset.src = remote;
         }
 
+        function bindCommunityAuthorAvatars(root, opts) {
+            if (!root) return;
+            const options = opts || {};
+            const imgs = root.querySelectorAll('.community-author-avatar-img[data-src]');
+            if (!imgs.length) return;
+            if (!window.UssLazyMedia) {
+                imgs.forEach(function (img) {
+                    if (img.dataset.src) {
+                        img.src = img.dataset.src;
+                        img.dataset.loadedSrc = img.dataset.src;
+                    }
+                });
+                return;
+            }
+            const scrollRoot = options.root != null ? options.root : null;
+            const eager = !!options.eager;
+            imgs.forEach(function (img) {
+                if (eager) window.UssLazyMedia.loadNow(img);
+                else {
+                    window.UssLazyMedia.observe(img, {
+                        root: scrollRoot,
+                        rootMargin: options.rootMargin || '200px 0px',
+                    });
+                }
+            });
+        }
+
         function bindCommunityChatAvatars(root, opts) {
             if (!root || !window.UssLazyMedia) return;
             const scroll = getCommunityChatScrollEl();
@@ -2597,14 +2624,10 @@
             const startEager = Math.max(0, lines.length - eagerLast);
             lines.forEach(function (line, idx) {
                 const eager = idx >= startEager;
-                line.querySelectorAll('.community-author-avatar-img[data-src]').forEach(function (img) {
-                    if (eager) window.UssLazyMedia.loadNow(img);
-                    else {
-                        window.UssLazyMedia.observe(img, {
-                            root: scroll,
-                            rootMargin: '180px 0px',
-                        });
-                    }
+                bindCommunityAuthorAvatars(line, {
+                    root: scroll,
+                    rootMargin: '180px 0px',
+                    eager: eager,
                 });
             });
             root.querySelectorAll('.community-chat-img[data-src]').forEach(function (img) {
@@ -2613,12 +2636,14 @@
         }
 
         function bindCommunityChatLineMedia(line, eagerAvatar) {
-            if (!line || !window.UssLazyMedia) return;
-            const scroll = getCommunityChatScrollEl();
-            line.querySelectorAll('.community-author-avatar-img[data-src]').forEach(function (img) {
-                if (eagerAvatar) window.UssLazyMedia.loadNow(img);
-                else window.UssLazyMedia.observe(img, { root: scroll, rootMargin: '180px 0px' });
+            if (!line) return;
+            bindCommunityAuthorAvatars(line, {
+                root: getCommunityChatScrollEl(),
+                rootMargin: '180px 0px',
+                eager: !!eagerAvatar,
             });
+            if (!window.UssLazyMedia) return;
+            const scroll = getCommunityChatScrollEl();
             line.querySelectorAll('.community-chat-img[data-src]').forEach(function (img) {
                 window.UssLazyMedia.observe(img, { root: scroll, rootMargin: '240px 0px' });
             });
@@ -2630,7 +2655,15 @@
             return 'https://robertsspaceindustries.com/en/citizens/' + encodeURIComponent(h);
         }
 
-        function buildCommunityAuthorRow(bindingId, avatarUrl, createdAt, trailingEl, avatarRsiHref, authorLabel) {
+        function buildCommunityAuthorRow(
+            bindingId,
+            avatarUrl,
+            createdAt,
+            trailingEl,
+            avatarRsiHref,
+            authorLabel,
+            eagerAvatar
+        ) {
             const row = document.createElement('div');
             row.className = 'community-author-row';
             const displayName =
@@ -2645,11 +2678,11 @@
             const img = document.createElement('img');
             img.className = 'community-author-avatar-img';
             img.alt = displayName + ' 头像';
-            communityPrepareAvatarImg(img, bindingId, avatarUrl, authorLabel, false);
+            communityPrepareAvatarImg(img, bindingId, avatarUrl, authorLabel, !!eagerAvatar);
             const rsi =
                 authorLabel || String(bindingId || '').trim().toLowerCase() === '__honghou__'
                     ? ''
-                    : typeof avatarRsiHref === 'string'
+                    : typeof avatarRsiHref === 'string' && avatarRsiHref.trim()
                       ? avatarRsiHref.trim()
                       : '';
             if (rsi) {
@@ -3133,7 +3166,17 @@
                 const inner = document.createElement('div');
                 inner.className = 'community-post-compact-inner';
 
-                inner.appendChild(buildCommunityAuthorRow(p.bindingId, p.avatarUrl, p.createdAt));
+                inner.appendChild(
+                    buildCommunityAuthorRow(
+                        p.bindingId,
+                        p.avatarUrl,
+                        p.createdAt,
+                        null,
+                        null,
+                        p.authorLabel,
+                        true
+                    )
+                );
 
                 const content = String(p.content || '').trim();
                 const imgs = Array.isArray(p.images) ? p.images : [];
@@ -3191,6 +3234,7 @@
                 card.appendChild(inner);
                 feed.appendChild(card);
             });
+            bindCommunityAuthorAvatars(feed, { eager: true });
             if (window.UssLazyMedia) {
                 window.UssLazyMedia.observeAll('.community-post-compact-thumb[data-src]', {
                     rootMargin: '200px 0px',

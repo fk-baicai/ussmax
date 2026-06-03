@@ -2507,37 +2507,57 @@ body.home-page-body .community-section {
 }
 
 .oopz-bridge-head {
-    --oopz-head-fs: clamp(22px, 3vw, 30px);
-    --oopz-head-pill-fs: calc(var(--oopz-head-fs) * 0.5);
+    --oopz-head-pill-fs: calc(clamp(22px, 3vw, 30px) * 0.5);
     --oopz-head-pill-py: 0.42em;
     --oopz-head-pill-px: 0.95em;
     display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 12px 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
     margin-bottom: clamp(14px, 2.2vw, 20px);
 }
 
-.oopz-bridge-head-left {
+.oopz-bridge-head-actions {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-end;
-    gap: 10px 14px;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px 10px;
+    width: 100%;
     min-width: 0;
 }
 
 .oopz-bridge-title {
     margin: 0;
-    font-size: var(--oopz-head-fs);
-    font-weight: 600;
-    color: #fff;
-    letter-spacing: 0.04em;
-    line-height: 1;
+}
+
+@media (max-width: 640px) {
+    .oopz-bridge-head {
+        --oopz-head-pill-fs: calc(clamp(18px, 4.8vw, 22px) * 0.46);
+        --oopz-head-pill-py: 0.36em;
+        --oopz-head-pill-px: 0.68em;
+        gap: 8px;
+    }
+
+    .oopz-bridge-head-actions {
+        gap: 6px 8px;
+    }
+
+    .oopz-bind-head-btn,
+    .oopz-bridge-status {
+        max-width: min(72vw, 220px);
+    }
+
+    .oopz-bridge-status-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 }
 
 .oopz-bind-head-btn {
-    flex-shrink: 0;
+    flex-shrink: 1;
+    min-width: 0;
     box-sizing: border-box;
     padding: var(--oopz-head-pill-py) var(--oopz-head-pill-px);
     border-radius: 999px;
@@ -2548,6 +2568,7 @@ body.home-page-body .community-section {
     font-weight: 700;
     letter-spacing: 0.04em;
     line-height: 1.2;
+    white-space: nowrap;
     cursor: pointer;
     transition: background 0.15s ease, border-color 0.15s ease;
 }
@@ -2565,9 +2586,8 @@ body.home-page-body .community-section {
 
 .oopz-bind-head-block {
     display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    align-self: flex-end;
+    justify-content: flex-start;
+    align-items: center;
     min-width: 0;
 }
 
@@ -3023,10 +3043,10 @@ body.oopz-bind-open {
 .oopz-bridge-status {
     display: inline-flex;
     align-items: center;
-    align-self: flex-end;
     box-sizing: border-box;
     gap: 0.55em;
-    margin-left: auto;
+    min-width: 0;
+    flex-shrink: 1;
     padding: var(--oopz-head-pill-py) var(--oopz-head-pill-px);
     border-radius: 999px;
     border: 1px solid rgba(95, 184, 255, 0.28);
