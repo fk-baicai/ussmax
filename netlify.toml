@@ -1,4 +1,4 @@
-﻿# Use when Netlify Base directory = frontend (publish = this folder)
+# Use when Netlify Base directory = frontend (publish = this folder)
 [build]
   publish = "."
 
