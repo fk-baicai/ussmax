@@ -4449,18 +4449,7 @@ body.oopz-bind-open {
 }
 
 /* 聊天 / 发帖：输入框与「发送 + 下拉」同高 */
-.community-chat-compose-row .community-send-split .community-chat-send.primary-btn {
-    height: 40px;
-    min-height: 40px;
-    padding: 0 14px;
-    font-size: 14px;
-    min-width: 64px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-}
-
+.community-chat-compose-row .community-send-split .community-chat-send.primary-btn,
 .community-post-compose-row .community-send-split .community-post-btn--main.primary-btn {
     height: 48px;
     min-height: 48px;
@@ -4471,15 +4460,7 @@ body.oopz-bind-open {
     box-sizing: border-box;
 }
 
-.community-chat-compose-row .community-send-split__more {
-    height: 40px;
-    min-height: 40px;
-    min-width: 36px;
-    padding: 0 8px;
-    align-self: center;
-    box-sizing: border-box;
-}
-
+.community-chat-compose-row .community-send-split__more,
 .community-post-compose-row .community-send-split__more {
     height: 48px;
     min-height: 48px;
@@ -6218,8 +6199,7 @@ a.community-author-avatar-link:focus-visible {
 
 .community-chat-send {
     flex-shrink: 0;
-    min-width: 64px;
-    font-size: 14px;
+    min-width: 100px;
 }
 
 .community-chat-send:disabled {

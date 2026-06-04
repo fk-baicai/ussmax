@@ -107,8 +107,9 @@
         if (phase === 'charging') {
             greenCount = Math.min(5, Math.floor(t / (24 * 60000)));
             for (i = 0; i < 5; i++) {
-                leds.push(i < greenCount);
-                ledDetails.push({ green: i < greenCount, red: false });
+                var isGreenCharge = i < greenCount;
+                leds.push(isGreenCharge);
+                ledDetails.push({ green: isGreenCharge, red: !isGreenCharge });
             }
         } else if (phase === 'discharge') {
             if (dt < INSERT_WINDOW) {
@@ -118,12 +119,12 @@
                     ledDetails.push({ green: true, red: false });
                 }
             } else {
-                var reds = Math.min(5, Math.floor((dt - INSERT_WINDOW) / (12 * 60000)) + 1);
-                greenCount = Math.max(0, 5 - reds);
+                var extinguished = Math.min(5, Math.floor((dt - INSERT_WINDOW) / (12 * 60000)) + 1);
+                greenCount = Math.max(0, 5 - extinguished);
                 for (i = 0; i < 5; i++) {
-                    var isGreen = i < greenCount;
-                    leds.push(isGreen);
-                    ledDetails.push({ green: isGreen, red: !isGreen });
+                    var isGreenDischarge = i < greenCount;
+                    leds.push(isGreenDischarge);
+                    ledDetails.push({ green: isGreenDischarge, red: false });
                 }
             }
         } else {
