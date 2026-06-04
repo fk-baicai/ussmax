@@ -20,6 +20,9 @@
         '</svg>';
 
     function loadAuthSession() {
+        if (window.UssAuthSessionSync && typeof window.UssAuthSessionSync.loadAuthSession === 'function') {
+            return window.UssAuthSessionSync.loadAuthSession();
+        }
         try {
             var raw = sessionStorage.getItem(AUTH_SESSION_KEY);
             if (raw) return JSON.parse(raw);
@@ -31,9 +34,29 @@
         return null;
     }
 
+    function clearAuthSession() {
+        if (window.UssAuthSessionSync && typeof window.UssAuthSessionSync.clearAuthSession === 'function') {
+            window.UssAuthSessionSync.clearAuthSession();
+            return;
+        }
+        try {
+            localStorage.removeItem(AUTH_SESSION_KEY);
+            sessionStorage.removeItem(AUTH_SESSION_KEY);
+        } catch (e) {
+            /* ignore */
+        }
+    }
+
     function isLoggedIn() {
         var s = loadAuthSession();
         return !!(s && s.token);
+    }
+
+    function showSessionGate() {
+        var gate = document.getElementById('checkinGateHint');
+        var main = document.getElementById('checkinHubMain');
+        setPanelHidden(gate, false);
+        setPanelHidden(main, true);
     }
 
     function isLikelyNetworkError(msg) {
@@ -213,6 +236,16 @@
             }
         } catch (e) {
             renderHubCards(FALLBACK_UNITS, null);
+            if (window.UssAuthApi && window.UssAuthApi.isAuthSessionError(e)) {
+                clearAuthSession();
+                showSessionGate();
+                showHubError(
+                    window.UssAuthApi.authSessionExpiredMessage
+                        ? window.UssAuthApi.authSessionExpiredMessage()
+                        : '登录已过期，请重新登录'
+                );
+                return;
+            }
             var msg = isLikelyNetworkError(e && e.message)
                 ? '连不上签到服务（请确认服务已开、API 地址正确）。已显示默认分部入口。'
                 : (e && e.message) || '加载失败，已显示默认分部入口。';
@@ -241,7 +274,12 @@
                 await window.UssAuthApi.me(s.token);
             }
         } catch (e) {
-            /* 会话校验失败仍允许尝试签到接口；卡片已可见 */
+            if (window.UssAuthApi && window.UssAuthApi.isAuthSessionError(e)) {
+                clearAuthSession();
+                showSessionGate();
+                showHubError(window.UssAuthApi.authSessionExpiredMessage());
+                return;
+            }
         }
 
         await refreshHubFromApi();

@@ -250,6 +250,30 @@ body.exec-hangar-body::before {
     animation: exec-insert-glow 1.6s ease-in-out infinite;
 }
 
+.exec-insert-banner[data-state='cooldown'] {
+    letter-spacing: 0.14em;
+    border-color: rgba(255, 120, 40, 0.62);
+    background: linear-gradient(90deg, rgba(72, 28, 4, 0.92), rgba(48, 16, 2, 0.94));
+    color: #ffb870;
+    text-shadow: 0 0 24px rgba(255, 140, 40, 0.65);
+    animation: exec-cooldown-warn-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes exec-cooldown-warn-pulse {
+    0%,
+    100% {
+        box-shadow:
+            0 0 22px rgba(255, 120, 40, 0.22),
+            inset 0 0 24px rgba(255, 100, 20, 0.08);
+    }
+    50% {
+        box-shadow:
+            0 0 40px rgba(255, 140, 50, 0.45),
+            0 0 70px rgba(255, 100, 20, 0.18),
+            inset 0 0 32px rgba(255, 120, 30, 0.12);
+    }
+}
+
 @keyframes exec-insert-glow {
     0%,
     100% {
@@ -982,6 +1006,13 @@ body.exec-hangar-body::before {
     background: linear-gradient(90deg, rgba(8, 44, 30, 0.92), rgba(4, 24, 20, 0.94));
     color: #c6ffe4;
     text-shadow: 0 0 22px rgba(57, 255, 154, 0.62);
+}
+
+.exec-insert-banner[data-state='cooldown'] {
+    border-color: rgba(255, 130, 48, 0.58);
+    background: linear-gradient(90deg, rgba(72, 28, 4, 0.94), rgba(40, 12, 2, 0.96));
+    color: #ffc080;
+    text-shadow: 0 0 22px rgba(255, 140, 40, 0.62);
 }
 
 .exec-insert-text {

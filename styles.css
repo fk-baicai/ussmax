@@ -819,7 +819,7 @@ html.auth-session-cached #navLoginBtn {
     margin-bottom: 1.15rem;
 }
 
-.rsi-field label {
+.rsi-field:not(.rsi-field--float) label {
     position: absolute;
     left: 11px;
     top: -0.42rem;
@@ -829,8 +829,61 @@ html.auth-session-cached #navLoginBtn {
     font-weight: 500;
     letter-spacing: 0.04em;
     color: rgba(160, 200, 225, 0.9);
-    background: linear-gradient(180deg, var(--rsi-surface) 55%, var(--rsi-surface) 100%);
     pointer-events: none;
+}
+
+.rsi-field--float > label,
+.rsi-field--float > .rsi-float-label {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    z-index: 2;
+    margin: 0;
+    padding: 0;
+    font-size: 0.95rem;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    color: rgba(160, 200, 225, 0.48);
+    pointer-events: none;
+    transform: translateY(-50%);
+    transform-origin: left center;
+    transition:
+        opacity 0.18s ease,
+        visibility 0.18s ease,
+        transform 0.18s ease,
+        top 0.18s ease,
+        font-size 0.18s ease,
+        color 0.18s ease;
+}
+
+.rsi-field--float .rsi-input {
+    padding-top: 16px;
+    padding-bottom: 12px;
+}
+
+.rsi-field--float:focus-within:not(.is-filled) > label,
+.rsi-field--float:focus-within:not(.is-filled) > .rsi-float-label,
+.rsi-field--float.is-focused:not(.is-filled) > .rsi-float-label {
+    top: 8px;
+    transform: translateY(0) scale(0.78);
+    transform-origin: left top;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: rgba(160, 200, 225, 0.88);
+}
+
+.rsi-field--float.is-filled > label,
+.rsi-field--float.is-filled > .rsi-float-label,
+.rsi-field--float .rsi-input:not(:placeholder-shown) + label,
+.rsi-field--float .rsi-input:-webkit-autofill + label {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.rsi-field--float.is-filled .rsi-input,
+.rsi-field--float.rsi-field--session.is-filled .rsi-custom-select-trigger {
+    padding-top: 14px;
+    padding-bottom: 11px;
 }
 
 .rsi-input {
@@ -990,6 +1043,102 @@ html.auth-session-cached #navLoginBtn {
     gap: 0.75rem;
     margin: 0.15rem 0 1.15rem;
     flex-wrap: wrap;
+}
+
+.rsi-auth-row--end {
+    justify-content: flex-end;
+}
+
+.rsi-field--session {
+    margin-bottom: 0.85rem;
+}
+
+.rsi-custom-select {
+    position: relative;
+}
+
+.rsi-custom-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    color: #f2f6f9;
+}
+
+.rsi-field--session .rsi-custom-select-trigger,
+.rsi-field--session .rsi-custom-select-value {
+    color: rgba(160, 200, 225, 0.48);
+    font-size: 0.95rem;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+}
+
+.rsi-custom-select-value {
+    flex: 1;
+    min-width: 0;
+}
+
+.rsi-custom-select-caret {
+    flex-shrink: 0;
+    width: 1.45rem;
+    height: 1.45rem;
+    opacity: 0.85;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a8d8e8'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E")
+        center / contain no-repeat;
+    transition: transform 0.18s ease;
+}
+
+.rsi-custom-select.is-open .rsi-custom-select-caret {
+    transform: rotate(180deg);
+}
+
+.rsi-custom-select-menu {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 0.22rem);
+    z-index: 40;
+    margin: 0;
+    padding: 0.28rem 0;
+    list-style: none;
+    border-radius: 6px;
+    border: 1px solid rgba(95, 184, 255, 0.32);
+    background: rgba(8, 18, 28, 0.98);
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.48);
+}
+
+.rsi-custom-select-menu[hidden] {
+    display: none !important;
+}
+
+.rsi-custom-select-option {
+    padding: 0.58rem 0.78rem;
+    font-size: 0.92rem;
+    line-height: 1.35;
+    color: rgba(230, 240, 248, 0.92);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.rsi-custom-select-option:hover,
+.rsi-custom-select-option:focus {
+    background: rgba(95, 184, 255, 0.12);
+    color: #fff;
+    outline: none;
+}
+
+.rsi-custom-select-option.is-selected {
+    background: rgba(95, 184, 255, 0.16);
+    color: #8ad0ff;
+}
+
+.rsi-custom-select.is-open .rsi-custom-select-trigger {
+    border-color: var(--rsi-accent);
+    box-shadow: 0 0 0 1px rgba(95, 184, 255, 0.22);
 }
 
 .rsi-form-hint {

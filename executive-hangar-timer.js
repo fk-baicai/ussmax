@@ -92,7 +92,7 @@
         } else if (t < CHARGE + DISCHARGE) {
             phase = 'discharge';
             phaseEnd = CHARGE + DISCHARGE;
-            phaseLabel = dischargeOffset(t) < INSERT_WINDOW ? '放电中（可插卡）' : '放电中';
+            phaseLabel = '放电中（可插卡）';
         } else {
             phase = 'cooldown';
             phaseLabel = '冷却中';
@@ -135,7 +135,7 @@
             }
         }
 
-        var canInsert = phase === 'discharge' && dt < INSERT_WINDOW;
+        var canInsert = phase === 'discharge';
         var cycleRemainingMs = CYCLE_MS - t;
         var phaseRemainingMs = phaseEnd - t;
         var indicatorRemainingMs = phaseRemainingMs;
@@ -158,8 +158,8 @@
         var nextAccessText;
         var nextAccessLabelText;
         if (canInsert) {
-            nextAccessText = '窗口进行中';
-            nextAccessLabelText = '插卡窗口关闭';
+            nextAccessLabelText = '距插卡窗口关闭';
+            nextAccessText = formatMs(phaseRemainingMs);
         } else {
             nextAccessText = formatMs(nextAccessMs);
             nextAccessLabelText = '距下次插卡窗口';
@@ -190,7 +190,11 @@
             leds: leds,
             ledDetails: ledDetails,
             canInsert: canInsert,
-            canInsertLabel: canInsert ? '可插卡' : '不可插卡',
+            canInsertLabel: canInsert
+                ? '可插卡'
+                : phase === 'cooldown'
+                  ? '警告！机库消杀！'
+                  : '不可插卡',
             nextAccessText: nextAccessText,
             nextAccessLabelText: nextAccessLabelText,
         };
@@ -234,11 +238,7 @@
         var state = computeLocal(data.elapsedMs != null ? Number(data.elapsedMs) : localElapsedMs());
         if (data.phase) state.phase = data.phase;
         if (data.phaseLabel) state.phaseLabel = data.phaseLabel;
-        // 灯态仅由本地 computeLocal 推导，避免 API 缓存/旧后端覆盖导致红灯闪灭
-        if (data.canInsert != null) {
-            state.canInsert = !!data.canInsert;
-            state.canInsertLabel = data.canInsertLabel || (state.canInsert ? '可插卡' : '不可插卡');
-        }
+        // 灯态与插卡状态仅由本地 computeLocal 推导
         if (data.indicatorRemainingText) {
             state.indicatorRemainingText = data.indicatorRemainingText;
             if (data.phase === 'charging' || data.phase === 'discharge') {
@@ -262,7 +262,12 @@
         renderPhaseRail(state.phase);
         renderClock(state.cycleRemainingParts);
 
-        if (insertBanner) insertBanner.setAttribute('data-state', state.canInsert ? 'yes' : 'no');
+        if (insertBanner) {
+            insertBanner.setAttribute(
+                'data-state',
+                state.canInsert ? 'yes' : state.phase === 'cooldown' ? 'cooldown' : 'no',
+            );
+        }
         if (insertText) insertText.textContent = state.canInsertLabel;
         if (phaseRemainLabel) phaseRemainLabel.textContent = state.phaseRemainLabel;
         if (phaseRemainHero) {
@@ -385,9 +390,40 @@
         });
     }
 
+    function getPreviewElapsedMs() {
+        try {
+            var params = new URLSearchParams(window.location.search);
+            var preview = String(params.get('preview') || '').trim().toLowerCase();
+            if (preview === 'cooldown') return 182.5 * 60 * 1000;
+            if (preview === 'discharge') return 150 * 60 * 1000;
+            if (preview === 'charging') return 60 * 60 * 1000;
+            var em = params.get('elapsedMin');
+            if (em != null && em !== '' && Number.isFinite(Number(em))) {
+                return Math.max(0, Number(em)) * 60 * 1000;
+            }
+        } catch (e) {
+            return null;
+        }
+        return null;
+    }
+
+    function applyPreviewAnchor(elapsedMs) {
+        anchorStartTime = Date.now() - modMs(elapsedMs, CYCLE_MS);
+        calibrationOffsetMs = 0;
+        hideError();
+        render(computeLocal(elapsedMs));
+    }
+
     function start() {
         initLeds();
         initPhaseInfoCards();
+        var previewMs = getPreviewElapsedMs();
+        if (previewMs != null) {
+            applyPreviewAnchor(previewMs);
+            if (tickTimer) clearInterval(tickTimer);
+            tickTimer = setInterval(tick, 1000);
+            return;
+        }
         fetchState(true);
         if (tickTimer) clearInterval(tickTimer);
         tickTimer = setInterval(tick, 1000);

@@ -34,6 +34,41 @@
         throw err;
     }
 
+    function parseTokenPayload(token) {
+        if (!token || typeof token !== 'string') return null;
+        var i = token.lastIndexOf('.');
+        if (i <= 0) return null;
+        try {
+            return JSON.parse(atob(token.slice(0, i).replace(/-/g, '+').replace(/_/g, '/')));
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function getTokenExpiresAt(token) {
+        var payload = parseTokenPayload(token);
+        var exp = payload && payload.exp;
+        return exp != null && Number.isFinite(Number(exp)) ? Number(exp) : null;
+    }
+
+    function isTokenExpired(token, skewMs) {
+        var exp = getTokenExpiresAt(token);
+        if (exp == null) return true;
+        var skew = skewMs != null ? Number(skewMs) : 5000;
+        return Date.now() >= exp - skew;
+    }
+
+    function isAuthSessionError(err) {
+        var code =
+            (err && err.code) ||
+            (err && err.httpStatus === 401 ? 'AUTH_S002' : '');
+        return code === 'AUTH_S001' || code === 'AUTH_S002' || code === 'AUTH_S003';
+    }
+
+    function authSessionExpiredMessage() {
+        return '登录已过期，请重新登录';
+    }
+
     async function fetchCheckinBranchUnit(token, branch, year, month) {
         var parts = ['branch=' + encodeURIComponent(branch)];
         if (year != null && month != null) {
@@ -60,6 +95,11 @@
 
     window.UssAuthApi = {
         base: AUTH_API_BASE,
+        parseTokenPayload: parseTokenPayload,
+        getTokenExpiresAt: getTokenExpiresAt,
+        isTokenExpired: isTokenExpired,
+        isAuthSessionError: isAuthSessionError,
+        authSessionExpiredMessage: authSessionExpiredMessage,
 
         setBase: function (url) {
             AUTH_API_BASE = String(url || '').replace(/\/$/, '') || AUTH_API_BASE;
@@ -113,7 +153,7 @@
                 headers: { Authorization: 'Bearer ' + token }
             });
             var data = await parseJson(r);
-            throwIfNotOk(r, data, 'AUTH_S001');
+            throwIfNotOk(r, data, r.status === 401 ? 'AUTH_S002' : 'AUTH_S001');
             return data;
         },
 

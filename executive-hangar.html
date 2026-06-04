@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>行政机库 · USS星巢</title>
-    <meta name="description" content="USS星巢行政机库实时倒计时，185分钟周期内充电、放电、冷却三阶段，放电段首12分钟可插卡，精准掌握 Pyro 行政机库插卡窗口。">
+    <meta name="description" content="USS星巢行政机库实时倒计时，185分钟周期内充电、放电、冷却三阶段，放电段全程可插卡，精准掌握 Pyro 行政机库插卡窗口。">
     <meta name="keywords" content="星际公民,行政机库,Pyro,插卡窗口,倒计时,USS星巢">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Rajdhani:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap">
@@ -126,7 +126,7 @@
             <div class="exec-cycle-track-wrap">
                 <div class="exec-cycle-track">
                     <div class="exec-cycle-seg exec-cycle-seg--charge" style="flex:120" title="充电 120min"></div>
-                    <div class="exec-cycle-seg exec-cycle-seg--discharge" style="flex:60" title="放电 120–180min（前 12min 可插卡）"></div>
+                    <div class="exec-cycle-seg exec-cycle-seg--discharge" style="flex:60" title="放电 120–180min（全程可插卡）"></div>
                     <div class="exec-cycle-seg exec-cycle-seg--cooldown" style="flex:5" title="冷却 5min"></div>
                     <div class="exec-cycle-marker" id="execCycleMarker" aria-hidden="true"></div>
                 </div>
@@ -151,8 +151,8 @@
                         <span class="exec-phase-info-title">放电阶段</span>
                         <span class="exec-phase-info-time">120 – 180 min</span>
                     </span>
-                    <span class="exec-phase-info-desc">120 分起 5 盏全绿，每 12 分钟熄灭 1 盏绿灯，首盏熄灭前（12 分钟）为可插卡窗口。</span>
-                    <span class="exec-phase-info-extra">可插卡：120–132 min · 熄灭节点：132 → 144 → 156 → 168 → 180 min</span>
+                    <span class="exec-phase-info-desc">120 分起 5 盏全绿，每 12 分钟熄灭 1 盏绿灯。全程可插卡。</span>
+                    <span class="exec-phase-info-extra">熄灭节点：132 → 144 → 156 → 168 → 180 min</span>
                 </button>
                 <button type="button" class="exec-phase-info-card" data-phase="cooldown" aria-pressed="false">
                     <span class="exec-phase-info-head">
@@ -160,8 +160,8 @@
                         <span class="exec-phase-info-title">冷却阶段</span>
                         <span class="exec-phase-info-time">180 – 185 min</span>
                     </span>
-                    <span class="exec-phase-info-desc">持续 5 分钟。不可插卡，随后进入新一轮充电。</span>
-                    <span class="exec-phase-info-extra">185 min 整轮结束，自动进入新一轮充电</span>
+                    <span class="exec-phase-info-desc">持续 5 分钟，随后进入新一轮充电。</span>
+                    <span class="exec-phase-info-extra">不可插卡 · 185 min 整轮结束</span>
                 </button>
             </div>
         </section>

@@ -7,6 +7,9 @@
     var AUTH_KEY = 'ussHangzhouAuthSession';
 
     function loadSession() {
+        if (window.UssAuthSessionSync && typeof window.UssAuthSessionSync.loadAuthSession === 'function') {
+            return window.UssAuthSessionSync.loadAuthSession();
+        }
         try {
             var raw = sessionStorage.getItem(AUTH_KEY) || localStorage.getItem(AUTH_KEY);
             if (!raw) return null;

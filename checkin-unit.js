@@ -64,7 +64,23 @@
         }
     }
 
+    function clearAuthSession() {
+        if (window.UssAuthSessionSync && typeof window.UssAuthSessionSync.clearAuthSession === 'function') {
+            window.UssAuthSessionSync.clearAuthSession();
+            return;
+        }
+        try {
+            localStorage.removeItem(AUTH_SESSION_KEY);
+            sessionStorage.removeItem(AUTH_SESSION_KEY);
+        } catch (e) {
+            /* ignore */
+        }
+    }
+
     function loadAuthSession() {
+        if (window.UssAuthSessionSync && typeof window.UssAuthSessionSync.loadAuthSession === 'function') {
+            return window.UssAuthSessionSync.loadAuthSession();
+        }
         try {
             var raw = sessionStorage.getItem(AUTH_SESSION_KEY);
             if (raw) return JSON.parse(raw);
@@ -79,6 +95,22 @@
     function isLoggedIn() {
         var s = loadAuthSession();
         return !!(s && s.token);
+    }
+
+    function authSessionExpiredMessage() {
+        if (window.UssAuthApi && typeof window.UssAuthApi.authSessionExpiredMessage === 'function') {
+            return window.UssAuthApi.authSessionExpiredMessage();
+        }
+        return '登录已过期，请重新登录';
+    }
+
+    function handleAuthSessionLost() {
+        clearAuthSession();
+        var gate = document.getElementById('checkinGateHint');
+        var main = document.getElementById('checkinUnitMain');
+        setPanelHidden(gate, false);
+        setPanelHidden(main, true);
+        showAlert(authSessionExpiredMessage());
     }
 
     function isLikelyNetworkError(msg) {
@@ -809,6 +841,10 @@
             renderMyHistory(Array.isArray(data.myHistoryDates) ? data.myHistoryDates : []);
             applyPrimaryBtnFromSummary(data);
         } catch (e) {
+            if (window.UssAuthApi && window.UssAuthApi.isAuthSessionError(e)) {
+                handleAuthSessionLost();
+                return;
+            }
             renderCalendar(ym.year, ym.month, new Set(), today);
             var ul = document.getElementById('checkinTodayList');
             if (ul) {
@@ -945,6 +981,10 @@
             );
         } catch (e) {
             if (e && e.message && e.message.indexOf('取消') >= 0) return;
+            if (window.UssAuthApi && window.UssAuthApi.isAuthSessionError(e)) {
+                handleAuthSessionLost();
+                return;
+            }
             showAlert((e && e.message) || '人机验证失败');
             return;
         }
@@ -970,6 +1010,10 @@
             );
         } catch (e) {
             var msg = e && e.message ? e.message : '';
+            if (window.UssAuthApi && window.UssAuthApi.isAuthSessionError(e)) {
+                handleAuthSessionLost();
+                return;
+            }
             await loadSummary();
             showAlert(safeUserFacingMessage(msg));
         }

@@ -551,23 +551,47 @@
                     </div>
 
                     <div id="authPanelLogin" class="rsi-auth-panels">
-                        <div class="rsi-field">
+                        <div class="rsi-field rsi-field--float">
+                            <input type="email" class="rsi-input" id="loginEmail" autocomplete="username" placeholder=" " oninput="syncLoginFloatField(this); clearLoginFormHint()">
                             <label for="loginEmail">邮箱</label>
-                            <input type="email" class="rsi-input" id="loginEmail" autocomplete="username" oninput="clearLoginFormHint()">
                         </div>
-                        <div class="rsi-field rsi-field--password">
+                        <div class="rsi-field rsi-field--float rsi-field--password">
+                            <input type="password" class="rsi-input" id="loginPassword" autocomplete="current-password" placeholder=" " oninput="syncLoginFloatField(this); clearLoginFormHint()">
                             <label for="loginPassword">密码</label>
-                            <input type="password" class="rsi-input" id="loginPassword" autocomplete="current-password" oninput="clearLoginFormHint()">
                             <button type="button" class="rsi-pw-toggle" id="loginPwToggle" onclick="togglePasswordField('loginPassword', 'loginPwToggle')" aria-label="显示或隐藏密码">
                                 <span class="rsi-pw-toggle-icon" aria-hidden="true"><svg class="rsi-pw-icon rsi-pw-icon--show" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 6a6 6 0 1 1 0 12 6 6 0 0 1 0-12m0-4C6.5 2 1.73 7.11 1 12c.73 4.89 5.5 10 11 10s10.27-5.11 11-10C21.27 7.11 17.5 2 12 2m0 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg><svg class="rsi-pw-icon rsi-pw-icon--hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" hidden aria-hidden="true"><path d="M2.28 3.51 1 4.79l4.37 4.37C3.61 10.28 2.12 11.09 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l2.92 2.92L21 20.73 22.27 19.5 3.51 2.28M12 17c-2.76 0-5-2.24-5-5 0-.65.13-1.26.36-1.83l1.63 1.63c.17.58.68 1 1.31 1 1.1 0 2-.9 2-2 0-.63-.42-1.14-1-1.31l1.63 1.63c.57-.23 1.18-.36 1.83-.36 2.76 0 5 2.24 5 5 0 .79-.2 1.53-.53 2.2l1.46 1.46A9.9 9.9 0 0 0 12 17m6.24-3.59-1.88-1.88a2.98 2.98 0 0 0 .05-.41 3 3 0 0 0-3-3c-.14 0-.28.02-.41.05L11.41 7.3A4.98 4.98 0 0 1 12 7c2.76 0 5 2.24 5 5 0 .7-.15 1.36-.41 1.97z"/></svg></span>
                             </button>
                         </div>
                         <p id="loginFormHint" class="rsi-form-hint rsi-form-hint--error" hidden></p>
-                        <div class="rsi-auth-row">
-                            <label class="rsi-check">
-                                <input type="checkbox" id="rememberMe" checked>
-                                <span>记住我</span>
-                            </label>
+                        <div class="rsi-field rsi-field--session" id="loginSessionDaysField">
+                            <div class="rsi-custom-select" id="loginSessionDaysWrap">
+                                <input type="hidden" id="loginSessionDays" value="7">
+                                <button
+                                    type="button"
+                                    class="rsi-input rsi-custom-select-trigger"
+                                    id="loginSessionDaysTrigger"
+                                    aria-haspopup="listbox"
+                                    aria-expanded="false"
+                                    aria-labelledby="loginSessionDaysValue"
+                                >
+                                    <span class="rsi-custom-select-value" id="loginSessionDaysValue">保持登录 - 7 Sky</span>
+                                    <span class="rsi-custom-select-caret" aria-hidden="true"></span>
+                                </button>
+                                <ul
+                                    class="rsi-custom-select-menu"
+                                    id="loginSessionDaysMenu"
+                                    role="listbox"
+                                    aria-label="保持登录时长"
+                                    hidden
+                                >
+                                    <li class="rsi-custom-select-option" role="option" data-value="0" tabindex="-1">24 hour</li>
+                                    <li class="rsi-custom-select-option is-selected" role="option" data-value="7" aria-selected="true" tabindex="-1">7 Sky</li>
+                                    <li class="rsi-custom-select-option" role="option" data-value="30" tabindex="-1">30 Sky</li>
+                                    <li class="rsi-custom-select-option" role="option" data-value="365" tabindex="-1">1Year</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="rsi-auth-row rsi-auth-row--end">
                             <button type="button" class="rsi-auth-link rsi-auth-link--small" onclick="openForgotPasswordDialog()">忘记密码？</button>
                         </div>
                         <button type="button" id="loginSubmitBtn" class="rsi-submit-btn" onclick="submitLogin()">登录</button>
@@ -838,6 +862,7 @@
             clearLoginFormHint();
             clearRegisterFormHint();
             refreshLoginDrawerView();
+            syncLoginFloatFields();
             syncOverlay();
             if (isLoggedIn()) {
                 if (hydrateProfileCacheIfNeeded()) {
@@ -1026,6 +1051,9 @@
         }
 
         function loadAuthSession() {
+            if (window.UssAuthSessionSync && typeof window.UssAuthSessionSync.loadAuthSession === 'function') {
+                return window.UssAuthSessionSync.loadAuthSession();
+            }
             try {
                 let raw = sessionStorage.getItem(AUTH_SESSION_KEY);
                 if (raw) return JSON.parse(raw);
@@ -1037,8 +1065,12 @@
             return null;
         }
 
-        // remember: true → localStorage（长期）；false → sessionStorage（关标签页后需重登）。省略则保持当前存储位置（供 validateAuthSession 刷新 token 用）。
+        // remember: true → localStorage；false → sessionStorage（「一次」登录）。省略则保持当前存储位置。
         function saveAuthSession(data, remember) {
+            if (window.UssAuthSessionSync && typeof window.UssAuthSessionSync.saveAuthSession === 'function') {
+                window.UssAuthSessionSync.saveAuthSession(data, remember);
+                return;
+            }
             if (remember === undefined) {
                 remember = !authSessionLivesInSessionStorage();
             }
@@ -1057,12 +1089,108 @@
         }
 
         function clearAuthSession() {
+            if (window.UssAuthSessionSync && typeof window.UssAuthSessionSync.clearAuthSession === 'function') {
+                window.UssAuthSessionSync.clearAuthSession();
+                return;
+            }
             try {
                 localStorage.removeItem(AUTH_SESSION_KEY);
             } catch (e) { /* ignore */ }
             try {
                 sessionStorage.removeItem(AUTH_SESSION_KEY);
             } catch (e) { /* ignore */ }
+        }
+
+        function syncLoginFloatField(input) {
+            if (!input || !input.parentElement) return;
+            input.parentElement.classList.toggle('is-filled', !!String(input.value || '').trim());
+        }
+
+        function syncLoginFloatFields() {
+            syncLoginFloatField(document.getElementById('loginEmail'));
+            syncLoginFloatField(document.getElementById('loginPassword'));
+        }
+
+        function getLoginSessionDays() {
+            const el = document.getElementById('loginSessionDays');
+            if (!el) return 7;
+            const n = Number(el.value);
+            if (n === 0 || n === 7 || n === 30 || n === 365) return n;
+            return 7;
+        }
+
+        const LOGIN_SESSION_LABELS = { '0': '24 hour', '7': '7 Sky', '30': '30 Sky', '365': '1Year' };
+
+        function formatSessionSelectText(val) {
+            const label = LOGIN_SESSION_LABELS[String(val)];
+            return label ? '保持登录 - ' + label : '保持登录';
+        }
+
+        function initLoginSessionSelect() {
+            const wrap = document.getElementById('loginSessionDaysWrap');
+            if (!wrap || wrap.dataset.wired === '1') return;
+            wrap.dataset.wired = '1';
+            const hidden = document.getElementById('loginSessionDays');
+            const trigger = document.getElementById('loginSessionDaysTrigger');
+            const menu = document.getElementById('loginSessionDaysMenu');
+            const valueEl = document.getElementById('loginSessionDaysValue');
+            if (!hidden || !trigger || !menu || !valueEl) return;
+
+            function setValue(val) {
+                const v = String(val);
+                if (!LOGIN_SESSION_LABELS[v]) return;
+                hidden.value = v;
+                valueEl.textContent = formatSessionSelectText(v);
+                menu.querySelectorAll('.rsi-custom-select-option').forEach(function (opt) {
+                    const on = opt.getAttribute('data-value') === v;
+                    opt.classList.toggle('is-selected', on);
+                    opt.setAttribute('aria-selected', on ? 'true' : 'false');
+                });
+            }
+
+            function closeMenu() {
+                menu.hidden = true;
+                trigger.setAttribute('aria-expanded', 'false');
+                wrap.classList.remove('is-open');
+            }
+
+            function openMenu() {
+                menu.hidden = false;
+                trigger.setAttribute('aria-expanded', 'true');
+                wrap.classList.add('is-open');
+            }
+
+            valueEl.textContent = formatSessionSelectText(hidden.value);
+
+            trigger.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (wrap.classList.contains('is-open')) closeMenu();
+                else openMenu();
+            });
+
+            menu.querySelectorAll('.rsi-custom-select-option').forEach(function (opt) {
+                opt.addEventListener('click', function () {
+                    setValue(opt.getAttribute('data-value'));
+                    closeMenu();
+                });
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!wrap.contains(e.target)) closeMenu();
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && wrap.classList.contains('is-open')) {
+                    closeMenu();
+                    trigger.focus();
+                }
+            });
+        }
+
+        function handleAuthSessionExpired() {
+            clearAuthSession();
+            refreshNavLoginState();
+            refreshLoginDrawerView();
         }
 
         const AUTH_BUTTON_FEEDBACK_MS = 1600;
@@ -1279,7 +1407,15 @@
         }
 
         function saveAuthSessionFromUser(token, user, remember, prev) {
-            const payload = authSessionPayloadFromUser(token, user, prev || loadAuthSession() || {});
+            const basePrev = prev || loadAuthSession() || {};
+            const payload = authSessionPayloadFromUser(token, user, basePrev);
+            if (basePrev.sessionDays != null) payload.sessionDays = basePrev.sessionDays;
+            if (basePrev.expiresAt != null) {
+                payload.expiresAt = basePrev.expiresAt;
+            } else if (window.UssAuthApi && typeof window.UssAuthApi.getTokenExpiresAt === 'function') {
+                const exp = window.UssAuthApi.getTokenExpiresAt(token);
+                if (exp != null) payload.expiresAt = exp;
+            }
             const useRemember =
                 remember !== undefined
                     ? remember
@@ -1416,29 +1552,34 @@
         async function validateAuthSession() {
             const s = loadAuthSession();
             if (!s || !s.token) return;
+            const onAuthUi = function () {
+                refreshNavLoginState();
+                refreshLoginDrawerView();
+            };
             try {
                 if (window.UssAuthSessionSync && typeof window.UssAuthSessionSync.refreshAuthSessionFromServerWithRetry === 'function') {
                     await window.UssAuthSessionSync.refreshAuthSessionFromServerWithRetry({
-                        onUpdated: function () {
-                            refreshNavLoginState();
-                            refreshLoginDrawerView();
-                        },
+                        onUpdated: onAuthUi,
+                        onSessionExpired: onAuthUi,
                     });
                     return;
                 }
                 if (window.UssAuthSessionSync && typeof window.UssAuthSessionSync.refreshAuthSessionFromServer === 'function') {
                     await window.UssAuthSessionSync.refreshAuthSessionFromServer({
-                        onUpdated: function () {
-                            refreshNavLoginState();
-                            refreshLoginDrawerView();
-                        },
+                        onUpdated: onAuthUi,
+                        onSessionExpired: onAuthUi,
                     });
                     return;
                 }
                 const me = await window.UssAuthApi.me(s.token);
                 saveAuthSessionFromUser(s.token, me, undefined, s);
             } catch (e) {
-                clearAuthSession();
+                if (window.UssAuthApi && window.UssAuthApi.isAuthSessionError(e)) {
+                    handleAuthSessionExpired();
+                } else {
+                    clearAuthSession();
+                    onAuthUi();
+                }
             }
         }
 
@@ -4955,6 +5096,7 @@
                     bindingId,
                     email,
                     password,
+                    sessionDays: 7,
                     rsiProfile: rsiProfile || undefined,
                 });
                 const loginAt = new Date().toISOString();
@@ -4963,6 +5105,8 @@
                     bindingId: res.user.bindingId,
                     email: res.user.email,
                     loginAt,
+                    sessionDays: res.sessionDays != null ? res.sessionDays : 7,
+                    expiresAt: res.expiresAt != null ? res.expiresAt : (window.UssAuthApi.getTokenExpiresAt ? window.UssAuthApi.getTokenExpiresAt(res.token) : undefined),
                     avatarUrl: res.user.avatarUrl || null,
                     rsiProfileHandle: res.user.rsiProfileHandle || null,
                     rsiRankIconUrl: res.user.rsiRankIconUrl || null,
@@ -5016,7 +5160,8 @@
 
             try {
                 clearLoginFormHint();
-                const res = await window.UssAuthApi.login({ email, password });
+                const sessionDays = getLoginSessionDays();
+                const res = await window.UssAuthApi.login({ email, password, sessionDays });
                 const elapsed = Date.now() - t0;
                 const waitMore = Math.max(0, LOGIN_MIN_LOADING_MS - elapsed);
                 if (waitMore > 0) {
@@ -5025,13 +5170,21 @@
                     });
                 }
 
-                const rememberEl = document.getElementById('rememberMe');
-                const remember = rememberEl ? rememberEl.checked : true;
+                const remember = sessionDays !== 0;
                 saveAuthSessionFromUser(
                     res.token,
                     res.user,
                     remember,
-                    { loginAt: new Date().toISOString() }
+                    {
+                        loginAt: new Date().toISOString(),
+                        sessionDays: res.sessionDays != null ? res.sessionDays : sessionDays,
+                        expiresAt:
+                            res.expiresAt != null
+                                ? res.expiresAt
+                                : window.UssAuthApi.getTokenExpiresAt
+                                  ? window.UssAuthApi.getTokenExpiresAt(res.token)
+                                  : undefined,
+                    }
                 );
                 refreshNavLoginState();
                 loadCommunityChatFull();
@@ -5075,6 +5228,8 @@
         }
 
         initCommunityBoard();
+        initLoginSessionSelect();
+        syncLoginFloatFields();
         validateAuthSession().finally(bootHomeAfterAuth);
     </script>
     <script defer src="oopz-bind.js"></script>

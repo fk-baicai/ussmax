@@ -6,15 +6,45 @@
 
     var AUTH_SESSION_KEY = 'ussHangzhouAuthSession';
 
+    function clearAuthSession() {
+        try {
+            localStorage.removeItem(AUTH_SESSION_KEY);
+        } catch (e) {
+            /* ignore */
+        }
+        try {
+            sessionStorage.removeItem(AUTH_SESSION_KEY);
+        } catch (e) {
+            /* ignore */
+        }
+    }
+
+    function isAuthSessionExpired(sess) {
+        if (!sess || !sess.token) return true;
+        if (global.UssAuthApi && typeof global.UssAuthApi.isTokenExpired === 'function') {
+            return global.UssAuthApi.isTokenExpired(sess.token);
+        }
+        if (sess.expiresAt != null && Number.isFinite(Number(sess.expiresAt))) {
+            return Date.now() >= Number(sess.expiresAt);
+        }
+        return false;
+    }
+
     function loadAuthSession() {
+        var sess = null;
         try {
             var raw = sessionStorage.getItem(AUTH_SESSION_KEY);
             if (!raw) raw = localStorage.getItem(AUTH_SESSION_KEY);
             if (!raw) return null;
-            return JSON.parse(raw);
+            sess = JSON.parse(raw);
         } catch (e) {
             return null;
         }
+        if (isAuthSessionExpired(sess)) {
+            clearAuthSession();
+            return null;
+        }
+        return sess;
     }
 
     function saveAuthSession(payload, remember) {
@@ -129,11 +159,22 @@
         if (cached) {
             prev = Object.assign({}, cached, prev);
         }
+        var tokenExpiresAt =
+            global.UssAuthApi && typeof global.UssAuthApi.getTokenExpiresAt === 'function'
+                ? global.UssAuthApi.getTokenExpiresAt(token)
+                : null;
         var merged = {
             token: token,
             bindingId: user.bindingId != null ? user.bindingId : prev.bindingId,
             email: user.email != null ? user.email : prev.email,
             loginAt: prev.loginAt || new Date().toISOString(),
+            sessionDays: prev.sessionDays !== undefined ? prev.sessionDays : undefined,
+            expiresAt:
+                prev.expiresAt != null
+                    ? prev.expiresAt
+                    : tokenExpiresAt != null
+                      ? tokenExpiresAt
+                      : undefined,
             avatarUrl: mergeProfileField(user.avatarUrl, prev.avatarUrl),
             rsiCitizenAvatarSourceUrl: mergeProfileField(
                 user.rsiCitizenAvatarSourceUrl,
@@ -189,6 +230,16 @@
         try {
             me = await global.UssAuthApi.me(sess.token);
         } catch (eMe) {
+            if (global.UssAuthApi && global.UssAuthApi.isAuthSessionError(eMe)) {
+                clearAuthSession();
+                if (typeof options.onSessionExpired === 'function') {
+                    try {
+                        options.onSessionExpired(eMe);
+                    } catch (eCb) {
+                        /* ignore */
+                    }
+                }
+            }
             return null;
         }
 
@@ -211,8 +262,10 @@
         var maxAttempts = options.maxAttempts != null ? options.maxAttempts : 3;
         var baseDelayMs = options.baseDelayMs != null ? options.baseDelayMs : 800;
         for (var attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            if (!loadAuthSession()) return null;
             var merged = await refreshAuthSessionFromServer(options);
             if (merged) return merged;
+            if (!loadAuthSession()) return null;
             if (attempt < maxAttempts) {
                 await sleep(Math.min(8000, baseDelayMs * Math.pow(2, attempt - 1)));
             }
@@ -223,6 +276,8 @@
     global.UssAuthSessionSync = {
         AUTH_SESSION_KEY: AUTH_SESSION_KEY,
         PROFILE_CACHE_KEY: PROFILE_CACHE_KEY,
+        clearAuthSession: clearAuthSession,
+        isAuthSessionExpired: isAuthSessionExpired,
         loadAuthSession: loadAuthSession,
         saveAuthSession: saveAuthSession,
         mergeUserIntoSession: mergeUserIntoSession,
