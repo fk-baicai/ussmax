@@ -224,9 +224,9 @@
             if (!nodes[i]) continue;
             var d = details ? details[i] : null;
             var on = d ? !!d.green : !!(leds && leds[i]);
-            var red = d ? !!d.red : false;
+            var red = d ? !!d.red && !on : false;
             nodes[i].classList.toggle('is-on', on);
-            nodes[i].classList.toggle('is-red', red && !on);
+            nodes[i].classList.toggle('is-red', red);
         }
     }
 
@@ -234,9 +234,7 @@
         var state = computeLocal(data.elapsedMs != null ? Number(data.elapsedMs) : localElapsedMs());
         if (data.phase) state.phase = data.phase;
         if (data.phaseLabel) state.phaseLabel = data.phaseLabel;
-        if (data.ledDetails) state.ledDetails = data.ledDetails;
-        if (data.leds) state.leds = data.leds;
-        if (data.greenCount != null) state.greenCount = data.greenCount;
+        // 灯态仅由本地 computeLocal 推导，避免 API 缓存/旧后端覆盖导致红灯闪灭
         if (data.canInsert != null) {
             state.canInsert = !!data.canInsert;
             state.canInsertLabel = data.canInsertLabel || (state.canInsert ? '可插卡' : '不可插卡');
