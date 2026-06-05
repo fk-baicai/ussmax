@@ -689,29 +689,29 @@
     </div>
 
     <div id="accountSettingsBackdrop" class="account-settings-backdrop" hidden>
-        <div class="account-settings-panel" role="dialog" aria-modal="true" aria-labelledby="accountSettingsTitle">
+        <div class="account-settings-panel rsi-auth-card" role="dialog" aria-modal="true" aria-labelledby="accountSettingsTitle">
             <div class="account-settings-head">
-                <h3 id="accountSettingsTitle">修改密码</h3>
+                <h3 id="accountSettingsTitle" class="rsi-auth-title">修改密码</h3>
                 <button type="button" class="account-settings-close" onclick="closeAccountSettings()" aria-label="关闭">×</button>
             </div>
-            <p class="account-settings-hint">请先输入当前密码，再设置新密码（需输入两次确认）。</p>
-            <div class="rsi-field rsi-field--password">
+            <p class="rsi-auth-sub account-settings-sub">请先输入当前密码，再设置新密码（需输入两次确认）。</p>
+            <div class="rsi-field rsi-field--float rsi-field--password">
+                <input type="password" class="rsi-input" id="settingsCurrentPassword" autocomplete="current-password" placeholder=" " oninput="syncAuthFloatField(this); clearAccountSettingsHint()">
                 <label for="settingsCurrentPassword">当前密码</label>
-                <input type="password" class="rsi-input" id="settingsCurrentPassword" autocomplete="current-password" oninput="clearAccountSettingsHint()">
                 <button type="button" class="rsi-pw-toggle" id="settingsCurrentPwToggle" onclick="togglePasswordField('settingsCurrentPassword', 'settingsCurrentPwToggle')" aria-label="显示或隐藏密码">
                     <span class="rsi-pw-toggle-icon" aria-hidden="true"><svg class="rsi-pw-icon rsi-pw-icon--show" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 6a6 6 0 1 1 0 12 6 6 0 0 1 0-12m0-4C6.5 2 1.73 7.11 1 12c.73 4.89 5.5 10 11 10s10.27-5.11 11-10C21.27 7.11 17.5 2 12 2m0 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg><svg class="rsi-pw-icon rsi-pw-icon--hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" hidden aria-hidden="true"><path d="M2.28 3.51 1 4.79l4.37 4.37C3.61 10.28 2.12 11.09 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l2.92 2.92L21 20.73 22.27 19.5 3.51 2.28M12 17c-2.76 0-5-2.24-5-5 0-.65.13-1.26.36-1.83l1.63 1.63c.17.58.68 1 1.31 1 1.1 0 2-.9 2-2 0-.63-.42-1.14-1-1.31l1.63 1.63c.57-.23 1.18-.36 1.83-.36 2.76 0 5 2.24 5 5 0 .79-.2 1.53-.53 2.2l1.46 1.46A9.9 9.9 0 0 0 12 17m6.24-3.59-1.88-1.88a2.98 2.98 0 0 0 .05-.41 3 3 0 0 0-3-3c-.14 0-.28.02-.41.05L11.41 7.3A4.98 4.98 0 0 1 12 7c2.76 0 5 2.24 5 5 0 .7-.15 1.36-.41 1.97z"/></svg></span>
                 </button>
             </div>
-            <div class="rsi-field rsi-field--password">
+            <div class="rsi-field rsi-field--float rsi-field--password">
+                <input type="password" class="rsi-input" id="settingsNewPassword" autocomplete="new-password" placeholder=" " oninput="syncAuthFloatField(this); clearAccountSettingsHint()">
                 <label for="settingsNewPassword">新密码</label>
-                <input type="password" class="rsi-input" id="settingsNewPassword" autocomplete="new-password" oninput="clearAccountSettingsHint()">
                 <button type="button" class="rsi-pw-toggle" id="settingsNewPwToggle" onclick="togglePasswordField('settingsNewPassword', 'settingsNewPwToggle')" aria-label="显示或隐藏密码">
                     <span class="rsi-pw-toggle-icon" aria-hidden="true"><svg class="rsi-pw-icon rsi-pw-icon--show" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 6a6 6 0 1 1 0 12 6 6 0 0 1 0-12m0-4C6.5 2 1.73 7.11 1 12c.73 4.89 5.5 10 11 10s10.27-5.11 11-10C21.27 7.11 17.5 2 12 2m0 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg><svg class="rsi-pw-icon rsi-pw-icon--hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" hidden aria-hidden="true"><path d="M2.28 3.51 1 4.79l4.37 4.37C3.61 10.28 2.12 11.09 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l2.92 2.92L21 20.73 22.27 19.5 3.51 2.28M12 17c-2.76 0-5-2.24-5-5 0-.65.13-1.26.36-1.83l1.63 1.63c.17.58.68 1 1.31 1 1.1 0 2-.9 2-2 0-.63-.42-1.14-1-1.31l1.63 1.63c.57-.23 1.18-.36 1.83-.36 2.76 0 5 2.24 5 5 0 .79-.2 1.53-.53 2.2l1.46 1.46A9.9 9.9 0 0 0 12 17m6.24-3.59-1.88-1.88a2.98 2.98 0 0 0 .05-.41 3 3 0 0 0-3-3c-.14 0-.28.02-.41.05L11.41 7.3A4.98 4.98 0 0 1 12 7c2.76 0 5 2.24 5 5 0 .7-.15 1.36-.41 1.97z"/></svg></span>
                 </button>
             </div>
-            <div class="rsi-field rsi-field--password">
+            <div class="rsi-field rsi-field--float rsi-field--password">
+                <input type="password" class="rsi-input" id="settingsConfirmPassword" autocomplete="new-password" placeholder=" " oninput="syncAuthFloatField(this); clearAccountSettingsHint()">
                 <label for="settingsConfirmPassword">确认新密码</label>
-                <input type="password" class="rsi-input" id="settingsConfirmPassword" autocomplete="new-password" oninput="clearAccountSettingsHint()">
                 <button type="button" class="rsi-pw-toggle" id="settingsConfirmPwToggle" onclick="togglePasswordField('settingsConfirmPassword', 'settingsConfirmPwToggle')" aria-label="显示或隐藏密码">
                     <span class="rsi-pw-toggle-icon" aria-hidden="true"><svg class="rsi-pw-icon rsi-pw-icon--show" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 6a6 6 0 1 1 0 12 6 6 0 0 1 0-12m0-4C6.5 2 1.73 7.11 1 12c.73 4.89 5.5 10 11 10s10.27-5.11 11-10C21.27 7.11 17.5 2 12 2m0 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg><svg class="rsi-pw-icon rsi-pw-icon--hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" hidden aria-hidden="true"><path d="M2.28 3.51 1 4.79l4.37 4.37C3.61 10.28 2.12 11.09 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l2.92 2.92L21 20.73 22.27 19.5 3.51 2.28M12 17c-2.76 0-5-2.24-5-5 0-.65.13-1.26.36-1.83l1.63 1.63c.17.58.68 1 1.31 1 1.1 0 2-.9 2-2 0-.63-.42-1.14-1-1.31l1.63 1.63c.57-.23 1.18-.36 1.83-.36 2.76 0 5 2.24 5 5 0 .79-.2 1.53-.53 2.2l1.46 1.46A9.9 9.9 0 0 0 12 17m6.24-3.59-1.88-1.88a2.98 2.98 0 0 0 .05-.41 3 3 0 0 0-3-3c-.14 0-.28.02-.41.05L11.41 7.3A4.98 4.98 0 0 1 12 7c2.76 0 5 2.24 5 5 0 .7-.15 1.36-.41 1.97z"/></svg></span>
                 </button>
@@ -1137,6 +1137,9 @@
                 'forgotPwCode',
                 'forgotPwNewPassword',
                 'forgotPwConfirmPassword',
+                'settingsCurrentPassword',
+                'settingsNewPassword',
+                'settingsConfirmPassword',
             ].forEach(function (id) {
                 var el = document.getElementById(id);
                 if (el) syncAuthFloatField(el);
@@ -1306,6 +1309,7 @@
             ['settingsCurrentPwToggle', 'settingsNewPwToggle', 'settingsConfirmPwToggle'].forEach(function (id) {
                 setPasswordToggleIcon(document.getElementById(id), false);
             });
+            syncAuthFloatFields();
             const submit = document.getElementById('settingsPasswordSubmitBtn');
             if (submit) {
                 submit.disabled = false;

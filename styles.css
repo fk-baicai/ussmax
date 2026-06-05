@@ -1018,8 +1018,8 @@ html.auth-session-cached #navLoginBtn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 1.625rem;
-    height: 1.625rem;
+    width: 1rem;
+    height: 1rem;
     line-height: 0;
     font-size: 0;
 }
@@ -1411,12 +1411,19 @@ html.auth-session-cached #navLoginBtn {
 
 .account-settings-panel {
     width: min(100%, 22rem);
-    padding: 1.25rem 1.2rem 1.35rem;
+    padding: 1.35rem 1.25rem 1.5rem;
     border-radius: 10px;
-    border: 1px solid rgba(95, 184, 255, 0.22);
-    background: linear-gradient(165deg, #0c151c 0%, #101f2c 50%, #0a1218 100%);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
     color: #e8eef3;
+}
+
+.account-settings-panel.rsi-auth-card,
+.forgot-password-panel.rsi-auth-card {
+    --rsi-accent: #5fb8ff;
+    --rsi-accent-dim: rgba(95, 184, 255, 0.45);
+    --rsi-surface: #12202b;
+    background: var(--rsi-surface);
+    border: 1px solid rgba(95, 184, 255, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 12px 40px rgba(0, 0, 0, 0.35);
 }
 
 .account-settings-head {
@@ -1424,14 +1431,11 @@ html.auth-session-cached #navLoginBtn {
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    margin-bottom: 0.65rem;
+    margin-bottom: 0.35rem;
 }
 
-.account-settings-head h3 {
-    margin: 0;
-    font-size: 1.05rem;
-    font-weight: 600;
-    color: #fff;
+.account-settings-head .rsi-auth-title {
+    margin-bottom: 0;
 }
 
 .account-settings-close {
@@ -1448,15 +1452,12 @@ html.auth-session-cached #navLoginBtn {
     color: #b8e4ff;
 }
 
-.account-settings-hint {
-    margin: 0 0 1rem;
-    font-size: 0.82rem;
-    line-height: 1.45;
-    color: rgba(200, 220, 235, 0.72);
+.account-settings-sub {
+    margin: 0 0 1.15rem;
 }
 
 .account-settings-panel .rsi-field {
-    margin-bottom: 0.85rem;
+    margin-bottom: 1.15rem;
 }
 
 .account-settings-actions {
@@ -1470,12 +1471,6 @@ html.auth-session-cached #navLoginBtn {
 .forgot-password-panel {
     width: min(100%, 24rem);
     padding: 1.35rem 1.25rem 1.5rem;
-}
-
-.forgot-password-panel.rsi-auth-card {
-    background: var(--rsi-surface, #12202b);
-    border: 1px solid rgba(95, 184, 255, 0.18);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 12px 40px rgba(0, 0, 0, 0.35);
 }
 
 .forgot-password-head {
