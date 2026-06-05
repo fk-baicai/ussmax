@@ -5078,13 +5078,22 @@
 
             try {
                 clearRegisterFormHint();
-                setRegisterFormHint('正在通过服务端验证 RSI 资料，请稍候…', true);
-                const res = await window.UssAuthApi.register({
-                    bindingId,
-                    email,
-                    password,
-                    sessionDays: 7,
-                });
+                setRegisterFormHint('正在提交注册，请稍候…', true);
+                const res = await window.UssAuthApi.register(
+                    {
+                        bindingId,
+                        email,
+                        password,
+                        sessionDays: 7,
+                    },
+                    {
+                        onProgress: function (p) {
+                            if (p && p.message) {
+                                setRegisterFormHint(p.message, true);
+                            }
+                        },
+                    }
+                );
                 const loginAt = new Date().toISOString();
                 saveAuthSession({
                     token: res.token,

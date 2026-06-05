@@ -15,6 +15,12 @@
         return String(base || AUTH_API_BASE).replace(/\/$/, '') + path;
     }
 
+    function sleep(ms) {
+        return new Promise(function (resolve) {
+            setTimeout(resolve, ms);
+        });
+    }
+
     function isFetchNetworkFailure(err) {
         if (!err) return false;
         if (err.name === 'AbortError' || err.name === 'TypeError') return true;
@@ -142,13 +148,16 @@
             return joinUrl('/community-uploads/' + m[1] + '-thumb.jpg');
         },
 
-        async register(body) {
+        async register(body, opts) {
+            opts = opts || {};
+            var onProgress = typeof opts.onProgress === 'function' ? opts.onProgress : null;
+            var pollMaxMs = opts.pollMaxMs != null ? Number(opts.pollMaxMs) : 300000;
             var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
             var timer = null;
             if (controller) {
                 timer = setTimeout(function () {
                     controller.abort();
-                }, 180000);
+                }, pollMaxMs + 15000);
             }
             var bases = [];
             var regBase =
@@ -164,6 +173,60 @@
             }
             if (!bases.length) bases.push(mainBase);
 
+            function reportProgress(payload) {
+                if (onProgress && payload) onProgress(payload);
+            }
+
+            async function pollRegisterJob(base, jobId, pollMs, message) {
+                var deadline = Date.now() + pollMaxMs;
+                var interval = Math.max(1000, Number(pollMs) || 2000);
+                reportProgress({ stage: 'pending', message: message || '正在处理注册，请稍候…' });
+                while (Date.now() < deadline) {
+                    if (controller && controller.signal && controller.signal.aborted) {
+                        var abortErr = new Error('错误代码：REG_P001');
+                        abortErr.code = 'REG_P001';
+                        throw abortErr;
+                    }
+                    await sleep(interval);
+                    var sr = await fetch(joinUrlWithBase(base, '/api/register/status/' + encodeURIComponent(jobId)), {
+                        signal: controller ? controller.signal : undefined,
+                    });
+                    var statusData = await parseJson(sr);
+                    if (sr.status === 404) {
+                        var expiredErr = new Error('错误代码：REG_P002');
+                        expiredErr.code = 'REG_P002';
+                        throw expiredErr;
+                    }
+                    if (!sr.ok && statusData && statusData.code) {
+                        throwIfNotOk(sr, statusData, statusData.code);
+                    }
+                    if (statusData.message || statusData.stage) {
+                        reportProgress({
+                            stage: statusData.stage || 'pending',
+                            message: statusData.message || '',
+                        });
+                    }
+                    if (statusData.status === 'success') {
+                        return {
+                            token: statusData.token,
+                            user: statusData.user,
+                            sessionDays: statusData.sessionDays,
+                            expiresAt: statusData.expiresAt,
+                        };
+                    }
+                    if (statusData.status === 'failed') {
+                        var failCode = (statusData && statusData.code) || 'SRV_001';
+                        var failErr = new Error('错误代码：' + failCode);
+                        failErr.code = failCode;
+                        if (statusData && statusData.action) failErr.action = statusData.action;
+                        throw failErr;
+                    }
+                }
+                var pollTimeoutErr = new Error('错误代码：REG_P001');
+                pollTimeoutErr.code = 'REG_P001';
+                throw pollTimeoutErr;
+            }
+
             var lastErr = null;
             try {
                 for (var bi = 0; bi < bases.length; bi += 1) {
@@ -175,13 +238,21 @@
                             signal: controller ? controller.signal : undefined,
                         });
                         var data = await parseJson(r);
+                        if (r.status === 202 && data && data.jobId) {
+                            return await pollRegisterJob(
+                                bases[bi],
+                                data.jobId,
+                                data.pollMs,
+                                data.message
+                            );
+                        }
                         throwIfNotOk(r, data, 'AUTH_R006');
                         return data;
                     } catch (fetchErr) {
                         lastErr = fetchErr;
                         if (fetchErr && fetchErr.name === 'AbortError') {
-                            var timeoutErr = new Error('错误代码：NET_E001');
-                            timeoutErr.code = 'NET_E001';
+                            var timeoutErr = new Error('错误代码：REG_P001');
+                            timeoutErr.code = 'REG_P001';
                             throw timeoutErr;
                         }
                         if (bi < bases.length - 1 && isFetchNetworkFailure(fetchErr)) {
