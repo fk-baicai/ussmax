@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>USSXC | 星际公民工具站|新手教程|服务器查询|机库计时</title>
-    <link rel="stylesheet" href="styles.css?v=20260603u">
+    <link rel="stylesheet" href="styles.css?v=20260603v">
     <link rel="icon" href="/favicon.ico" sizes="48x48">
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -765,6 +765,7 @@
     </div>
 
     <script src="lazy-media.js"></script>
+    <script src="community-image-lightbox.js"></script>
     <script src="home-boot.js"></script>
     <script defer src="material-icons-svg.js"></script>
     <script defer src="pw-toggle-icons.js"></script>
@@ -835,6 +836,8 @@
                 window.scrollTo(0, savedPageScrollY);
             }
         }
+
+        document.addEventListener('uss-community-lightbox-change', updatePageScrollLock);
 
         function syncOverlay() {
             const overlay = document.getElementById('overlay');
@@ -1683,7 +1686,6 @@
         /** 舰队成员列表搜索关键字（列表重绘时保留） */
         let communityRosterSearchQuery = '';
         let communityInboxSnapshot = { fleetMaxSeq: 0, dmMaxByPeer: {} };
-        let communityImageLightboxKeyHandler = null;
         /** 全量成员（含自己），用于 @ 补全 */
         let communityChatRosterMembersList = [];
         const communityMentionNotifiedKeys = new Set();
@@ -1695,64 +1697,8 @@
             filtered: [],
         };
 
-        function ensureCommunityImageLightbox() {
-            let overlay = document.getElementById('communityImageLightbox');
-            if (overlay) return overlay;
-            overlay = document.createElement('div');
-            overlay.id = 'communityImageLightbox';
-            overlay.className = 'community-image-lightbox';
-            overlay.setAttribute('role', 'dialog');
-            overlay.setAttribute('aria-modal', 'true');
-            overlay.setAttribute('aria-hidden', 'true');
-            const img = document.createElement('img');
-            img.className = 'community-image-lightbox-img';
-            img.alt = '';
-            img.decoding = 'async';
-            overlay.appendChild(img);
-            document.body.appendChild(overlay);
-            overlay.addEventListener('click', function (ev) {
-                if (ev.target === overlay) closeCommunityImageLightbox();
-            });
-            img.addEventListener('click', function () {
-                closeCommunityImageLightbox();
-            });
-            return overlay;
-        }
-
         function openCommunityImageLightbox(src) {
-            if (!src) return;
-            const overlay = ensureCommunityImageLightbox();
-            const img = overlay.querySelector('.community-image-lightbox-img');
-            if (!img) return;
-            img.src = src;
-            img.alt = '放大预览';
-            overlay.classList.add('is-open');
-            overlay.setAttribute('aria-hidden', 'false');
-            updatePageScrollLock();
-            if (communityImageLightboxKeyHandler) {
-                document.removeEventListener('keydown', communityImageLightboxKeyHandler);
-            }
-            communityImageLightboxKeyHandler = function (ev) {
-                if (ev.key === 'Escape') closeCommunityImageLightbox();
-            };
-            document.addEventListener('keydown', communityImageLightboxKeyHandler);
-        }
-
-        function closeCommunityImageLightbox() {
-            const overlay = document.getElementById('communityImageLightbox');
-            if (!overlay) return;
-            const img = overlay.querySelector('.community-image-lightbox-img');
-            if (img) {
-                img.removeAttribute('src');
-                img.alt = '';
-            }
-            overlay.classList.remove('is-open');
-            overlay.setAttribute('aria-hidden', 'true');
-            updatePageScrollLock();
-            if (communityImageLightboxKeyHandler) {
-                document.removeEventListener('keydown', communityImageLightboxKeyHandler);
-                communityImageLightboxKeyHandler = null;
-            }
+            if (window.UssCommunityImageLightbox) window.UssCommunityImageLightbox.open(src);
         }
 
         function communityReadStateStorageKey() {
@@ -2342,7 +2288,9 @@
             parent.appendChild(wrap);
         }
 
-        function buildCommunityChatImageCell(src) {
+        function buildCommunityChatImageCell(rel) {
+            const fullSrc = resolveCommunityAssetUrl(rel);
+            const thumbSrc = resolveCommunityThumbUrl(rel);
             const wrap = document.createElement('div');
             wrap.className = 'community-chat-img-wrap community-chat-img-wrap--censored';
 
@@ -2355,7 +2303,8 @@
                 encodeURIComponent(
                     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 3" preserveAspectRatio="none"><rect width="4" height="3" fill="#1a2834"/></svg>'
                 );
-            im.dataset.src = src;
+            im.dataset.src = thumbSrc;
+            im.dataset.fullSrc = fullSrc;
 
             const mask = document.createElement('button');
             mask.type = 'button';
@@ -2384,7 +2333,8 @@
                     return;
                 }
                 e.stopPropagation();
-                openCommunityImageLightbox(im.src);
+                const full = im.dataset.fullSrc || im.src;
+                openCommunityImageLightbox(full);
             });
 
             wrap.appendChild(im);
@@ -3367,11 +3317,7 @@
                 grid.className = 'community-chat-images';
                 imgs.forEach(function (rel) {
                     if (typeof rel !== 'string' || rel.indexOf('/community-uploads/') !== 0) return;
-                    const src =
-                        window.UssAuthApi && typeof window.UssAuthApi.resolveAssetUrl === 'function'
-                            ? window.UssAuthApi.resolveAssetUrl(rel)
-                            : rel;
-                    grid.appendChild(buildCommunityChatImageCell(src));
+                    grid.appendChild(buildCommunityChatImageCell(rel));
                 });
                 return grid.childNodes.length ? grid : null;
             }
@@ -3478,6 +3424,13 @@
             return rel;
         }
 
+        function resolveCommunityThumbUrl(rel) {
+            if (window.UssAuthApi && typeof window.UssAuthApi.communityImageThumbUrl === 'function') {
+                return window.UssAuthApi.communityImageThumbUrl(rel);
+            }
+            return resolveCommunityAssetUrl(rel);
+        }
+
         function renderCommunityPosts(posts) {
             const feed = document.getElementById('communityFeed');
             const loading = document.getElementById('communityFeedLoading');
@@ -3548,7 +3501,7 @@
                         thumb.loading = 'lazy';
                         thumb.decoding = 'async';
                         thumb.alt = '帖子配图';
-                        const thumbUrl = resolveCommunityAssetUrl(rel);
+                        const thumbUrl = resolveCommunityThumbUrl(rel);
                         if (window.UssLazyMedia) {
                             thumb.src =
                                 'data:image/svg+xml,' +
@@ -5077,15 +5030,19 @@
             if (el) {
                 el.textContent = '';
                 el.hidden = true;
+                el.classList.remove('rsi-form-hint--info');
+                el.classList.add('rsi-form-hint--error');
             }
         }
 
-        function setRegisterFormHint(text) {
+        function setRegisterFormHint(text, isSuccess) {
             const el = document.getElementById('registerFormHint');
             if (!el) return;
             if (text) {
                 el.textContent = text;
                 el.hidden = false;
+                el.classList.toggle('rsi-form-hint--info', !!isSuccess);
+                el.classList.toggle('rsi-form-hint--error', !isSuccess);
             } else {
                 clearRegisterFormHint();
             }
@@ -5116,52 +5073,17 @@
             const regBtn = document.getElementById('registerSubmitBtn');
             if (regBtn) {
                 regBtn.disabled = true;
-                regBtn.textContent = '验证 RSI…';
+                regBtn.textContent = '注册中…';
             }
 
             try {
                 clearRegisterFormHint();
-                var rsiProfile = null;
-                if (
-                    window.UssRsiSync &&
-                    typeof window.UssRsiSync.scrapeCitizenPublicProfileWithRetry === 'function'
-                ) {
-                    try {
-                        rsiProfile = await window.UssRsiSync.scrapeCitizenPublicProfileWithRetry(bindingId, {
-                            maxAttempts: 2,
-                            baseDelayMs: 800,
-                        });
-                    } catch (rsiClientErr) {
-                        console.warn(
-                            '[rsi] 注册前浏览器抓取失败，改由服务端验证',
-                            rsiClientErr && rsiClientErr.message ? rsiClientErr.message : rsiClientErr
-                        );
-                    }
-                } else if (
-                    window.UssRsiClient &&
-                    typeof window.UssRsiClient.scrapeCitizenPublicProfile === 'function'
-                ) {
-                    try {
-                        rsiProfile = await window.UssRsiClient.scrapeCitizenPublicProfile(bindingId);
-                    } catch (rsiClientErr) {
-                        console.warn(
-                            '[rsi] 注册前浏览器抓取失败，改由服务端验证',
-                            rsiClientErr && rsiClientErr.message ? rsiClientErr.message : rsiClientErr
-                        );
-                    }
-                }
-                var clientRsiOk =
-                    rsiProfile &&
-                    window.UssRsiSync &&
-                    typeof window.UssRsiSync.clientScrapedLooksUsable === 'function' &&
-                    window.UssRsiSync.clientScrapedLooksUsable(rsiProfile);
-                if (regBtn) regBtn.textContent = '注册中…';
+                setRegisterFormHint('正在通过服务端验证 RSI 资料，请稍候…', true);
                 const res = await window.UssAuthApi.register({
                     bindingId,
                     email,
                     password,
                     sessionDays: 7,
-                    rsiProfile: clientRsiOk ? rsiProfile : undefined,
                 });
                 const loginAt = new Date().toISOString();
                 saveAuthSession({
@@ -5194,14 +5116,17 @@
                     regBtn.textContent = '已注册';
                     regBtn.disabled = true;
                 }
+                setRegisterFormHint('注册成功，已自动登录！', true);
                 setTimeout(function () {
                     resetRegisterSubmitBtn();
                     refreshLoginDrawerView();
                 }, AUTH_BUTTON_FEEDBACK_MS);
             } catch (e) {
                 resetRegisterSubmitBtn();
-                if (isLikelyNetworkError(e && e.message)) {
-                    setRegisterFormHint(registerFormErrorHint({ code: 'NET_E001' }));
+                if (isLikelyNetworkError(e && e.message) || (e && e.code === 'NET_E001')) {
+                    setRegisterFormHint(
+                        '注册请求超时或网络中断。若邮箱已能登录说明注册已成功，请直接登录；否则请稍后重试。'
+                    );
                 } else {
                     setRegisterFormHint(registerFormErrorHint(e));
                 }

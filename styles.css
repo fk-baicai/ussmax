@@ -6408,7 +6408,7 @@ a.community-author-avatar-link:focus-visible {
     overflow: hidden;
 }
 
-/* 全站交流区图片点击放大 */
+/* 全站交流区图片点击放大（滚轮缩放 + 拖动平移） */
 .community-image-lightbox {
     display: none;
     position: fixed;
@@ -6419,10 +6419,12 @@ a.community-author-avatar-link:focus-visible {
     box-sizing: border-box;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
     background: rgba(4, 12, 22, 0.92);
     -webkit-backdrop-filter: blur(6px);
     backdrop-filter: blur(6px);
-    cursor: zoom-out;
+    cursor: default;
+    touch-action: none;
 }
 
 .community-image-lightbox.is-open {
@@ -6438,8 +6440,16 @@ a.community-author-avatar-link:focus-visible {
     border-radius: 10px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
     border: 1px solid rgba(84, 173, 247, 0.28);
-    cursor: zoom-out;
+    cursor: grab;
     vertical-align: middle;
+    transform-origin: center center;
+    will-change: transform;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.community-image-lightbox-img.is-dragging {
+    cursor: grabbing;
 }
 
 .games-section {

@@ -114,15 +114,46 @@
             return joinUrl(p);
         },
 
+        /** 社区上传图缩略图 URL（列表/聊天用；点击查看原图用 resolveAssetUrl） */
+        communityImageThumbUrl: function (rel) {
+            if (!rel || typeof rel !== 'string') return '';
+            if (/^https?:\/\//i.test(rel)) return rel;
+            var pathRel = rel.charAt(0) === '/' ? rel : '/' + rel;
+            if (pathRel.indexOf('/community-uploads/') !== 0) return joinUrl(pathRel);
+            var base = pathRel.split('/').pop() || '';
+            var m = /^(.+)\.(jpe?g|png|gif|webp)$/i.exec(base);
+            if (!m) return joinUrl(pathRel);
+            return joinUrl('/community-uploads/' + m[1] + '-thumb.jpg');
+        },
+
         async register(body) {
-            var r = await fetch(joinUrl('/api/register'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-            var data = await parseJson(r);
-            throwIfNotOk(r, data, 'AUTH_R006');
-            return data;
+            var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            var timer = null;
+            if (controller) {
+                timer = setTimeout(function () {
+                    controller.abort();
+                }, 180000);
+            }
+            try {
+                var r = await fetch(joinUrl('/api/register'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                    signal: controller ? controller.signal : undefined,
+                });
+                var data = await parseJson(r);
+                throwIfNotOk(r, data, 'AUTH_R006');
+                return data;
+            } catch (fetchErr) {
+                if (fetchErr && fetchErr.name === 'AbortError') {
+                    var timeoutErr = new Error('错误代码：NET_E001');
+                    timeoutErr.code = 'NET_E001';
+                    throw timeoutErr;
+                }
+                throw fetchErr;
+            } finally {
+                if (timer) clearTimeout(timer);
+            }
         },
 
         async login(body) {

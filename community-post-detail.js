@@ -94,6 +94,13 @@
         return fromSearchString(window.location.search || '');
     }
 
+    function resolveThumb(rel) {
+        if (window.UssAuthApi && typeof window.UssAuthApi.communityImageThumbUrl === 'function') {
+            return window.UssAuthApi.communityImageThumbUrl(rel);
+        }
+        return resolveAsset(rel);
+    }
+
     function resolveAsset(rel) {
         if (window.UssAuthApi && typeof window.UssAuthApi.resolveAssetUrl === 'function') {
             return window.UssAuthApi.resolveAssetUrl(rel);
@@ -244,27 +251,7 @@
     }
 
     function openLightbox(src) {
-        if (!src) return;
-        var overlay = document.getElementById('communityImageLightbox');
-        if (!overlay) return;
-        var img = overlay.querySelector('.community-image-lightbox-img');
-        if (!img) return;
-        img.src = src;
-        img.alt = '放大预览';
-        overlay.classList.add('is-open');
-        overlay.setAttribute('aria-hidden', 'false');
-    }
-
-    function closeLightbox() {
-        var overlay = document.getElementById('communityImageLightbox');
-        if (!overlay) return;
-        var img = overlay.querySelector('.community-image-lightbox-img');
-        if (img) {
-            img.removeAttribute('src');
-            img.alt = '';
-        }
-        overlay.classList.remove('is-open');
-        overlay.setAttribute('aria-hidden', 'true');
+        if (window.UssCommunityImageLightbox) window.UssCommunityImageLightbox.open(src);
     }
 
     function showConfirm(message, danger) {
@@ -368,11 +355,13 @@
                 var im = document.createElement('img');
                 im.className = 'community-post-img';
                 im.loading = 'lazy';
+                im.decoding = 'async';
                 im.alt = '帖子配图';
                 im.style.cursor = 'pointer';
-                im.src = resolveAsset(rel);
+                im.dataset.fullSrc = resolveAsset(rel);
+                im.src = resolveThumb(rel);
                 im.addEventListener('click', function () {
-                    openLightbox(im.src);
+                    openLightbox(im.dataset.fullSrc || im.src);
                 });
                 grid.appendChild(im);
             });
@@ -508,15 +497,7 @@
     }
 
     function init() {
-        var overlay = document.getElementById('communityImageLightbox');
-        if (overlay) {
-            overlay.addEventListener('click', function (ev) {
-                if (ev.target === overlay) closeLightbox();
-            });
-        }
-        document.addEventListener('keydown', function (ev) {
-            if (ev.key === 'Escape') closeLightbox();
-        });
+        if (window.UssCommunityImageLightbox) window.UssCommunityImageLightbox.ensureOverlay();
         loadPost();
     }
 
