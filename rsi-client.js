@@ -20,6 +20,33 @@
         fluency: ['Fluency', '语言能力', '流利', '流利程度'],
     };
 
+    var RSI_HANDLE_LABELS = ['Handle name', 'Handle', '句柄名称', '句柄'];
+
+    function isRsiHandleLabel(lab) {
+        var t = normalizeBlockText(lab).toLowerCase();
+        for (var i = 0; i < RSI_HANDLE_LABELS.length; i++) {
+            if (RSI_HANDLE_LABELS[i].toLowerCase() === t) return true;
+        }
+        return false;
+    }
+
+    function extractRsiProfileHandle(doc, normalizedHandle) {
+        var info = doc.querySelector('.profile.left-col .info');
+        if (info) {
+            var entries = info.querySelectorAll('p.entry');
+            for (var i = 0; i < entries.length; i++) {
+                var ent = entries[i];
+                var labEl = ent.querySelector('span.label, .label');
+                var lab = normalizeBlockText(labEl ? labEl.textContent : '');
+                if (!isRsiHandleLabel(lab)) continue;
+                var valEl = ent.querySelector('strong.value, span.value, .value');
+                var val = normalizeBlockText(valEl ? valEl.textContent : '');
+                if (val) return val;
+            }
+        }
+        return String(normalizedHandle || '').trim();
+    }
+
     function normalizeBlockText(s) {
         return String(s || '')
             .replace(/\s+/g, ' ')
@@ -167,24 +194,9 @@
         };
     }
 
-    function extractProfileExtras(doc) {
+    function extractProfileExtras(doc, normalizedHandle) {
         var info = doc.querySelector('.profile.left-col .info');
-        var rsiProfileHandle = '';
-        if (info) {
-            var entries = info.querySelectorAll('p.entry');
-            for (var i = 0; i < entries.length; i++) {
-                var ent = entries[i];
-                if (ent.querySelector('strong.value') && !ent.querySelector('span.label')) {
-                    var hv = ent.querySelector('strong.value');
-                    rsiProfileHandle = hv ? hv.textContent.trim() : '';
-                    break;
-                }
-            }
-            if (!rsiProfileHandle) {
-                var firstVal = info.querySelector('p.entry strong.value');
-                rsiProfileHandle = firstVal ? firstVal.textContent.trim() : '';
-            }
-        }
+        var rsiProfileHandle = extractRsiProfileHandle(doc, normalizedHandle);
 
         var rsiRankIconUrl = null;
         var rsiRankLabel = '';
@@ -385,14 +397,10 @@
     function parseCitizenHtml(html, normalizedHandle) {
         var parser = new DOMParser();
         var doc = parser.parseFromString(html, 'text/html');
-        var handle =
-            normalizedHandle ||
-            (doc.querySelector('.profile.left-col .info strong.value') &&
-                doc.querySelector('.profile.left-col .info strong.value').textContent.trim().toLowerCase()) ||
-            '';
+        var handle = normalizedHandle || extractRsiProfileHandle(doc, '').toLowerCase();
         var citizenAvatarUrls = collectCitizenAvatarCandidates(doc, handle);
         var citizenAvatarUrl = citizenAvatarUrls.length ? citizenAvatarUrls[0] : null;
-        var extras = extractProfileExtras(doc);
+        var extras = extractProfileExtras(doc, handle);
         return {
             citizenAvatarUrl: citizenAvatarUrl,
             citizenAvatarUrls: citizenAvatarUrls,

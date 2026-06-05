@@ -360,6 +360,11 @@
                 body: JSON.stringify(body || {}),
             });
         },
+        async adminDeleteUser(token, userId) {
+            return adminJson(token, '/api/admin/users/' + encodeURIComponent(userId), {
+                method: 'DELETE',
+            });
+        },
         async adminCheckinBranch(token, branch, year, month) {
             var q = '/api/admin/checkin/branch?branch=' + encodeURIComponent(branch);
             if (year != null && month != null && String(year) !== '' && String(month) !== '') {

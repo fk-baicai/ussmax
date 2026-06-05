@@ -1469,6 +1469,29 @@ html.auth-session-cached #navLoginBtn {
 
 .forgot-password-panel {
     width: min(100%, 24rem);
+    padding: 1.35rem 1.25rem 1.5rem;
+}
+
+.forgot-password-panel.rsi-auth-card {
+    background: var(--rsi-surface, #12202b);
+    border: 1px solid rgba(95, 184, 255, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.forgot-password-head {
+    margin-bottom: 0.35rem;
+}
+
+.forgot-password-head .rsi-auth-title {
+    margin-bottom: 0;
+}
+
+.forgot-password-sub {
+    margin: 0 0 1.15rem;
+}
+
+.forgot-password-panel .rsi-field {
+    margin-bottom: 1.15rem;
 }
 
 .forgot-pw-code-inner {
@@ -1482,17 +1505,64 @@ html.auth-session-cached #navLoginBtn {
     min-width: 0;
 }
 
+.rsi-field--float.forgot-pw-code-row .forgot-pw-code-inner .rsi-input {
+    padding-top: 16px;
+    padding-bottom: 12px;
+}
+
+.rsi-field--float.forgot-pw-code-row.is-filled .forgot-pw-code-inner .rsi-input {
+    padding-top: 14px;
+    padding-bottom: 11px;
+}
+
 .forgot-pw-send-btn {
     flex-shrink: 0;
     align-self: stretch;
     padding: 0 0.75rem;
-    font-size: 0.8rem;
+    font-size: 0.82rem;
+    font-weight: 600;
     white-space: nowrap;
+    color: #8ad0ff;
+    background: transparent;
+    border: 1px solid rgba(95, 184, 255, 0.42);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.forgot-pw-send-btn:hover:not(:disabled) {
+    background: rgba(95, 184, 255, 0.08);
+    border-color: rgba(95, 184, 255, 0.65);
+    color: #b8e4ff;
 }
 
 .forgot-pw-send-btn:disabled {
     opacity: 0.65;
     cursor: not-allowed;
+}
+
+.forgot-password-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 0.35rem;
+}
+
+.forgot-password-actions .rsi-submit-btn {
+    margin: 0;
+    min-width: 6.25rem;
+    max-width: min(100%, 11rem);
+    min-height: 2.28rem;
+    padding: 0.42rem 0.95rem;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    border-radius: 5px;
+}
+
+.forgot-password-actions .rsi-auth-link {
+    font-size: 0.82rem;
 }
 
 .account-settings-actions .rsi-btn-ghost,

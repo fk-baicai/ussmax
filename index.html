@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>USSXC | 星际公民工具站|新手教程|服务器查询|机库计时|舰队攻略</title>
+    <title>USSXC | 星际公民工具站|新手教程|服务器查询|机库计时</title>
     <link rel="stylesheet" href="styles.css?v=20260603u">
     <link rel="icon" href="/favicon.ico" sizes="48x48">
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
@@ -552,11 +552,11 @@
 
                     <div id="authPanelLogin" class="rsi-auth-panels">
                         <div class="rsi-field rsi-field--float">
-                            <input type="email" class="rsi-input" id="loginEmail" autocomplete="username" placeholder=" " oninput="syncLoginFloatField(this); clearLoginFormHint()">
+                            <input type="email" class="rsi-input" id="loginEmail" autocomplete="username" placeholder=" " oninput="syncAuthFloatField(this); clearLoginFormHint()">
                             <label for="loginEmail">邮箱</label>
                         </div>
                         <div class="rsi-field rsi-field--float rsi-field--password">
-                            <input type="password" class="rsi-input" id="loginPassword" autocomplete="current-password" placeholder=" " oninput="syncLoginFloatField(this); clearLoginFormHint()">
+                            <input type="password" class="rsi-input" id="loginPassword" autocomplete="current-password" placeholder=" " oninput="syncAuthFloatField(this); clearLoginFormHint()">
                             <label for="loginPassword">密码</label>
                             <button type="button" class="rsi-pw-toggle" id="loginPwToggle" onclick="togglePasswordField('loginPassword', 'loginPwToggle')" aria-label="显示或隐藏密码">
                                 <span class="rsi-pw-toggle-icon" aria-hidden="true"><svg class="rsi-pw-icon rsi-pw-icon--show" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 6a6 6 0 1 1 0 12 6 6 0 0 1 0-12m0-4C6.5 2 1.73 7.11 1 12c.73 4.89 5.5 10 11 10s10.27-5.11 11-10C21.27 7.11 17.5 2 12 2m0 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg><svg class="rsi-pw-icon rsi-pw-icon--hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" hidden aria-hidden="true"><path d="M2.28 3.51 1 4.79l4.37 4.37C3.61 10.28 2.12 11.09 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l2.92 2.92L21 20.73 22.27 19.5 3.51 2.28M12 17c-2.76 0-5-2.24-5-5 0-.65.13-1.26.36-1.83l1.63 1.63c.17.58.68 1 1.31 1 1.1 0 2-.9 2-2 0-.63-.42-1.14-1-1.31l1.63 1.63c.57-.23 1.18-.36 1.83-.36 2.76 0 5 2.24 5 5 0 .79-.2 1.53-.53 2.2l1.46 1.46A9.9 9.9 0 0 0 12 17m6.24-3.59-1.88-1.88a2.98 2.98 0 0 0 .05-.41 3 3 0 0 0-3-3c-.14 0-.28.02-.41.05L11.41 7.3A4.98 4.98 0 0 1 12 7c2.76 0 5 2.24 5 5 0 .7-.15 1.36-.41 1.97z"/></svg></span>
@@ -598,17 +598,17 @@
                     </div>
 
                     <div id="authPanelRegister" class="rsi-auth-panels" style="display: none;">
-                        <div class="rsi-field">
+                        <div class="rsi-field rsi-field--float">
+                            <input type="text" class="rsi-input" id="regBindingId" autocomplete="off" placeholder=" " oninput="syncAuthFloatField(this); clearRegisterFormHint()">
                             <label for="regBindingId">绑定 ID</label>
-                            <input type="text" class="rsi-input" id="regBindingId" autocomplete="off" oninput="clearRegisterFormHint()">
                         </div>
-                        <div class="rsi-field">
+                        <div class="rsi-field rsi-field--float">
+                            <input type="email" class="rsi-input" id="regEmail" autocomplete="email" placeholder=" " oninput="syncAuthFloatField(this); clearRegisterFormHint()">
                             <label for="regEmail">邮箱</label>
-                            <input type="email" class="rsi-input" id="regEmail" autocomplete="email" oninput="clearRegisterFormHint()">
                         </div>
-                        <div class="rsi-field rsi-field--password">
+                        <div class="rsi-field rsi-field--float rsi-field--password">
+                            <input type="password" class="rsi-input" id="regPassword" autocomplete="new-password" placeholder=" " oninput="syncAuthFloatField(this); clearRegisterFormHint()">
                             <label for="regPassword">密码</label>
-                            <input type="password" class="rsi-input" id="regPassword" autocomplete="new-password" oninput="clearRegisterFormHint()">
                             <button type="button" class="rsi-pw-toggle" id="regPwToggle" onclick="togglePasswordField('regPassword', 'regPwToggle')" aria-label="显示或隐藏密码">
                                 <span class="rsi-pw-toggle-icon" aria-hidden="true"><svg class="rsi-pw-icon rsi-pw-icon--show" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 6a6 6 0 1 1 0 12 6 6 0 0 1 0-12m0-4C6.5 2 1.73 7.11 1 12c.73 4.89 5.5 10 11 10s10.27-5.11 11-10C21.27 7.11 17.5 2 12 2m0 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg><svg class="rsi-pw-icon rsi-pw-icon--hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" hidden aria-hidden="true"><path d="M2.28 3.51 1 4.79l4.37 4.37C3.61 10.28 2.12 11.09 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l2.92 2.92L21 20.73 22.27 19.5 3.51 2.28M12 17c-2.76 0-5-2.24-5-5 0-.65.13-1.26.36-1.83l1.63 1.63c.17.58.68 1 1.31 1 1.1 0 2-.9 2-2 0-.63-.42-1.14-1-1.31l1.63 1.63c.57-.23 1.18-.36 1.83-.36 2.76 0 5 2.24 5 5 0 .79-.2 1.53-.53 2.2l1.46 1.46A9.9 9.9 0 0 0 12 17m6.24-3.59-1.88-1.88a2.98 2.98 0 0 0 .05-.41 3 3 0 0 0-3-3c-.14 0-.28.02-.41.05L11.41 7.3A4.98 4.98 0 0 1 12 7c2.76 0 5 2.24 5 5 0 .7-.15 1.36-.41 1.97z"/></svg></span>
                             </button>
@@ -725,40 +725,40 @@
     </div>
 
     <div id="forgotPasswordBackdrop" class="account-settings-backdrop" hidden>
-        <div class="account-settings-panel forgot-password-panel" role="dialog" aria-modal="true" aria-labelledby="forgotPasswordTitle">
-            <div class="account-settings-head">
-                <h3 id="forgotPasswordTitle">忘记密码</h3>
+        <div class="account-settings-panel forgot-password-panel rsi-auth-card" role="dialog" aria-modal="true" aria-labelledby="forgotPasswordTitle">
+            <div class="account-settings-head forgot-password-head">
+                <h3 id="forgotPasswordTitle" class="rsi-auth-title">忘记密码</h3>
                 <button type="button" class="account-settings-close" onclick="closeForgotPasswordDialog()" aria-label="关闭">×</button>
             </div>
-            <p class="account-settings-hint">输入注册邮箱获取验证码，验证通过后设置新密码。</p>
-            <div class="rsi-field">
+            <p class="rsi-auth-sub forgot-password-sub">输入注册邮箱获取验证码，验证通过后设置新密码。</p>
+            <div class="rsi-field rsi-field--float">
+                <input type="email" class="rsi-input" id="forgotPwEmail" autocomplete="email" placeholder=" " oninput="syncAuthFloatField(this); clearForgotPasswordHint()">
                 <label for="forgotPwEmail">注册邮箱</label>
-                <input type="email" class="rsi-input" id="forgotPwEmail" autocomplete="email" oninput="clearForgotPasswordHint()">
             </div>
-            <div class="rsi-field forgot-pw-code-row">
-                <label for="forgotPwCode">验证码</label>
+            <div class="rsi-field rsi-field--float forgot-pw-code-row">
                 <div class="forgot-pw-code-inner">
-                    <input type="text" class="rsi-input" id="forgotPwCode" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" placeholder="6 位数字" oninput="clearForgotPasswordHint()">
-                    <button type="button" id="forgotPwSendCodeBtn" class="rsi-btn-ghost forgot-pw-send-btn" onclick="submitForgotPasswordSendCode()">发送验证码</button>
+                    <input type="text" class="rsi-input" id="forgotPwCode" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" placeholder=" " oninput="syncAuthFloatField(this); clearForgotPasswordHint()">
+                    <button type="button" id="forgotPwSendCodeBtn" class="forgot-pw-send-btn" onclick="submitForgotPasswordSendCode()">发送验证码</button>
                 </div>
+                <label for="forgotPwCode">验证码</label>
             </div>
-            <div class="rsi-field rsi-field--password">
+            <div class="rsi-field rsi-field--float rsi-field--password">
+                <input type="password" class="rsi-input" id="forgotPwNewPassword" autocomplete="new-password" placeholder=" " oninput="syncAuthFloatField(this); clearForgotPasswordHint()">
                 <label for="forgotPwNewPassword">新密码</label>
-                <input type="password" class="rsi-input" id="forgotPwNewPassword" autocomplete="new-password" oninput="clearForgotPasswordHint()">
                 <button type="button" class="rsi-pw-toggle" id="forgotPwNewToggle" onclick="togglePasswordField('forgotPwNewPassword', 'forgotPwNewToggle')" aria-label="显示或隐藏密码">
                     <span class="rsi-pw-toggle-icon" aria-hidden="true"><svg class="rsi-pw-icon rsi-pw-icon--show" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 6a6 6 0 1 1 0 12 6 6 0 0 1 0-12m0-4C6.5 2 1.73 7.11 1 12c.73 4.89 5.5 10 11 10s10.27-5.11 11-10C21.27 7.11 17.5 2 12 2m0 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg><svg class="rsi-pw-icon rsi-pw-icon--hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" hidden aria-hidden="true"><path d="M2.28 3.51 1 4.79l4.37 4.37C3.61 10.28 2.12 11.09 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l2.92 2.92L21 20.73 22.27 19.5 3.51 2.28M12 17c-2.76 0-5-2.24-5-5 0-.65.13-1.26.36-1.83l1.63 1.63c.17.58.68 1 1.31 1 1.1 0 2-.9 2-2 0-.63-.42-1.14-1-1.31l1.63 1.63c.57-.23 1.18-.36 1.83-.36 2.76 0 5 2.24 5 5 0 .79-.2 1.53-.53 2.2l1.46 1.46A9.9 9.9 0 0 0 12 17m6.24-3.59-1.88-1.88a2.98 2.98 0 0 0 .05-.41 3 3 0 0 0-3-3c-.14 0-.28.02-.41.05L11.41 7.3A4.98 4.98 0 0 1 12 7c2.76 0 5 2.24 5 5 0 .7-.15 1.36-.41 1.97z"/></svg></span>
                 </button>
             </div>
-            <div class="rsi-field rsi-field--password">
+            <div class="rsi-field rsi-field--float rsi-field--password">
+                <input type="password" class="rsi-input" id="forgotPwConfirmPassword" autocomplete="new-password" placeholder=" " oninput="syncAuthFloatField(this); clearForgotPasswordHint()">
                 <label for="forgotPwConfirmPassword">确认新密码</label>
-                <input type="password" class="rsi-input" id="forgotPwConfirmPassword" autocomplete="new-password" oninput="clearForgotPasswordHint()">
                 <button type="button" class="rsi-pw-toggle" id="forgotPwConfirmToggle" onclick="togglePasswordField('forgotPwConfirmPassword', 'forgotPwConfirmToggle')" aria-label="显示或隐藏密码">
                     <span class="rsi-pw-toggle-icon" aria-hidden="true"><svg class="rsi-pw-icon rsi-pw-icon--show" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 6a6 6 0 1 1 0 12 6 6 0 0 1 0-12m0-4C6.5 2 1.73 7.11 1 12c.73 4.89 5.5 10 11 10s10.27-5.11 11-10C21.27 7.11 17.5 2 12 2m0 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg><svg class="rsi-pw-icon rsi-pw-icon--hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" hidden aria-hidden="true"><path d="M2.28 3.51 1 4.79l4.37 4.37C3.61 10.28 2.12 11.09 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l2.92 2.92L21 20.73 22.27 19.5 3.51 2.28M12 17c-2.76 0-5-2.24-5-5 0-.65.13-1.26.36-1.83l1.63 1.63c.17.58.68 1 1.31 1 1.1 0 2-.9 2-2 0-.63-.42-1.14-1-1.31l1.63 1.63c.57-.23 1.18-.36 1.83-.36 2.76 0 5 2.24 5 5 0 .79-.2 1.53-.53 2.2l1.46 1.46A9.9 9.9 0 0 0 12 17m6.24-3.59-1.88-1.88a2.98 2.98 0 0 0 .05-.41 3 3 0 0 0-3-3c-.14 0-.28.02-.41.05L11.41 7.3A4.98 4.98 0 0 1 12 7c2.76 0 5 2.24 5 5 0 .7-.15 1.36-.41 1.97z"/></svg></span>
                 </button>
             </div>
             <p id="forgotPasswordHint" class="rsi-form-hint rsi-form-hint--error" hidden></p>
-            <div class="account-settings-actions">
-                <button type="button" class="rsi-btn-ghost" onclick="closeForgotPasswordDialog()">取消</button>
+            <div class="forgot-password-actions">
+                <button type="button" class="rsi-auth-link rsi-auth-link--small" onclick="closeForgotPasswordDialog()">取消</button>
                 <button type="button" id="forgotPwSubmitBtn" class="rsi-submit-btn" onclick="submitForgotPasswordReset()">重置密码</button>
             </div>
         </div>
@@ -862,7 +862,7 @@
             clearLoginFormHint();
             clearRegisterFormHint();
             refreshLoginDrawerView();
-            syncLoginFloatFields();
+            syncAuthFloatFields();
             syncOverlay();
             if (isLoggedIn()) {
                 if (hydrateProfileCacheIfNeeded()) {
@@ -1007,6 +1007,21 @@
 
         /* 登录/注册：账号在自建 API（仓库 backend/），浏览器只存会话 token。本机先启动 backend；公网基址由 auth-config.js / USS_AUTH_API_BASE 决定。 */
 
+        function registerFormErrorHint(err) {
+            var code = '';
+            if (err && typeof err === 'object' && err.code) {
+                code = String(err.code).trim();
+            } else if (err && err.message) {
+                var m = String(err.message).match(/^错误代码：([A-Z0-9_]+)$/);
+                if (m) code = m[1];
+            }
+            if (code && typeof UssApiError !== 'undefined' && UssApiError.registerHintForCode) {
+                var hint = UssApiError.registerHintForCode(code);
+                if (hint) return hint;
+            }
+            return safeUserFacingMessage(err);
+        }
+
         function safeUserFacingMessage(msg) {
             if (typeof UssApiError !== 'undefined') {
                 return UssApiError.sanitizeUserMessage(msg);
@@ -1101,14 +1116,28 @@
             } catch (e) { /* ignore */ }
         }
 
-        function syncLoginFloatField(input) {
-            if (!input || !input.parentElement) return;
-            input.parentElement.classList.toggle('is-filled', !!String(input.value || '').trim());
+        function syncAuthFloatField(input) {
+            if (!input) return;
+            var field = input.closest('.rsi-field--float');
+            if (!field) return;
+            field.classList.toggle('is-filled', !!String(input.value || '').trim());
         }
 
-        function syncLoginFloatFields() {
-            syncLoginFloatField(document.getElementById('loginEmail'));
-            syncLoginFloatField(document.getElementById('loginPassword'));
+        function syncAuthFloatFields() {
+            [
+                'loginEmail',
+                'loginPassword',
+                'regBindingId',
+                'regEmail',
+                'regPassword',
+                'forgotPwEmail',
+                'forgotPwCode',
+                'forgotPwNewPassword',
+                'forgotPwConfirmPassword',
+            ].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) syncAuthFloatField(el);
+            });
         }
 
         function getLoginSessionDays() {
@@ -4796,6 +4825,7 @@
                 regPanel.style.display = 'none';
                 loginPanel.style.display = 'block';
             }
+            syncAuthFloatFields();
         }
 
         function setPasswordToggleIcon(btn, showPlainText) {
@@ -4949,6 +4979,7 @@
                 if (e.target === backdrop) closeForgotPasswordDialog();
             };
             updatePageScrollLock();
+            syncAuthFloatFields();
             if (forgotEmail) forgotEmail.focus();
         }
 
@@ -5170,9 +5201,9 @@
             } catch (e) {
                 resetRegisterSubmitBtn();
                 if (isLikelyNetworkError(e && e.message)) {
-                    setRegisterFormHint(safeUserFacingMessage('NET_E001'));
+                    setRegisterFormHint(registerFormErrorHint({ code: 'NET_E001' }));
                 } else {
-                    setRegisterFormHint(safeUserFacingMessage(e));
+                    setRegisterFormHint(registerFormErrorHint(e));
                 }
             }
         }
@@ -5262,7 +5293,7 @@
 
         initCommunityBoard();
         initLoginSessionSelect();
-        syncLoginFloatFields();
+        syncAuthFloatFields();
         validateAuthSession().finally(bootHomeAfterAuth);
     </script>
     <script defer src="oopz-bind.js"></script>

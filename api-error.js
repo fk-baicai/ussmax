@@ -23,10 +23,29 @@
         return DEFAULT_CODE;
     }
 
+    var REGISTER_HINTS = {
+        AUTH_R001: '请填写绑定 ID、邮箱和密码。',
+        AUTH_R002: '密码至少需要 6 位。',
+        AUTH_R003: '请填写有效的邮箱地址。',
+        AUTH_R004: '该邮箱已在站点注册，请直接登录；或使用其他邮箱注册。',
+        AUTH_R005: '该绑定 ID 已被其他账号使用，请更换或联系管理员。',
+        AUTH_R006: '注册未通过 RSI 校验，请确认绑定 ID 正确且已加入组织。',
+        AUTH_R007: '无法获取 RSI 头像，请稍后重试或联系管理员。',
+        AUTH_R008: '绑定 ID 格式无效，请填写正确的 RSI Handle。',
+        RSI_E001: 'RSI 资料校验失败，请稍后重试。',
+        SRV_001: '服务器繁忙，请稍后重试。',
+        NET_E001: '网络异常，请检查网络后重试。',
+    };
+
     /** 用户可见文案（仅错误码） */
     function formatUserError(code) {
         var c = String(code || DEFAULT_CODE).trim() || DEFAULT_CODE;
         return '错误代码：' + c;
+    }
+
+    function registerHintForCode(code) {
+        var c = String(code || '').trim();
+        return REGISTER_HINTS[c] || '';
     }
 
     function createApiError(httpStatus, data, fallbackCode) {
@@ -37,6 +56,7 @@
         if (data && typeof data === 'object') {
             if (data.cooldownSec != null) err.cooldownSec = data.cooldownSec;
             if (data.canChangeAt != null) err.canChangeAt = data.canChangeAt;
+            if (data.action != null) err.action = data.action;
         }
         return err;
     }
@@ -62,6 +82,7 @@
         DEFAULT_CODE: DEFAULT_CODE,
         pickCode: pickCode,
         formatUserError: formatUserError,
+        registerHintForCode: registerHintForCode,
         createApiError: createApiError,
         sanitizeUserMessage: sanitizeUserMessage,
     };

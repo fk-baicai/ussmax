@@ -298,18 +298,22 @@
             word-break: break-all;
             vertical-align: bottom;
         }
-        .grid-sched .sched-grid-table > thead > tr > th:first-child {
-            width: 4.75rem;
-            max-width: 4.75rem;
+        .grid-sched .sched-grid-table > thead > tr > th:first-child,
+        .grid-sched .sched-branch-head-cell,
+        .grid-sched .sched-branch-spacer,
+        .grid-sched .sched-branch-template-tr > td.sched-template-label {
+            width: 7.25rem;
+            max-width: 7.25rem;
             white-space: normal;
             word-break: keep-all;
         }
         /* 分部块：标题行 + 日程行同一底色；块间仅留白 + 细线分隔 */
-        .grid-sched .sched-branch-title-tr > td.sched-branch-head-banner,
+        .grid-sched .sched-branch-title-tr > td,
+        .grid-sched .sched-branch-template-tr > td,
         .grid-sched .sched-branch-data-tr > td {
             background: var(--sched-branch-bg);
         }
-        .grid-sched .sched-branch-title-tr > td.sched-branch-head-banner {
+        .grid-sched .sched-branch-title-tr > td.sched-branch-head-cell {
             padding: 0.5rem 0.45rem 0.4rem;
             font-size: 0.82rem;
             font-weight: 700;
@@ -320,16 +324,30 @@
             border-left: none;
             box-shadow: none;
         }
-        .grid-sched .sched-branch-data-tr + .sched-branch-title-tr > td.sched-branch-head-banner {
+        .grid-sched .sched-branch-title-tr > td.sched-branch-head-rest {
+            padding: 0.45rem 0.55rem 0.4rem;
+            vertical-align: middle;
+            border-top: none;
+            border-left: none;
+            box-shadow: none;
+        }
+        .grid-sched .sched-branch-data-tr + .sched-branch-title-tr > td {
             border-top: 1.35rem solid var(--card);
             padding-top: 0.55rem;
             box-shadow: none;
         }
-        .sched-branch-head-banner .sched-branch-title {
-            display: flex;
-            flex-wrap: wrap;
+        .sched-branch-title-left {
+            display: inline-flex;
             align-items: center;
-            gap: 0.35rem 0.75rem;
+            gap: 0.35rem;
+            min-width: 0;
+        }
+        .sched-branch-head-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 0.55rem 1rem;
             width: 100%;
         }
         .sched-branch-name-label {
@@ -337,13 +355,13 @@
             line-height: 1.2;
         }
         .sched-branch-points-inline {
-            margin-left: auto;
             display: inline-flex;
             align-items: center;
             gap: 0.35rem;
             font-size: 0.78rem;
             font-weight: 600;
             color: rgba(180, 210, 255, 0.88);
+            margin-right: auto;
         }
         .sched-branch-points-inline .sched-ppt-lbl {
             display: inline-flex;
@@ -362,9 +380,7 @@
             font-size: 0.8rem;
         }
         .grid-sched .sched-branch-spacer {
-            width: 4.75rem;
-            max-width: 4.75rem;
-            padding: 0.35rem 0.15rem 0.85rem;
+            padding: 0.2rem 0.15rem 0.85rem;
             vertical-align: top;
             border: none;
             border-left: none;
@@ -387,6 +403,9 @@
             vertical-align: top;
             padding: 0.28rem 0.18rem;
             font-size: 0.76rem;
+        }
+        .grid-sched .sched-branch-template-tr > td {
+            border-top: 1px solid rgba(95, 184, 255, 0.14);
         }
         .grid-sched .sched-branch-template-tr > td.sched-template-label {
             font-size: 0.72rem;
@@ -550,13 +569,25 @@
         tr.sched-branch-template-tr.sched-branch-tr-collapsed {
             display: none;
         }
-        /* 签到区块顶部说明、默认时长一行：比表格略大，易读 */
+        /* 签到区块顶部说明：比表格略大，易读 */
         #secSchedule > .hint {
             font-size: 0.88rem;
             line-height: 1.55;
         }
-        #secSchedule .def-dur-row {
-            font-size: 0.9rem;
+        .sched-branch-save-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            flex-shrink: 0;
+        }
+        .btn-save-sched-branch {
+            font-size: 0.82rem;
+            padding: 0.32rem 0.9rem;
+            white-space: nowrap;
+        }
+        .sched-save-ok {
+            font-size: 0.82rem;
+            white-space: nowrap;
         }
         #secSchedule h2 {
             font-size: 1.05rem;
@@ -657,6 +688,28 @@
             border: 1px solid rgba(95, 184, 255, 0.16);
             border-radius: 10px;
             margin-bottom: 0.75rem;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-gutter: stable;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(95, 184, 255, 0.55) transparent;
+        }
+        #secOopzTts .oopz-tts-rules-scroll::-webkit-scrollbar {
+            width: 5px;
+        }
+        #secOopzTts .oopz-tts-rules-scroll::-webkit-scrollbar-button {
+            display: none;
+            width: 0;
+            height: 0;
+        }
+        #secOopzTts .oopz-tts-rules-scroll::-webkit-scrollbar-thumb {
+            background: rgba(95, 184, 255, 0.55);
+            border-radius: 999px;
+        }
+        #secOopzTts .oopz-tts-rules-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(120, 210, 255, 0.72);
+        }
+        #secOopzTts .oopz-tts-rules-scroll::-webkit-scrollbar-track {
+            background: transparent;
         }
         #secOopzTts .oopz-tts-rules-scroll table {
             width: 100%;
@@ -846,6 +899,21 @@
         }
         #secUsers .users-table-scroll tbody tr:last-child td {
             border-bottom: none;
+        }
+        #secUsers .users-actions {
+            white-space: nowrap;
+        }
+        #secUsers button.btn-delete-user {
+            margin-left: 0.35rem;
+            font-size: 0.82rem;
+            padding: 0.22rem 0.55rem;
+            color: #ffb4b4;
+            border-color: rgba(255, 120, 120, 0.35);
+            background: rgba(80, 20, 28, 0.35);
+        }
+        #secUsers button.btn-delete-user:hover {
+            background: rgba(120, 30, 40, 0.5);
+            border-color: rgba(255, 140, 140, 0.5);
         }
         button.btn-secondary {
             background: rgba(255, 255, 255, 0.06);
@@ -1547,7 +1615,8 @@
                             各分部「长期默认」：勾选启用后，下方日期格将锁定并统一沿用该规则；取消勾选后可逐日单独配置。<br />
                             生效优先级：单日覆盖 &gt; 长期默认 &gt; 未配置（禁止签到）。启用长期默认保存时会清除该分部的单日覆盖，避免冲突。<br />
                             时段签到时，OOPZ 在线时长仅统计签到开放窗口内的时间。<br />
-                            各分部签到积分可在分部标题旁单独设置，默认 1 分，签到成功自动加分。
+                            各分部签到积分可在分部标题旁单独设置，默认 1 分，签到成功自动加分。<br />
+                            修改某分部后请点击该分部标题行的「保存本分部」，仅保存当前分部，不会影响其他分部。
                         </p>
                     </div>
                 </details>
@@ -1583,24 +1652,6 @@
                     <option value="50"></option>
                     <option value="100"></option>
                 </datalist>
-                <div class="def-dur-row">
-                    <label for="defDurInp">默认开放时长</label>
-                    <input
-                        type="number"
-                        id="defDurInp"
-                        min="1"
-                        max="1440"
-                        step="1"
-                        value="3"
-                        list="adminSchedDurOpts"
-                        aria-label="默认开放分钟数"
-                        class="sched-num-inp"
-                    />
-                    <span>分钟</span>
-                </div>
-                <div class="row">
-                    <button type="button" id="btnSaveSchedule">保存整表</button>
-                </div>
                 <div id="schedErr" class="err" hidden></div>
                 <div id="schedGrid" class="grid-sched"></div>
             </section>
@@ -1613,7 +1664,7 @@
                         说明
                     </summary>
                     <div class="branch-help-body">
-                        <p class="hint"><strong>自动签到：</strong>已绑定 OOPZ 的成员，在 OOPZ 语音频道内按实际停留时长累计（机器人约每 60 秒上报一次）。达到分钟数后自动写入对应分部签到。「仅在签到时段内」勾选时，须该分部在上方开放窗口内才会自动签；时段签到下在线时长仅计开放窗口内。</p>
+                        <p class="hint"><strong>自动签到：</strong>已绑定 OOPZ 的成员，在 OOPZ 语音频道内按实际停留时长累计（机器人约每 60 秒上报一次）。达到分钟数后自动写入对应分部签到。「仅在签到时段内」勾选时，须该分部在上方开放窗口内才会自动签；时段签到下在线时长仅计开放窗口内。启用某分部自动签到时，若上方未配置该分部开放窗口，系统将自动设为「全天开放」。</p>
                         <p class="hint"><strong>手动签到：</strong>控制分部页「今日签到」按钮的额外条件。须绑定 OOPZ 时未绑定将引导去首页绑定；勾选「须在线时长」时，全天签到计今日总在线，时段签到仅计该分部开放窗口内在线（与自动签到共用统计）。</p>
                     </div>
                 </details>
@@ -1740,7 +1791,7 @@
 
             <section id="secUsers">
                 <h2>用户（修改绑定 ID / 邮箱 / 密码 / OOPZ）</h2>
-                <p class="hint">密码留空则不修改。OOPZ ID 绑定后用户端不可自行更换或解绑，仅管理员可在此修改或解绑。仅超级管理员可改「fkbaicai」账户。</p>
+                <p class="hint">密码留空则不修改。OOPZ ID 绑定后用户端不可自行更换或解绑，仅管理员可在此修改或解绑。仅超级管理员可改「fkbaicai」账户；超级管理员还可删除其他用户（不可删除超级管理员账户及本人）。</p>
                 <div id="usersErr" class="err" hidden></div>
                 <div id="usersOk" class="ok" hidden></div>
                 <div class="users-toolbar">
@@ -2186,7 +2237,6 @@
                 wireBranchDayColumnHighlightOnce();
                 wireBranchTableDragScrollOnce();
                 document.getElementById('btnAddAdmin').onclick = addAdmin;
-                document.getElementById('btnSaveSchedule').onclick = saveSchedule;
                 document.getElementById('btnSaveOopzAuto').onclick = saveOopzCheckin;
                 document.getElementById('btnSaveOopzTts').onclick = saveOopzTts;
                 document.getElementById('btnAddOopzTtsRule').onclick = addOopzTtsRuleRow;
@@ -2332,6 +2382,18 @@
                 return id.indexOf(q) >= 0 || bid.indexOf(q) >= 0 || rsi.indexOf(q) >= 0 || em.indexOf(q) >= 0 || oopz.indexOf(q) >= 0;
             }
 
+            var SUPER_ADMIN_BINDING = 'fkbaicai';
+
+            function userCanBeDeletedBySuperAdmin(u) {
+                if (!state.me || !state.me.isSuperAdmin) return false;
+                if (!u || !u.id) return false;
+                var meBid = String(state.me.bindingId || '').trim().toLowerCase();
+                var rowBid = String(u.bindingId || '').trim().toLowerCase();
+                if (meBid && rowBid && meBid === rowBid) return false;
+                if (rowBid === SUPER_ADMIN_BINDING) return false;
+                return true;
+            }
+
             function renderUsersRows() {
                 var tb = document.getElementById('usersTbody');
                 var lbl = document.getElementById('usersCountLbl');
@@ -2345,6 +2407,10 @@
                 tb.innerHTML = '';
                 list.forEach(function (u) {
                     var tr = document.createElement('tr');
+                    var deleteBtn =
+                        userCanBeDeletedBySuperAdmin(u)
+                            ? ' <button type="button" class="btn-delete-user">删除</button>'
+                            : '';
                     tr.innerHTML =
                         '<td>' +
                         esc(u.bindingId) +
@@ -2354,10 +2420,18 @@
                         esc(u.email) +
                         '</td><td><code style="font-size:0.72rem">' +
                         esc(u.id) +
-                        '</code></td><td><button type="button" class="btn-edit">编辑</button></td>';
+                        '</code></td><td class="users-actions"><button type="button" class="btn-edit">编辑</button>' +
+                        deleteBtn +
+                        '</td>';
                     tr.querySelector('.btn-edit').onclick = function () {
                         openUserEditModal(u);
                     };
+                    var del = tr.querySelector('.btn-delete-user');
+                    if (del) {
+                        del.onclick = function () {
+                            deleteUserRow(u);
+                        };
+                    }
                     tb.appendChild(tr);
                 });
                 if (lbl) {
@@ -2377,6 +2451,34 @@
                 } catch (e) {
                     showErr('usersErr', (e && e.message) || '加载失败');
                 }
+            }
+
+            function deleteUserRow(u) {
+                if (!userCanBeDeletedBySuperAdmin(u)) return;
+                var label = String(u.bindingId || u.email || u.id || '').trim();
+                if (
+                    !window.confirm(
+                        '确定删除用户「' +
+                            label +
+                            '」？\n\n将移除账号及其签到记录、积分调整与头像文件，此操作不可恢复。'
+                    )
+                ) {
+                    return;
+                }
+                var s = loadSess();
+                showErr('usersErr', '');
+                window.UssAuthApi.adminDeleteUser(s.token, u.id)
+                    .then(function () {
+                        document.getElementById('usersOk').textContent = '已删除用户 ' + label;
+                        document.getElementById('usersOk').hidden = false;
+                        setTimeout(function () {
+                            document.getElementById('usersOk').hidden = true;
+                        }, 2500);
+                        loadUsers();
+                    })
+                    .catch(function (e) {
+                        showErr('usersErr', (e && e.message) || '删除失败');
+                    });
             }
 
             function showModalErr(msg) {
@@ -3222,9 +3324,21 @@
                 return String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
             }
 
+            var SCHED_DUR_FALLBACK = 60;
+            var SCHED_BRANCH_LABELS = {
+                hq: '总部',
+                squad1: '一中队',
+                uss: 'USS创伤舰队',
+                ussprod: 'USS生产队',
+            };
+
+            function scheduleDurFallback() {
+                return SCHED_DUR_FALLBACK;
+            }
+
             function clampScheduleMinutes(raw) {
                 var n = Math.round(Number(raw));
-                if (!Number.isFinite(n)) return 3;
+                if (!Number.isFinite(n)) return SCHED_DUR_FALLBACK;
                 return Math.min(1440, Math.max(1, n));
             }
 
@@ -3293,7 +3407,7 @@
                 var tim = padTimeForInput(tplTd.querySelector('.sch-time').value);
                 if (!tim) return { enabled: true, config: null, invalid: true };
                 var durInp = tplTd.querySelector('.sch-dur-inp');
-                var def = clampScheduleMinutes(document.getElementById('defDurInp') && document.getElementById('defDurInp').value);
+                var def = scheduleDurFallback();
                 var dur = clampScheduleMinutes(durInp ? durInp.value : def) || def;
                 return {
                     enabled: true,
@@ -3323,7 +3437,7 @@
                 );
                 var tplState = readSchedTemplateCell(tplTd);
                 var locked = !!(tplState.enabled && tplState.config && !tplState.invalid);
-                var defM = clampScheduleMinutes(document.getElementById('defDurInp') && document.getElementById('defDurInp').value);
+                var defM = scheduleDurFallback();
                 var dayCfg = locked ? tplState.config : {};
                 var sch = state.schedule || { branches: {} };
                 document.querySelectorAll('#schedGrid td.sched-cell[data-b="' + bid + '"]').forEach(function (td) {
@@ -3388,9 +3502,6 @@
                 showErr('schedErr', '');
                 try {
                     state.schedule = await window.UssAuthApi.adminGetSchedule(s.token);
-                    var defM = clampScheduleMinutes(state.schedule.defaultDurationMinutes);
-                    var defInp = document.getElementById('defDurInp');
-                    if (defInp) defInp.value = String(defM);
                     renderScheduleGrid();
                 } catch (e) {
                     showErr('schedErr', (e && e.message) || '加载日程失败');
@@ -3408,13 +3519,11 @@
                 var sch =
                     state.schedule || {
                         branches: {},
-                        defaultDurationMinutes: 3,
                         pointsPerCheckin: 1,
                         pointsPerCheckinByBranch: { hq: 1, squad1: 1, uss: 1, ussprod: 1 },
                     };
-                var defM = clampScheduleMinutes(sch.defaultDurationMinutes);
+                var defM = scheduleDurFallback();
                 var pptMap = sch.pointsPerCheckinByBranch || {};
-                var colCount = dates.length + 1;
                 var html =
                     '<table class="sched-grid-table"><thead><tr><th>分部</th>' +
                     dates.map(function (d) {
@@ -3440,9 +3549,7 @@
                     html +=
                         '<tr class="sched-branch-title-tr" data-sched-branch="' +
                         esc(br.id) +
-                        '"><td class="sched-branch-head-banner" colspan="' +
-                        colCount +
-                        '"><span class="sched-branch-title">' +
+                        '"><td class="sched-branch-head-cell"><span class="sched-branch-title-left">' +
                         '<button type="button" class="sched-fold-btn btn-ghost" data-sched-branch="' +
                         esc(br.id) +
                         '" aria-expanded="' +
@@ -3453,12 +3560,18 @@
                         (folded ? '▶' : '▼') +
                         '</span></button><span class="sched-branch-name-label">' +
                         esc(br.label) +
-                        '</span><span class="sched-branch-points-inline"><label class="sched-ppt-lbl">签到积分' +
+                        '</span></span></td><td class="sched-branch-head-rest" colspan="' +
+                        dates.length +
+                        '"><div class="sched-branch-head-toolbar"><span class="sched-branch-points-inline"><label class="sched-ppt-lbl">签到积分' +
                         '<input type="number" class="sched-ppt-inp sched-num-inp" data-sched-ppt="' +
                         esc(br.id) +
                         '" min="1" max="1000" step="1" list="adminSchedPointsOpts" title="该分部每次成功签到的基础积分" value="' +
                         esc(String(pptBr)) +
-                        '" /></label></span></span></td></tr>';
+                        '" /></label></span><span class="sched-branch-save-wrap"><button type="button" class="btn-save-sched-branch" data-sched-save="' +
+                        esc(br.id) +
+                        '">保存本分部</button><span class="sched-save-ok ok" data-sched-save-ok="' +
+                        esc(br.id) +
+                        '" hidden>已保存</span></span></div></td></tr>';
                     var tplDay = (sch.branchTemplates && sch.branchTemplates[br.id]) || {};
                     var tplActive = branchTemplateActiveFromConfig(tplDay);
                     html +=
@@ -3511,6 +3624,82 @@
                 document.getElementById('schedGrid').innerHTML = html;
                 bindScheduleCells();
                 wireScheduleBranchFold();
+                wireScheduleBranchSave();
+            }
+
+            function wireScheduleBranchSave() {
+                document.querySelectorAll('#schedGrid .btn-save-sched-branch').forEach(function (btn) {
+                    btn.onclick = function () {
+                        var bid = btn.getAttribute('data-sched-save');
+                        if (bid) saveScheduleBranch(bid);
+                    };
+                });
+            }
+
+            function showSchedBranchSaved(bid, saved) {
+                document.querySelectorAll('#schedGrid .sched-save-ok').forEach(function (el) {
+                    el.hidden = true;
+                });
+                if (saved) {
+                    var okEl = document.querySelector('#schedGrid .sched-save-ok[data-sched-save-ok="' + bid + '"]');
+                    if (okEl) okEl.hidden = false;
+                }
+            }
+
+            function collectScheduleBranchPayload(bid) {
+                var def = scheduleDurFallback();
+                var pin = document.querySelector('#schedGrid input.sched-ppt-inp[data-sched-ppt="' + bid + '"]');
+                var pptBy = {};
+                pptBy[bid] = clampSchedulePoints(pin && pin.value);
+                var payloadBranches = {};
+                payloadBranches[bid] = {};
+                var branchTemplates = {};
+                var tplTd = document.querySelector(
+                    '#schedGrid td.sched-template-cell[data-sched-template="' + bid + '"]'
+                );
+                var tplState = readSchedTemplateCell(tplTd);
+                if (tplState.enabled) {
+                    if (tplState.invalid || !tplState.config) {
+                        return {
+                            error:
+                                (SCHED_BRANCH_LABELS[bid] || bid) +
+                                '：已勾选启用长期默认，请填写开始时间或勾选全天',
+                        };
+                    }
+                    branchTemplates[bid] = tplState.config;
+                } else {
+                    branchTemplates[bid] = null;
+                }
+                var templateLocked = !!(tplState.enabled && tplState.config && !tplState.invalid);
+                state.dates.forEach(function (d) {
+                    var td = document.querySelector('#schedGrid td.sched-cell[data-b="' + bid + '"][data-d="' + d + '"]');
+                    if (!td) return;
+                    if (templateLocked) {
+                        payloadBranches[bid][d] = null;
+                        return;
+                    }
+                    if (td.querySelector('.sch-allday').checked) {
+                        payloadBranches[bid][d] = { allDay: true };
+                        return;
+                    }
+                    var tim = padTimeForInput(td.querySelector('.sch-time').value);
+                    if (!tim) {
+                        payloadBranches[bid][d] = null;
+                        return;
+                    }
+                    var durInp = td.querySelector('.sch-dur-inp');
+                    var dur = clampScheduleMinutes(durInp ? durInp.value : def) || def;
+                    payloadBranches[bid][d] = {
+                        startTime: tim,
+                        durationMinutes: dur,
+                    };
+                });
+                return {
+                    branch: bid,
+                    pointsPerCheckinByBranch: pptBy,
+                    branchTemplates: branchTemplates,
+                    branches: payloadBranches,
+                };
             }
 
             function wireScheduleBranchFold() {
@@ -3539,81 +3728,29 @@
                 });
             }
 
-            async function saveSchedule() {
+            async function saveScheduleBranch(bid) {
                 var s = loadSess();
-                var def = clampScheduleMinutes(document.getElementById('defDurInp') && document.getElementById('defDurInp').value);
-                var pptBy = { hq: 1, squad1: 1, uss: 1, ussprod: 1 };
-                ['hq', 'squad1', 'uss', 'ussprod'].forEach(function (bid) {
-                    var pin = document.querySelector('#schedGrid input.sched-ppt-inp[data-sched-ppt="' + bid + '"]');
-                    pptBy[bid] = clampSchedulePoints(pin && pin.value);
-                });
-                var payloadBranches = { hq: {}, squad1: {}, uss: {}, ussprod: {} };
-                var branchTemplates = {};
-                var saveErrors = [];
-                ['hq', 'squad1', 'uss', 'ussprod'].forEach(function (bid) {
-                    var tplTd = document.querySelector(
-                        '#schedGrid td.sched-template-cell[data-sched-template="' + bid + '"]'
-                    );
-                    var tplState = readSchedTemplateCell(tplTd);
-                    if (tplState.enabled) {
-                        if (tplState.invalid || !tplState.config) {
-                            var branchLabel =
-                                bid === 'hq'
-                                    ? '总部'
-                                    : bid === 'squad1'
-                                      ? '一中队'
-                                      : bid === 'uss'
-                                        ? 'USS创伤舰队'
-                                        : 'USS生产队';
-                            saveErrors.push(branchLabel + '：已勾选启用长期默认，请填写开始时间或勾选全天');
-                            branchTemplates[bid] = null;
-                        } else {
-                            branchTemplates[bid] = tplState.config;
-                        }
-                    } else {
-                        branchTemplates[bid] = null;
-                    }
-                    var templateLocked = !!(tplState.enabled && tplState.config && !tplState.invalid);
-                    state.dates.forEach(function (d) {
-                        var td = document.querySelector('#schedGrid td.sched-cell[data-b="' + bid + '"][data-d="' + d + '"]');
-                        if (!td) return;
-                        if (templateLocked) {
-                            payloadBranches[bid][d] = null;
-                            return;
-                        }
-                        if (td.querySelector('.sch-allday').checked) {
-                            payloadBranches[bid][d] = { allDay: true };
-                            return;
-                        }
-                        var tim = padTimeForInput(td.querySelector('.sch-time').value);
-                        if (!tim) {
-                            payloadBranches[bid][d] = null;
-                            return;
-                        }
-                        var durInp = td.querySelector('.sch-dur-inp');
-                        var dur = clampScheduleMinutes(durInp ? durInp.value : def) || def;
-                        payloadBranches[bid][d] = {
-                            startTime: tim,
-                            durationMinutes: dur,
-                        };
-                    });
-                });
-                if (saveErrors.length) {
-                    showErr('schedErr', saveErrors.join('；'));
+                var payload = collectScheduleBranchPayload(bid);
+                if (payload.error) {
+                    showSchedBranchSaved(bid, false);
+                    showErr('schedErr', payload.error);
                     return;
                 }
                 showErr('schedErr', '');
+                var btn = document.querySelector('#schedGrid .btn-save-sched-branch[data-sched-save="' + bid + '"]');
+                if (btn) btn.disabled = true;
                 try {
-                    state.schedule = await window.UssAuthApi.adminPutSchedule(s.token, {
-                        defaultDurationMinutes: def,
-                        pointsPerCheckinByBranch: pptBy,
-                        branchTemplates: branchTemplates,
-                        branches: payloadBranches,
-                    });
-                    renderScheduleGrid();
-                    alert('已保存');
+                    state.schedule = await window.UssAuthApi.adminPutSchedule(s.token, payload);
+                    syncBranchDailyLockState(bid);
+                    showSchedBranchSaved(bid, true);
                 } catch (e) {
-                    showErr('schedErr', (e && e.message) || '保存失败');
+                    showSchedBranchSaved(bid, false);
+                    showErr(
+                        'schedErr',
+                        (SCHED_BRANCH_LABELS[bid] || bid) + ' 保存失败：' + ((e && e.message) || '未知错误')
+                    );
+                } finally {
+                    if (btn) btn.disabled = false;
                 }
             }
 
