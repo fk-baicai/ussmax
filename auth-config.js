@@ -36,8 +36,15 @@
     }
 
     if (isProductionSite) {
-        /** 注册/登录等长耗时请求直连 api 子域（Nginx 120s）；避免 Netlify /api 反代约 26s 超时 */
-        window.USS_AUTH_API_BASE = 'https://api.ussxc.org';
+        /** 登录/签到等走同源 /api（Netlify 反代 → 阿里云），须保证可用 */
+        window.USS_AUTH_API_BASE = String(window.location.origin || '').replace(/\/$/, '');
+        /**
+         * 注册可选直连 api 子域（Nginx 120s，避免 Netlify 反代约 26s 超时）。
+         * 须 DNS 已解析 api.ussxc.org；未配置时 register() 会自动回退同源 /api。
+         */
+        if (!window.USS_REGISTER_API_BASE) {
+            window.USS_REGISTER_API_BASE = 'https://api.ussxc.org';
+        }
         return;
     }
 

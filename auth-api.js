@@ -11,6 +11,22 @@
         return AUTH_API_BASE.replace(/\/$/, '') + path;
     }
 
+    function joinUrlWithBase(base, path) {
+        return String(base || AUTH_API_BASE).replace(/\/$/, '') + path;
+    }
+
+    function isFetchNetworkFailure(err) {
+        if (!err) return false;
+        if (err.name === 'AbortError' || err.name === 'TypeError') return true;
+        var msg = String(err.message || '').toLowerCase();
+        return (
+            msg.indexOf('fetch') !== -1 ||
+            msg.indexOf('network') !== -1 ||
+            msg.indexOf('load failed') !== -1 ||
+            msg.indexOf('failed to fetch') !== -1
+        );
+    }
+
     async function parseJson(r) {
         try {
             return await r.json();
@@ -134,23 +150,47 @@
                     controller.abort();
                 }, 180000);
             }
+            var bases = [];
+            var regBase =
+                typeof window !== 'undefined' && window.USS_REGISTER_API_BASE
+                    ? String(window.USS_REGISTER_API_BASE).replace(/\/$/, '')
+                    : '';
+            var mainBase = AUTH_API_BASE.replace(/\/$/, '');
+            if (regBase && /^https?:\/\//i.test(regBase) && bases.indexOf(regBase) === -1) {
+                bases.push(regBase);
+            }
+            if (mainBase && bases.indexOf(mainBase) === -1) {
+                bases.push(mainBase);
+            }
+            if (!bases.length) bases.push(mainBase);
+
+            var lastErr = null;
             try {
-                var r = await fetch(joinUrl('/api/register'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body),
-                    signal: controller ? controller.signal : undefined,
-                });
-                var data = await parseJson(r);
-                throwIfNotOk(r, data, 'AUTH_R006');
-                return data;
-            } catch (fetchErr) {
-                if (fetchErr && fetchErr.name === 'AbortError') {
-                    var timeoutErr = new Error('错误代码：NET_E001');
-                    timeoutErr.code = 'NET_E001';
-                    throw timeoutErr;
+                for (var bi = 0; bi < bases.length; bi += 1) {
+                    try {
+                        var r = await fetch(joinUrlWithBase(bases[bi], '/api/register'), {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body),
+                            signal: controller ? controller.signal : undefined,
+                        });
+                        var data = await parseJson(r);
+                        throwIfNotOk(r, data, 'AUTH_R006');
+                        return data;
+                    } catch (fetchErr) {
+                        lastErr = fetchErr;
+                        if (fetchErr && fetchErr.name === 'AbortError') {
+                            var timeoutErr = new Error('错误代码：NET_E001');
+                            timeoutErr.code = 'NET_E001';
+                            throw timeoutErr;
+                        }
+                        if (bi < bases.length - 1 && isFetchNetworkFailure(fetchErr)) {
+                            continue;
+                        }
+                        throw fetchErr;
+                    }
                 }
-                throw fetchErr;
+                throw lastErr || new Error('错误代码：NET_E001');
             } finally {
                 if (timer) clearTimeout(timer);
             }
