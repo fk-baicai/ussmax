@@ -2808,39 +2808,6 @@ body.home-page-body .community-section {
         align-items: flex-start;
         text-align: left;
     }
-
-    .oopz-user-prefs__checkin-title,
-    .oopz-user-prefs__checkin-remain,
-    .oopz-user-prefs__checkin-branches {
-        text-align: left;
-    }
-
-    .oopz-user-prefs__checkin-single {
-        align-items: flex-start;
-    }
-
-    .oopz-user-prefs__checkin-cards {
-        flex-direction: column;
-        align-items: stretch;
-        justify-content: flex-start;
-        width: 100%;
-    }
-
-    .oopz-user-prefs__checkin-card {
-        margin-left: 0;
-        padding-left: 0;
-        border-left: none;
-        border-top: 1px solid rgba(94, 233, 255, 0.12);
-        padding-top: 8px;
-        align-items: flex-start;
-        text-align: left;
-        white-space: normal;
-    }
-
-    .oopz-user-prefs__checkin-card:first-child {
-        border-top: none;
-        padding-top: 0;
-    }
 }
 
 @media (max-width: 640px) {
@@ -2863,39 +2830,6 @@ body.home-page-body .community-section {
         gap: 8px;
         align-items: flex-start;
         text-align: left;
-    }
-
-    .oopz-user-prefs__checkin-title,
-    .oopz-user-prefs__checkin-remain,
-    .oopz-user-prefs__checkin-branches {
-        text-align: left;
-    }
-
-    .oopz-user-prefs__checkin-single {
-        align-items: flex-start;
-    }
-
-    .oopz-user-prefs__checkin-cards {
-        flex-direction: column;
-        align-items: stretch;
-        justify-content: flex-start;
-        width: 100%;
-    }
-
-    .oopz-user-prefs__checkin-card {
-        margin-left: 0;
-        padding-left: 0;
-        border-left: none;
-        border-top: 1px solid rgba(94, 233, 255, 0.12);
-        padding-top: 8px;
-        align-items: flex-start;
-        text-align: left;
-        white-space: normal;
-    }
-
-    .oopz-user-prefs__checkin-card:first-child {
-        border-top: none;
-        padding-top: 0;
     }
 }
 
@@ -3022,14 +2956,46 @@ body.home-page-body .community-section {
     white-space: nowrap;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 900px) {
+    .oopz-user-prefs__checkin-title,
+    .oopz-user-prefs__checkin-remain,
+    .oopz-user-prefs__checkin-branches {
+        text-align: left;
+    }
+
+    .oopz-user-prefs__checkin-single {
+        align-items: flex-start;
+    }
+
     .oopz-user-prefs__checkin.is-multi {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: visible;
+    }
+
+    .oopz-user-prefs__checkin-cards {
+        flex-direction: column;
+        align-items: stretch;
         justify-content: flex-start;
+        width: 100%;
     }
 
     .oopz-user-prefs__checkin-card {
-        padding-left: 10px;
-        margin-left: 10px;
+        margin-left: 0;
+        padding-left: 0;
+        border-left: none;
+        border-top: 1px solid rgba(94, 233, 255, 0.12);
+        padding-top: 8px;
+        align-items: flex-start;
+        text-align: left;
+        white-space: normal;
+    }
+
+    .oopz-user-prefs__checkin-card:first-child {
+        border-top: none;
+        padding-top: 0;
     }
 }
 

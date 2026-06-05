@@ -78,7 +78,7 @@
             b.remainingMinutes != null
                 ? b.remainingMinutes
                 : Math.max(0, (b.minOnlineMinutes || 60) - branchEffectiveMins(b, data));
-        var scopeHint = b.windowScoped ? '（开放时段内）' : '';
+        var scopeHint = b.windowScoped && b.scheduleOpen ? '（开放时段内）' : '';
         return '剩余时间：' + formatMinutes(remain) + scopeHint;
     }
 
@@ -95,7 +95,7 @@
         if (b.checkedInToday) {
             return label + '（已签）';
         }
-        var suffix = b.windowScoped ? '（时段内）' : '';
+        var suffix = b.windowScoped && b.scheduleOpen ? '（时段内）' : '';
         return label + ' ' + mins + '/' + (b.minOnlineMinutes || 60) + ' 分' + suffix;
     }
 

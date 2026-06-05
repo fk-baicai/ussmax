@@ -5082,22 +5082,55 @@
                 return;
             }
 
+            const regBtn = document.getElementById('registerSubmitBtn');
+            if (regBtn) {
+                regBtn.disabled = true;
+                regBtn.textContent = '验证 RSI…';
+            }
+
             try {
                 clearRegisterFormHint();
                 var rsiProfile = null;
-                if (window.UssRsiClient && typeof window.UssRsiClient.scrapeCitizenPublicProfile === 'function') {
+                if (
+                    window.UssRsiSync &&
+                    typeof window.UssRsiSync.scrapeCitizenPublicProfileWithRetry === 'function'
+                ) {
+                    try {
+                        rsiProfile = await window.UssRsiSync.scrapeCitizenPublicProfileWithRetry(bindingId, {
+                            maxAttempts: 2,
+                            baseDelayMs: 800,
+                        });
+                    } catch (rsiClientErr) {
+                        console.warn(
+                            '[rsi] 注册前浏览器抓取失败，改由服务端验证',
+                            rsiClientErr && rsiClientErr.message ? rsiClientErr.message : rsiClientErr
+                        );
+                    }
+                } else if (
+                    window.UssRsiClient &&
+                    typeof window.UssRsiClient.scrapeCitizenPublicProfile === 'function'
+                ) {
                     try {
                         rsiProfile = await window.UssRsiClient.scrapeCitizenPublicProfile(bindingId);
                     } catch (rsiClientErr) {
-                        console.warn('[rsi] 注册前浏览器抓取跳过', rsiClientErr && rsiClientErr.message ? rsiClientErr.message : rsiClientErr);
+                        console.warn(
+                            '[rsi] 注册前浏览器抓取失败，改由服务端验证',
+                            rsiClientErr && rsiClientErr.message ? rsiClientErr.message : rsiClientErr
+                        );
                     }
                 }
+                var clientRsiOk =
+                    rsiProfile &&
+                    window.UssRsiSync &&
+                    typeof window.UssRsiSync.clientScrapedLooksUsable === 'function' &&
+                    window.UssRsiSync.clientScrapedLooksUsable(rsiProfile);
+                if (regBtn) regBtn.textContent = '注册中…';
                 const res = await window.UssAuthApi.register({
                     bindingId,
                     email,
                     password,
                     sessionDays: 7,
-                    rsiProfile: rsiProfile || undefined,
+                    rsiProfile: clientRsiOk ? rsiProfile : undefined,
                 });
                 const loginAt = new Date().toISOString();
                 saveAuthSession({
@@ -5126,7 +5159,6 @@
                 }, true);
                 refreshNavLoginState();
                 loadCommunityChatFull();
-                const regBtn = document.getElementById('registerSubmitBtn');
                 if (regBtn) {
                     regBtn.textContent = '已注册';
                     regBtn.disabled = true;
@@ -5136,6 +5168,7 @@
                     refreshLoginDrawerView();
                 }, AUTH_BUTTON_FEEDBACK_MS);
             } catch (e) {
+                resetRegisterSubmitBtn();
                 if (isLikelyNetworkError(e && e.message)) {
                     setRegisterFormHint(safeUserFacingMessage('NET_E001'));
                 } else {

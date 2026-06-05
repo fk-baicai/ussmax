@@ -109,7 +109,37 @@
         return refreshUserRsiOnAuth(token);
     }
 
+    /**
+     * 注册/登录前：在用户浏览器内抓取 RSI（与登录后 sync 相同路径，带重试）
+     * @param {string} handle
+     * @param {{ maxAttempts?: number, baseDelayMs?: number }} [options]
+     * @returns {Promise<object|null>}
+     */
+    async function scrapeCitizenPublicProfileWithRetry(handle, options) {
+        options = options || {};
+        var maxAttempts = options.maxAttempts != null ? options.maxAttempts : 3;
+        var baseDelayMs = options.baseDelayMs != null ? options.baseDelayMs : 1200;
+        if (!handle || !global.UssRsiClient) return null;
+        var lastErr = null;
+        for (var attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            try {
+                var scraped = await global.UssRsiClient.scrapeCitizenPublicProfile(handle);
+                if (clientScrapedLooksUsable(scraped)) return scraped;
+                lastErr = new Error('RSI 页面解析结果不完整');
+            } catch (e) {
+                lastErr = e;
+            }
+            if (attempt < maxAttempts) {
+                await sleep(Math.min(10000, baseDelayMs * Math.pow(2, attempt - 1)));
+            }
+        }
+        if (lastErr) throw lastErr;
+        return null;
+    }
+
     global.UssRsiSync = {
+        clientScrapedLooksUsable: clientScrapedLooksUsable,
+        scrapeCitizenPublicProfileWithRetry: scrapeCitizenPublicProfileWithRetry,
         syncUserRsiFromBrowserClient: syncUserRsiFromBrowserClient,
         refreshUserRsiOnAuth: refreshUserRsiOnAuth,
         refreshUserRsiOnAuthWithRetry: refreshUserRsiOnAuthWithRetry,
