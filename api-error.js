@@ -10,14 +10,14 @@
         if (data && typeof data.code === 'string' && data.code.trim()) {
             return data.code.trim();
         }
+        if (httpStatus === 502 || httpStatus === 503 || httpStatus === 504) {
+            return 'NET_E' + String(httpStatus);
+        }
         if (fallbackCode) return String(fallbackCode);
         if (httpStatus === 401) return 'AUTH_S001';
         if (httpStatus === 403) return 'ADM_001';
         if (httpStatus === 404) return 'RES_404';
         if (httpStatus === 429) return 'RATE_001';
-        if (httpStatus === 502 || httpStatus === 503 || httpStatus === 504) {
-            return 'NET_E' + String(httpStatus);
-        }
         if (httpStatus >= 500) return 'SRV_001';
         if (httpStatus >= 400) return 'VAL_001';
         return DEFAULT_CODE;
@@ -35,6 +35,9 @@
         RSI_E001: 'RSI 资料校验失败，请稍后重试。',
         SRV_001: '服务器繁忙，请稍后重试。',
         NET_E001: '网络异常，请检查网络后重试。',
+        NET_E502: '注册请求超时（网关等待过久）。若邮箱已能登录说明注册已成功，请直接登录；否则请稍后重试。',
+        NET_E503: '服务暂时不可用，请稍后重试。',
+        NET_E504: '注册请求超时，请稍后重试；若邮箱已能登录请直接登录。',
     };
 
     /** 用户可见文案（仅错误码） */

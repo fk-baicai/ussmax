@@ -5123,13 +5123,7 @@
                 }, AUTH_BUTTON_FEEDBACK_MS);
             } catch (e) {
                 resetRegisterSubmitBtn();
-                if (isLikelyNetworkError(e && e.message) || (e && e.code === 'NET_E001')) {
-                    setRegisterFormHint(
-                        '注册请求超时或网络中断。若邮箱已能登录说明注册已成功，请直接登录；否则请稍后重试。'
-                    );
-                } else {
-                    setRegisterFormHint(registerFormErrorHint(e));
-                }
+                setRegisterFormHint(registerFormErrorHint(e));
             }
         }
 

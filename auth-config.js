@@ -36,7 +36,8 @@
     }
 
     if (isProductionSite) {
-        window.USS_AUTH_API_BASE = String(window.location.origin || '').replace(/\/$/, '');
+        /** 注册/登录等长耗时请求直连 api 子域（Nginx 120s）；避免 Netlify /api 反代约 26s 超时 */
+        window.USS_AUTH_API_BASE = 'https://api.ussxc.org';
         return;
     }
 
