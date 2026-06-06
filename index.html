@@ -86,7 +86,6 @@
     <div id="navMegaHangar" class="nav-mega-panel" role="region" aria-label="行政机库" hidden>
         <div class="nav-mega-inner">
             <div class="nav-mega-col">
-                <p class="nav-mega-heading">行政机库</p>
                 <ul class="nav-mega-list">
                     <li>
                         <a href="executive-hangar.html" class="nav-mega-link">
@@ -101,7 +100,6 @@
     <div id="navMegaTools" class="nav-mega-panel" role="region" aria-label="工具" hidden>
         <div class="nav-mega-inner">
             <div class="nav-mega-col">
-                <p class="nav-mega-heading">工具</p>
                 <ul class="nav-mega-list">
                     <li>
                         <a href="server-ip.html" class="nav-mega-link">
@@ -203,13 +201,29 @@
                     <h2 class="rsi-status-title">服务器状态</h2>
                     <div class="rsi-status-lead-row">
                         <p class="rsi-status-lead">星际公民官方服务 · 数据来自 Roberts Space Industries</p>
-                        <p class="rsi-status-updated" id="rsiServerStatusUpdated" hidden aria-live="polite"></p>
                     </div>
                 </div>
             </header>
             <div class="rsi-status-grid" id="rsiServerStatusGrid">
                 <div class="rsi-status-loading" role="status">正在获取 RSI 服务器状态…</div>
             </div>
+        </div>
+    </section>
+
+    <section class="sc-festival-section" id="sc-festival-section" aria-label="节日倒计时">
+        <div class="sc-festival-wrap">
+            <header class="sc-festival-head">
+                <div class="sc-festival-head-text">
+                    <h2 class="sc-festival-title rsi-status-title">节日倒计时</h2>
+                    <div class="sc-festival-lead-row">
+                        <p class="sc-festival-lead">星际公民社区活动 · 数据来自 SCToolBox</p>
+                    </div>
+                </div>
+            </header>
+            <div class="sc-festival-grid" id="scFestivalGrid">
+                <div class="sc-festival-loading" role="status">正在加载节日倒计时…</div>
+            </div>
+            <p class="sc-festival-disclaimer" id="scFestivalDisclaimer" hidden></p>
         </div>
     </section>
 
@@ -5231,6 +5245,7 @@
     <script defer src="oopz-bind.js"></script>
     <script defer src="oopz-user-prefs.js"></script>
     <script defer src="rsi-server-status.js?v=20260603g"></script>
+    <script defer src="sc-festival-countdown.js?v=20260606a"></script>
     <script defer src="oopz-bridge.js"></script>
     <script defer src="site-footer.js"></script>
 </body>

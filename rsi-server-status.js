@@ -13,7 +13,6 @@
     var RSI_STATUS_URL = 'https://status.robertsspaceindustries.com/';
 
     var gridEl = null;
-    var updatedEl = null;
     var timer = null;
 
     function apiBase() {
@@ -24,25 +23,6 @@
             return String(window.USS_AUTH_API_BASE).replace(/\/$/, '');
         }
         return 'http://127.0.0.1:3789';
-    }
-
-    function formatFetchedAt(iso) {
-        try {
-            var d = new Date(iso);
-            if (isNaN(d.getTime())) return '';
-            return d.toLocaleString('zh-CN', {
-                hour12: false,
-                timeZone: 'Asia/Shanghai',
-                year: 'numeric',
-                month: 'numeric',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-            });
-        } catch (e) {
-            return '';
-        }
     }
 
     function componentsAllUnknown(components) {
@@ -101,7 +81,6 @@
     function renderLoading() {
         if (!gridEl) return;
         gridEl.innerHTML = '<div class="rsi-status-loading" role="status">正在获取 RSI 服务器状态…</div>';
-        if (updatedEl) updatedEl.hidden = true;
     }
 
     function renderError(msg) {
@@ -110,7 +89,6 @@
             '<div class="rsi-status-error" role="alert">' +
             String(msg || '暂时无法获取状态，请稍后重试') +
             '</div>';
-        if (updatedEl) updatedEl.hidden = true;
     }
 
     function renderCard(row) {
@@ -164,12 +142,6 @@
         list.forEach(function (row) {
             gridEl.appendChild(renderCard(row));
         });
-
-        if (updatedEl && data.fetchedAt) {
-            var when = formatFetchedAt(data.fetchedAt);
-            updatedEl.textContent = when ? '更新于 ' + when : '';
-            updatedEl.hidden = !when;
-        }
     }
 
     async function fetchFromBackend() {
@@ -227,7 +199,6 @@
 
     function init() {
         gridEl = document.getElementById('rsiServerStatusGrid');
-        updatedEl = document.getElementById('rsiServerStatusUpdated');
         if (!gridEl) return;
         loadStatus({ revalidate: true });
         scheduleRefresh();

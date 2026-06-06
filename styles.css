@@ -1895,6 +1895,7 @@ a.drawer-checkin-textlink:hover {
 
 /* --- 首页 RSI 服务器状态 --- */
 body.home-page-body .rsi-status-section,
+body.home-page-body .sc-festival-section,
 body.home-page-body .oopz-bridge-section,
 body.home-page-body .community-section {
     content-visibility: auto;
@@ -2270,14 +2271,6 @@ body.home-page-body .community-section {
 .rsi-status-error {
     border-color: rgba(255, 120, 120, 0.35);
     color: #ffb4b4;
-}
-
-.rsi-status-updated {
-    margin: 0;
-    padding: 0;
-    font-size: 0.82rem;
-    color: rgba(168, 216, 232, 0.55);
-    white-space: nowrap;
 }
 
 /* --- RSI 众筹资金统计（工具页） --- */
@@ -2687,6 +2680,185 @@ body.home-page-body .community-section {
     text-align: right;
     white-space: nowrap;
     pointer-events: none;
+}
+
+/* --- 首页节日倒计时 --- */
+.sc-festival-section {
+    position: relative;
+    z-index: 2;
+    padding: var(--home-section-block-gap) var(--home-content-pad-x) 0;
+    background: transparent;
+}
+
+.sc-festival-wrap {
+    max-width: var(--home-content-max);
+    width: 100%;
+    margin: 0 auto;
+}
+
+.sc-festival-head {
+    margin-bottom: clamp(14px, 2.2vw, 20px);
+}
+
+.sc-festival-lead-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 10px;
+    margin-top: 6px;
+}
+
+.sc-festival-lead {
+    margin: 0;
+    font-size: 0.92rem;
+    color: rgba(168, 216, 232, 0.72);
+}
+
+.sc-festival-lead a {
+    color: #8ad0ff;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.sc-festival-lead a:hover {
+    color: #b8e4ff;
+}
+
+.sc-festival-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.sc-festival-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 74px;
+    padding: 0.85rem 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--home-surface-border);
+    background: var(--home-surface-tint);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease, background 0.25s ease;
+}
+
+.sc-festival-card:hover {
+    border-color: rgba(94, 233, 255, 0.32);
+    background: rgba(12, 30, 48, 0.95);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        0 4px 18px rgba(94, 233, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.sc-festival-icon-wrap {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+}
+
+.sc-festival-icon-wrap--empty {
+    width: 38px;
+}
+
+.sc-festival-icon {
+    display: block;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    transition: transform 0.25s ease;
+}
+
+.sc-festival-card:hover .sc-festival-icon {
+    transform: scale(1.08);
+}
+
+.sc-festival-card-body {
+    min-width: 0;
+    flex: 1;
+}
+
+.sc-festival-card-title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.3;
+}
+
+.sc-festival-card-sub {
+    margin: 0.1rem 0 0;
+    font-size: 0.78rem;
+    color: rgba(168, 216, 232, 0.62);
+    line-height: 1.25;
+}
+
+.sc-festival-countdown {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    margin-top: 0.35rem;
+    line-height: 1;
+}
+
+.sc-festival-days {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.sc-festival-days--soon {
+    color: #ff5f5f;
+}
+
+.sc-festival-clock {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: rgba(220, 236, 245, 0.92);
+    font-variant-numeric: tabular-nums;
+}
+
+.sc-festival-progress {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #20dc59;
+}
+
+.sc-festival-loading,
+.sc-festival-error {
+    grid-column: 1 / -1;
+    padding: 1rem 1.15rem;
+    border-radius: 10px;
+    border: 1px solid var(--home-surface-border);
+    background: var(--home-surface-tint);
+    color: rgba(168, 216, 232, 0.85);
+    font-size: 0.92rem;
+}
+
+.sc-festival-error {
+    border-color: rgba(255, 120, 120, 0.35);
+    color: #ffb4b4;
+}
+
+.sc-festival-disclaimer {
+    margin: 0.85rem 0 0;
+    font-size: 0.78rem;
+    color: rgba(168, 216, 232, 0.45);
+    line-height: 1.45;
+}
+
+@media (max-width: 900px) {
+    .sc-festival-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 560px) {
+    .sc-festival-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* --- 首页 OOPZ 语音桥接 --- */
@@ -5816,7 +5988,6 @@ a.community-author-avatar-link:focus-visible {
     border: 1px solid rgba(84, 173, 247, 0.25);
     background: rgba(0, 0, 0, 0.35);
     cursor: pointer;
-    vertical-align: top;
 }
 
 .community-chat-img-wrap {

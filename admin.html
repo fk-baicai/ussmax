@@ -436,13 +436,19 @@
             display: block;
         }
         .sched-template-cell .sch-template-enable-wrap {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 0.35rem;
+            width: fit-content;
+            max-width: 100%;
             margin-bottom: 0.35rem;
             color: var(--text);
             font-size: 0.78rem;
             font-weight: 600;
+        }
+        .sched-template-cell .sch-template-enable-wrap span {
+            pointer-events: none;
+            user-select: none;
         }
         .sched-template-cell.sched-template-off .sch-slot-wrap {
             opacity: 0.45;
@@ -457,15 +463,19 @@
             vertical-align: top;
         }
         .sched-cell .sch-allday-wrap {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 0.22rem;
+            width: fit-content;
+            max-width: 100%;
             margin-bottom: 0.28rem;
             color: var(--muted);
             line-height: 1.2;
         }
         .sched-cell .sch-allday-wrap span {
             font-size: 0.74rem;
+            pointer-events: none;
+            user-select: none;
         }
         .sched-cell .sch-slot-wrap { opacity: 1; }
         .sched-cell.sch-cell-off .sch-slot-wrap { opacity: 0.38; pointer-events: none; }
@@ -3360,10 +3370,10 @@
                     : '';
                 return (
                     lockBadge +
-                    '<label class="sch-allday-wrap"><input type="checkbox" class="sch-allday"' +
+                    '<div class="sch-allday-wrap"><input type="checkbox" class="sch-allday"' +
                     (allDay ? ' checked' : '') +
                     (o.locked ? ' disabled' : '') +
-                    ' title="全天开放" /> <span title="全天开放">全天</span></label>' +
+                    ' title="全天开放" /><span title="全天开放">全天</span></div>' +
                     '<div class="sch-slot-wrap">' +
                     '<label class="sch-time-lbl" title="开始时刻（24小时制）">开始' +
                     '<input type="time" class="sch-time" step="300" title="24小时制" value="' +
@@ -3386,11 +3396,11 @@
             function buildSchedTemplateHtml(tplDay, defM) {
                 var enabled = branchTemplateActiveFromConfig(tplDay);
                 return (
-                    '<label class="sch-template-enable-wrap">' +
+                    '<div class="sch-template-enable-wrap">' +
                     '<input type="checkbox" class="sch-template-enabled"' +
                     (enabled ? ' checked' : '') +
                     ' title="启用后下方日期格锁定，统一沿用本规则" />' +
-                    '<span>启用长期默认</span></label>' +
+                    '<span>启用长期默认</span></div>' +
                     '<div class="sch-template-hint">启用后下方日期不可单独修改；需逐日配置时请先取消勾选。留空开始时间且未勾选全天视为未启用。</div>' +
                     buildSchedSlotHtml(tplDay, defM, { locked: false })
                 );

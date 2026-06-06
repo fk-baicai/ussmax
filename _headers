@@ -40,6 +40,10 @@
   Cache-Control: no-store, no-cache, must-revalidate
   Netlify-CDN-Cache-Control: no-store
 
+/api/sc-festival-countdown
+  Cache-Control: no-store, no-cache, must-revalidate
+  Netlify-CDN-Cache-Control: no-store
+
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
