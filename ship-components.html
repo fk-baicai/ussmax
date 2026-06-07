@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>舰船配件 · USS</title>
+    <meta name="description" content="星际公民舰船配件查询：散热、电源、护盾、量子驱动器、跳跃驱动器、雷达，含价格与购买地点。">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="ship-components.css">
+    <link rel="icon" href="/favicon.ico" sizes="48x48">
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <script src="auth-config.js"></script>
+</head>
+<body class="ship-components-body">
+    <header class="site-header">
+    <div class="navbar-top" role="banner" aria-label="舰队标识">
+        <span class="navbar-top-brand">UMBRELLA FLEET</span>
+    </div>
+    <nav class="navbar">
+        <div class="navbar-start">
+        <div class="logo">
+            <a href="index.html" aria-label="首页"><img src="fleet-logo.jpg" alt="舰队 LOGO" decoding="async"></a>
+        </div>
+        <div class="nav-links" role="navigation" aria-label="站点导航">
+            <div class="nav-dropdown">
+                <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true" data-mega-target="navMegaHangar" aria-controls="navMegaHangar">
+                    行政机库
+                    <span class="nav-dropdown-caret" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="nav-dropdown">
+                <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true" data-mega-target="navMegaShip" aria-controls="navMegaShip">
+                    舰船
+                    <span class="nav-dropdown-caret" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="nav-dropdown nav-tools-gated" id="navToolsWrap">
+                <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true" data-mega-target="navMegaTools" aria-controls="navMegaTools">
+                    工具
+                    <span class="nav-dropdown-caret" aria-hidden="true"></span>
+                </button>
+            </div>
+        </div>
+        </div>
+    </nav>
+    <div id="navMegaHangar" class="nav-mega-panel" role="region" aria-label="行政机库" hidden>
+        <div class="nav-mega-inner">
+            <div class="nav-mega-col">
+                <ul class="nav-mega-list">
+                    <li><a href="executive-hangar.html" class="nav-mega-link"><span class="nav-mega-link-title">进入行政机库</span><span class="nav-mega-link-desc">Pyro 行政机库周期与插卡窗口</span></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div id="navMegaShip" class="nav-mega-panel" role="region" aria-label="舰船" hidden>
+        <div class="nav-mega-inner">
+            <div class="nav-mega-col">
+                <ul class="nav-mega-list">
+                    <li><a href="ship-components.html" class="nav-mega-link is-current"><span class="nav-mega-link-title">舰船配件</span><span class="nav-mega-link-desc">散热 · 电源 · 护盾 · 量子驱动器 · 跳跃驱动器 · 雷达</span></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div id="navMegaTools" class="nav-mega-panel" role="region" aria-label="工具" hidden>
+        <div class="nav-mega-inner">
+            <div class="nav-mega-col">
+                <ul class="nav-mega-list">
+                    <li><a href="server-ip.html" class="nav-mega-link"><span class="nav-mega-link-title">服务器 IP</span><span class="nav-mega-link-desc">服务器运行状态/IP地址</span></a></li>
+                    <li><a href="rsi-funding.html" class="nav-mega-link"><span class="nav-mega-link-title">资金统计</span><span class="nav-mega-link-desc">RSI 众筹资金与玩家数量</span></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    </header>
+
+    <main class="sc-main">
+        <header class="sc-hero">
+            <h1 class="sc-title">舰船配件</h1>
+            <p class="sc-lead">散热 · 电源 · 护盾 · 量子驱动器 · 跳跃驱动器 · 雷达 · 含最低买入价与购买地点</p>
+        </header>
+
+        <div id="scGate" class="sc-gate is-hidden" role="alert"></div>
+
+        <div class="sc-panel sc-toolbar-panel">
+        <div class="sc-toolbar">
+            <label class="sc-search-wrap">
+                <span class="sc-sr-only">搜索配件名称</span>
+                <input type="search" id="scSearch" class="sc-search" placeholder="搜索配件名称（中/英）…" autocomplete="off">
+            </label>
+        </div>
+        </div>
+
+        <div class="sc-panel sc-tabs-panel">
+            <p class="sc-tabs-label">配件类型</p>
+            <div class="sc-tabs" id="scTabs" role="tablist" aria-label="配件类型"></div>
+        </div>
+
+        <div class="sc-panel sc-data-panel">
+            <div class="sc-meta-bar" id="scMetaBar"></div>
+            <p class="sc-mobile-scroll-hint" id="scMobileScrollHint" aria-hidden="true">表格可左右滑动查看更多列</p>
+
+            <div class="sc-table-shell" id="scTableShell">
+                <table class="sc-table" id="scTable">
+                    <colgroup>
+                        <col class="sc-col-name" />
+                        <col class="sc-col-type" />
+                        <col class="sc-col-class" />
+                        <col class="sc-col-grade" />
+                        <col class="sc-col-size" />
+                        <col class="sc-col-mfg" />
+                        <col class="sc-col-mass" />
+                        <col class="sc-col-volume" />
+                        <col class="sc-col-speed sc-col-quantum-only" />
+                        <col class="sc-col-price" />
+                        <col class="sc-col-loc" />
+                        <col class="sc-col-expand" />
+                    </colgroup>
+                    <thead id="scTableHead">
+                        <tr>
+                            <th class="sc-col-name sc-sortable" data-sort="name" scope="col"><button type="button" class="sc-sort-btn">名称</button></th>
+                            <th class="sc-col-type sc-sortable" data-sort="type" scope="col"><button type="button" class="sc-sort-btn">类型</button></th>
+                            <th class="sc-col-class sc-sortable" data-sort="class" scope="col"><button type="button" class="sc-sort-btn">等级用途</button></th>
+                            <th class="sc-col-grade sc-sortable" data-sort="grade" scope="col"><button type="button" class="sc-sort-btn">等级</button></th>
+                            <th class="sc-col-size sc-sortable" data-sort="size" scope="col"><button type="button" class="sc-sort-btn">尺寸</button></th>
+                            <th class="sc-col-mfg sc-sortable" data-sort="mfg" scope="col"><button type="button" class="sc-sort-btn">制造商</button></th>
+                            <th class="sc-col-mass sc-sortable" data-sort="mass" scope="col"><button type="button" class="sc-sort-btn">质量</button></th>
+                            <th class="sc-col-volume sc-sortable" data-sort="volume" scope="col"><button type="button" class="sc-sort-btn">体积</button></th>
+                            <th class="sc-col-speed sc-col-quantum-only sc-sortable" data-sort="speed" scope="col"><button type="button" class="sc-sort-btn">最高速度</button></th>
+                            <th class="sc-col-price sc-sortable" data-sort="price" scope="col"><button type="button" class="sc-sort-btn">最低买入价</button></th>
+                            <th class="sc-col-loc sc-sortable" data-sort="loc" scope="col"><button type="button" class="sc-sort-btn">购买地点</button></th>
+                            <th class="sc-col-expand" scope="col"><span class="sc-sr-only">展开</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="scTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <p class="sc-footnote" id="scFootnote"></p>
+    </main>
+
+    <script src="nav-dropdown.js" defer></script>
+    <script src="nav-auth-tools.js" defer></script>
+    <script src="api-error.js"></script>
+    <script src="ship-components.js" defer></script>
+</body>
+</html>

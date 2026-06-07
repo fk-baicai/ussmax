@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SC 数据库管理 · USS</title>
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="stylesheet" href="admin-sc-database.css" />
+    <script src="auth-config.js"></script>
+</head>
+<body>
+    <header>
+        <h1>SC 数据库管理</h1>
+        <div class="header-links">
+            <a href="admin.html">返回管理系统</a>
+            <a href="ship-components.html">配件前台</a>
+            <a href="index.html">返回首页</a>
+        </div>
+    </header>
+    <main>
+        <p id="gateMsg"></p>
+        <div id="app" hidden>
+            <section id="secScSync">
+                <h2>舰船配件数据同步</h2>
+                <p class="hint">从 UEX 同步配件名录、价格与购买地点（数据存于配件服务器 / sc-database）。</p>
+                <div class="row">
+                    <button type="button" id="btnScSync">同步配件数据</button>
+                    <span id="scSyncStatus" class="hint"></span>
+                </div>
+                <p id="scTokenHint" class="hint"></p>
+                <div id="scSyncErr" class="err" hidden></div>
+                <h3 style="margin-top: 1.25rem; font-size: 1rem">同步日志</h3>
+                <p class="hint">仅保留最近 5 条，更早记录会自动清理。</p>
+                <div class="row">
+                    <button type="button" id="btnReloadScSyncLog" class="btn-secondary">刷新日志</button>
+                </div>
+                <ul id="scSyncLogList"></ul>
+            </section>
+
+            <section id="secScManualLoc">
+                <h2>手动汉化补译</h2>
+                <p class="hint">
+                    扫描配件名、制造商、地点、终端等仍为英文的字段，可在此手动补译。数据保存在
+                    <code>manual-loc-names.json</code>（配件名）与
+                    <code>manual-text-overrides.json</code>（其他字段），UEX 同步与汉化包更新<strong>不会覆盖</strong>。
+                </p>
+                <div class="row">
+                    <button type="button" id="btnReloadScManualLoc" class="btn-secondary">刷新列表</button>
+                    <span id="scManualLocMeta" class="hint"></span>
+                </div>
+                <div id="scManualLocErr" class="err" hidden></div>
+
+                <h4 style="margin: 1rem 0 0.5rem; font-size: 0.92rem">未命中（待补译）</h4>
+                <div class="sc-manual-toolbar">
+                    <div class="sc-manual-kind-chips" id="scManualUnmatchedKinds" role="tablist" aria-label="待补译分类"></div>
+                    <input
+                        type="search"
+                        id="scManualUnmatchedSearch"
+                        class="sc-manual-search"
+                        placeholder="搜索英文名、Slug、中文、备注…"
+                        autocomplete="off"
+                    />
+                    <span id="scManualUnmatchedFilterMeta" class="sc-manual-filter-meta hint"></span>
+                </div>
+                <div class="sc-manual-loc-wrap">
+                    <table class="sc-manual-loc-table">
+                        <thead>
+                            <tr>
+                                <th>字段</th>
+                                <th>英文名</th>
+                                <th>Slug</th>
+                                <th>中文名</th>
+                                <th>备注</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="scManualUnmatchedBody"></tbody>
+                    </table>
+                </div>
+
+                <h4 style="margin: 1.25rem 0 0.5rem; font-size: 0.92rem">已手动补译</h4>
+                <div class="sc-manual-toolbar">
+                    <div class="sc-manual-kind-chips" id="scManualSavedKinds" role="tablist" aria-label="已补译分类"></div>
+                    <input
+                        type="search"
+                        id="scManualSavedSearch"
+                        class="sc-manual-search"
+                        placeholder="搜索英文名、中文、备注…"
+                        autocomplete="off"
+                    />
+                    <span id="scManualSavedFilterMeta" class="sc-manual-filter-meta hint"></span>
+                </div>
+                <div class="sc-manual-loc-wrap">
+                    <table class="sc-manual-loc-table">
+                        <thead>
+                            <tr>
+                                <th>字段</th>
+                                <th>英文名</th>
+                                <th>中文名</th>
+                                <th>备注</th>
+                                <th>更新于</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="scManualSavedBody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+    <script src="api-error.js"></script>
+    <script src="auth-api.js"></script>
+    <script src="admin-sc-database.js" defer></script>
+</body>
+</html>

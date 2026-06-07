@@ -1598,12 +1598,18 @@
         #auditLogMeta {
             margin-left: 0.75rem;
         }
+        .header-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
     </style>
 </head>
 <body>
     <header>
         <h1>管理系统</h1>
-        <div>
+        <div class="header-links">
+            <a href="admin-sc-database.html" id="linkScDatabase" hidden>SC 数据库</a>
             <a href="index.html">返回首页</a>
         </div>
     </header>
@@ -2217,6 +2223,8 @@
                 app.style.display = 'block';
                 if (state.me.isSuperAdmin) {
                     document.getElementById('secAdmins').style.display = 'block';
+                    var linkSc = document.getElementById('linkScDatabase');
+                    if (linkSc) linkSc.hidden = false;
                     loadAdmins();
                 }
                 wireUsersUiOnce();
