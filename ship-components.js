@@ -3,7 +3,7 @@
 
     var API_BASE = (
         (typeof window !== 'undefined' &&
-            (window.USS_SC_COMPONENTS_API_BASE || window.USS_REGISTER_API_BASE || window.USS_AUTH_API_BASE)) ||
+            (window.USS_SC_COMPONENTS_API_BASE || window.USS_AUTH_API_BASE || window.USS_REGISTER_API_BASE)) ||
         ''
     ).replace(/\/$/, '');
     var COL_COUNT = 12;
