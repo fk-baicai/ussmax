@@ -45,6 +45,10 @@
         if (!window.USS_REGISTER_API_BASE) {
             window.USS_REGISTER_API_BASE = 'https://api.ussxc.org';
         }
+        /** 舰船配件首查较慢，走 api 子域避免 Netlify /api 反代约 26s 超时 */
+        if (!window.USS_SC_COMPONENTS_API_BASE) {
+            window.USS_SC_COMPONENTS_API_BASE = 'https://api.ussxc.org';
+        }
         return;
     }
 
