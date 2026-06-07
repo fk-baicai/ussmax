@@ -6,16 +6,22 @@
             (window.USS_SC_COMPONENTS_API_BASE || window.USS_AUTH_API_BASE || window.USS_REGISTER_API_BASE)) ||
         ''
     ).replace(/\/$/, '');
-    var COL_COUNT = 12;
+    var COL_COUNT = 13;
+    var PAGE_SIZE = 20;
     var state = {
         type: 'cooling',
         types: {},
         meta: null,
         items: [],
         total: 0,
+        page: 1,
+        hasMore: false,
+        loading: false,
+        loadingMore: false,
         expanded: {},
         searchTimer: null,
         listFetchController: null,
+        loadMoreController: null,
         sortKey: 'size',
         sortDir: 'asc',
     };
@@ -29,7 +35,10 @@
         metaBar: document.getElementById('scMetaBar'),
         footnote: document.getElementById('scFootnote'),
         search: document.getElementById('scSearch'),
+        loadSentinel: document.getElementById('scLoadSentinel'),
     };
+
+    var loadMoreObserver = null;
 
     var SORT_GETTERS = {
         name: function (item) {
@@ -113,14 +122,74 @@
         }
     }
 
-    function buildQuery() {
+    function buildQuery(page) {
         var q = els.search ? String(els.search.value || '').trim() : '';
         var params = new URLSearchParams();
         if (q) params.set('q', q);
         if (state.type && !q) params.set('type', state.type);
-        // 全局搜索需覆盖全部配件（当前约 328 条）
-        params.set('limit', q ? '500' : '200');
+        params.set('limit', String(PAGE_SIZE));
+        params.set('page', String(page || 1));
         return params.toString();
+    }
+
+    function abortPendingFetches() {
+        if (state.listFetchController) state.listFetchController.abort();
+        if (state.loadMoreController) state.loadMoreController.abort();
+        state.listFetchController = null;
+        state.loadMoreController = null;
+    }
+
+    function removeLoadMoreRow() {
+        if (!els.body) return;
+        var row = els.body.querySelector('.sc-load-more-row');
+        if (row) row.remove();
+    }
+
+    function showLoadMoreRow(text) {
+        if (!els.body) return;
+        removeLoadMoreRow();
+        var tr = document.createElement('tr');
+        tr.className = 'sc-load-more-row';
+        var td = document.createElement('td');
+        td.colSpan = COL_COUNT;
+        td.textContent = text;
+        tr.appendChild(td);
+        els.body.appendChild(tr);
+    }
+
+    function mergeItems(existing, incoming) {
+        var seen = {};
+        var out = (existing || []).slice();
+        (existing || []).forEach(function (item) {
+            seen[String(item.id_item)] = true;
+        });
+        (incoming || []).forEach(function (item) {
+            var id = String(item.id_item);
+            if (seen[id]) return;
+            seen[id] = true;
+            out.push(item);
+        });
+        return out;
+    }
+
+    function appendTableRows(newItems) {
+        if (!els.body || !newItems.length) return;
+        removeLoadMoreRow();
+        var scrollY = window.scrollY;
+        newItems.forEach(function (item) {
+            els.body.appendChild(renderRow(item));
+            if (state.expanded[item.id_item]) {
+                els.body.appendChild(renderDetailRow(item));
+            }
+        });
+        if (refreshMobileTableScrollState) {
+            requestAnimationFrame(refreshMobileTableScrollState);
+        }
+        window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
+    }
+
+    function shouldResortOnAppend() {
+        return state.sortKey !== 'size' || state.sortDir !== 'asc';
     }
 
     function renderTabs() {
@@ -226,15 +295,21 @@
     }
 
     function isSpeedColumnVisible() {
-        return isSearchActive() || state.type === 'quantum';
+        if (isSearchActive()) return true;
+        return state.type === 'quantum' || state.type === 'jump';
     }
 
     function isMassVolumeVisible() {
         if (isSearchActive()) return true;
-        return state.type !== 'jump' && state.type !== 'radar';
+        return state.type !== 'radar';
+    }
+
+    function isMobileTableLayout() {
+        return window.matchMedia('(max-width: 720px)').matches;
     }
 
     function isColumnVisible(key) {
+        if (isMobileTableLayout() && (key === 'mfg' || key === 'mass' || key === 'volume')) return false;
         if (key === 'type') return isTypeColumnVisible();
         if (key === 'speed') return isSpeedColumnVisible();
         if (key === 'mass' || key === 'volume') return isMassVolumeVisible();
@@ -271,10 +346,67 @@
         expand: 0.4,
     };
 
+    var MOBILE_COL_WIDTHS = {
+        name: '7.75rem',
+        type: '4.35rem',
+        class: '4.35rem',
+        grade: '2.9rem',
+        size: '2.9rem',
+        speed: '5.35rem',
+        price: '5.85rem',
+        loc: '13.5rem',
+        expand: '3.4rem',
+    };
+
     function syncTableColumns() {
+        var visible = COLUMN_ORDER.filter(isColumnVisible);
+
+        if (isMobileTableLayout()) {
+            var table = document.getElementById('scTable');
+            var totalRem = 0;
+            visible.forEach(function (key) {
+                var w = MOBILE_COL_WIDTHS[key];
+                if (!w) return;
+                totalRem += parseFloat(w) || 0;
+            });
+            if (table && totalRem > 0) {
+                table.style.width = totalRem + 'rem';
+                table.style.minWidth = totalRem + 'rem';
+                table.style.maxWidth = totalRem + 'rem';
+            }
+            document.querySelectorAll('#scTable col').forEach(function (col) {
+                var key = '';
+                var parts = (col.className || '').split(/\s+/);
+                for (var i = 0; i < parts.length; i++) {
+                    if (parts[i].indexOf('sc-col-') === 0) {
+                        key = parts[i].replace('sc-col-', '');
+                        break;
+                    }
+                }
+                if (!key) return;
+                var mobileW = visible.indexOf(key) >= 0 ? MOBILE_COL_WIDTHS[key] : '';
+                if (mobileW) {
+                    col.style.width = mobileW;
+                    col.style.minWidth = mobileW;
+                    col.style.maxWidth = mobileW;
+                } else {
+                    col.style.width = '0';
+                    col.style.minWidth = '0';
+                    col.style.maxWidth = '0';
+                }
+            });
+            return;
+        }
+
+        var tableDesktop = document.getElementById('scTable');
+        if (tableDesktop) {
+            tableDesktop.style.width = '';
+            tableDesktop.style.minWidth = '';
+            tableDesktop.style.maxWidth = '';
+        }
+
         var expandPct = 4;
         var budget = 100 - expandPct;
-        var visible = COLUMN_ORDER.filter(isColumnVisible);
         var weightSum = 0;
         visible.forEach(function (key) {
             if (key !== 'expand') weightSum += COLUMN_WEIGHTS[key] || 1;
@@ -313,9 +445,11 @@
                 if (!w) {
                     col.style.width = '0';
                     col.style.minWidth = '0';
+                    col.style.maxWidth = '0';
                 } else {
                     col.style.width = w + '%';
                     col.style.minWidth = '';
+                    col.style.maxWidth = '';
                 }
                 break;
             }
@@ -494,11 +628,24 @@
         }
     }
 
+    function collapseAllExpanded() {
+        if (!els.body) return;
+        els.body.querySelectorAll('.sc-detail-row').forEach(function (row) {
+            row.remove();
+        });
+        els.body.querySelectorAll('.sc-expand-btn.is-open').forEach(function (btn) {
+            btn.textContent = '地点';
+            btn.classList.remove('is-open');
+            btn.setAttribute('aria-expanded', 'false');
+        });
+        state.expanded = {};
+    }
+
     function toggleExpand(idItem, rowEl) {
         var scrollY = window.scrollY;
         var wasOpen = !!state.expanded[idItem];
-        state.expanded[idItem] = !wasOpen;
         if (wasOpen) {
+            delete state.expanded[idItem];
             var next = rowEl.nextElementSibling;
             if (next && next.classList.contains('sc-detail-row')) next.remove();
             var btn = rowEl.querySelector('.sc-expand-btn');
@@ -508,6 +655,8 @@
                 btn.setAttribute('aria-expanded', 'false');
             }
         } else {
+            collapseAllExpanded();
+            state.expanded[idItem] = true;
             var item = state.items.find(function (x) {
                 return String(x.id_item) === String(idItem);
             });
@@ -533,12 +682,17 @@
             var total = state.total || 0;
             var countHint = '共 ' + total + ' 条';
             if (shown > 0 && total > shown) {
-                countHint = '共 ' + total + ' 条（当前显示 ' + shown + ' 条）';
+                countHint = '共 ' + total + ' 条（已加载 ' + shown + ' 条，向下滚动加载更多）';
+            } else if (shown > 0 && total === shown && total > PAGE_SIZE) {
+                countHint = '共 ' + total + ' 条（已全部加载）';
             }
+            var loadHint = '';
+            if (state.loadingMore) loadHint = ' · 正在加载更多…';
             els.metaBar.textContent =
                 typeHint +
                 ' · ' +
                 countHint +
+                loadHint +
                 (state.meta && state.meta.synced_at ? ' · 数据更新于 ' + formatSynced(state.meta.synced_at) : '');
         }
         if (els.footnote) {
@@ -560,18 +714,24 @@
 
     async function loadList() {
         if (!els.body) return;
-        if (state.listFetchController) state.listFetchController.abort();
+        abortPendingFetches();
+        state.page = 1;
+        state.hasMore = false;
+        state.loading = true;
+        state.loadingMore = false;
         state.listFetchController = new AbortController();
         var signal = state.listFetchController.signal;
         els.body.innerHTML = '<tr><td colspan="' + COL_COUNT + '">加载中…</td></tr>';
+        updateMetaBar();
         try {
-            var res = await fetch(apiUrl('/api/sc/components?' + buildQuery()), { signal: signal });
+            var res = await fetch(apiUrl('/api/sc/components?' + buildQuery(1)), { signal: signal });
             var data = await res.json();
             if (!res.ok || !data.ok) throw new Error((data && data.message) || '加载失败');
             hideGate();
             state.meta = data.meta;
             state.items = data.items || [];
             state.total = data.total || 0;
+            state.hasMore = state.items.length < state.total;
             syncBodyMode();
             updateSortHeaders();
             renderTable();
@@ -585,7 +745,79 @@
                 showGate((e && e.message) || '加载失败');
             }
             els.body.innerHTML = '';
+            state.hasMore = false;
+        } finally {
+            state.loading = false;
+            state.listFetchController = null;
         }
+    }
+
+    async function loadMore() {
+        if (!els.body || state.loading || state.loadingMore || !state.hasMore) return;
+        state.loadingMore = true;
+        updateMetaBar();
+        showLoadMoreRow('加载更多…');
+        state.loadMoreController = new AbortController();
+        var signal = state.loadMoreController.signal;
+        var nextPage = state.page + 1;
+        try {
+            var res = await fetch(apiUrl('/api/sc/components?' + buildQuery(nextPage)), { signal: signal });
+            var data = await res.json();
+            if (!res.ok || !data.ok) throw new Error((data && data.message) || '加载失败');
+            var incoming = data.items || [];
+            if (!incoming.length) {
+                state.hasMore = false;
+                removeLoadMoreRow();
+                return;
+            }
+            state.page = nextPage;
+            if (data.meta) state.meta = data.meta;
+            if (data.total != null) state.total = data.total;
+            var prevLen = state.items.length;
+            state.items = mergeItems(state.items, incoming);
+            state.hasMore = state.items.length < state.total;
+            if (shouldResortOnAppend()) {
+                renderTable();
+            } else {
+                var onlyNew = state.items.slice(prevLen);
+                appendTableRows(onlyNew);
+            }
+            updateMetaBar();
+        } catch (e) {
+            if (e && e.name === 'AbortError') return;
+            removeLoadMoreRow();
+            showLoadMoreRow('加载失败，继续向下滚动重试');
+        } finally {
+            state.loadingMore = false;
+            state.loadMoreController = null;
+            if (state.hasMore) removeLoadMoreRow();
+        }
+    }
+
+    function initInfiniteScroll() {
+        if (!els.loadSentinel || typeof IntersectionObserver === 'undefined') {
+            window.addEventListener(
+                'scroll',
+                function () {
+                    if (state.loading || state.loadingMore || !state.hasMore) return;
+                    var doc = document.documentElement;
+                    if (window.innerHeight + window.scrollY >= doc.scrollHeight - 320) {
+                        loadMore();
+                    }
+                },
+                { passive: true }
+            );
+            return;
+        }
+        if (loadMoreObserver) loadMoreObserver.disconnect();
+        loadMoreObserver = new IntersectionObserver(
+            function (entries) {
+                if (!entries[0] || !entries[0].isIntersecting) return;
+                loadMore();
+            },
+            { root: null, rootMargin: '240px 0px', threshold: 0 }
+        );
+        loadMoreObserver.observe(els.loadSentinel);
     }
 
     function initMobileTableDragScroll() {
@@ -669,12 +901,18 @@
             true
         );
 
-        if (typeof mq.addEventListener === 'function') {
-            mq.addEventListener('change', updateScrollableState);
-        } else if (typeof mq.addListener === 'function') {
-            mq.addListener(updateScrollableState);
+        function onMobileLayoutChange() {
+            updateScrollableState();
+            syncTableColumns();
+            if (refreshMobileTableScrollState) refreshMobileTableScrollState();
         }
-        window.addEventListener('resize', updateScrollableState);
+
+        if (typeof mq.addEventListener === 'function') {
+            mq.addEventListener('change', onMobileLayoutChange);
+        } else if (typeof mq.addListener === 'function') {
+            mq.addListener(onMobileLayoutChange);
+        }
+        window.addEventListener('resize', onMobileLayoutChange);
         window.addEventListener('orientationchange', function () {
             setTimeout(updateScrollableState, 120);
         });
@@ -707,6 +945,7 @@
                 state.searchTimer = setTimeout(loadList, 300);
             });
         }
+        initInfiniteScroll();
         loadList();
     }
 
