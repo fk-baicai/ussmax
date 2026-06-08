@@ -78,28 +78,44 @@
 
     <main class="sc-main">
         <header class="sc-hero">
-            <h1 class="sc-title">舰船配件</h1>
-            <p class="sc-lead">散热 · 电源 · 护盾 · 量子驱动器 · 跳跃驱动器 · 雷达 · 含最低买入价与购买地点</p>
+            <div class="sc-hero-head" aria-label="舰船配件">
+                <span class="sc-hero-kicker">COMPONENTS</span>
+                <span class="sc-hero-vrule" aria-hidden="true"></span>
+                <h1 class="sc-title">舰船配件</h1>
+            </div>
+            <span class="sc-hero-hrule" aria-hidden="true"></span>
+            <nav class="sc-lead" aria-label="配件类别">
+                <span class="sc-lead-item">散热</span>
+                <span class="sc-lead-sep" aria-hidden="true"></span>
+                <span class="sc-lead-item">电源</span>
+                <span class="sc-lead-sep" aria-hidden="true"></span>
+                <span class="sc-lead-item">护盾</span>
+                <span class="sc-lead-sep" aria-hidden="true"></span>
+                <span class="sc-lead-item">量子驱动器</span>
+                <span class="sc-lead-sep" aria-hidden="true"></span>
+                <span class="sc-lead-item">跳跃驱动器</span>
+                <span class="sc-lead-sep" aria-hidden="true"></span>
+                <span class="sc-lead-item">雷达</span>
+            </nav>
         </header>
 
         <div id="scGate" class="sc-gate is-hidden" role="alert"></div>
 
-        <div class="sc-panel sc-toolbar-panel">
-        <div class="sc-toolbar">
-            <label class="sc-search-wrap">
-                <span class="sc-sr-only">搜索配件名称</span>
-                <input type="search" id="scSearch" class="sc-search" placeholder="搜索配件名称（中/英）…" autocomplete="off">
-            </label>
-        </div>
-        </div>
+        <div class="sc-workspace sc-panel">
+            <div class="sc-workspace-toolbar sc-toolbar">
+                <label class="sc-search-wrap">
+                    <span class="sc-sr-only">搜索配件名称</span>
+                    <input type="search" id="scSearch" class="sc-search" placeholder="搜索当前类型配件（中/英）…" autocomplete="off" aria-autocomplete="list" aria-controls="scSearchSuggest" aria-expanded="false">
+                    <div id="scSearchSuggest" class="sc-search-suggest" role="listbox" hidden aria-label="其他类型中的匹配配件"></div>
+                </label>
+            </div>
 
-        <div class="sc-panel sc-tabs-panel">
-            <p class="sc-tabs-label">配件类型</p>
-            <div class="sc-tabs" id="scTabs" role="tablist" aria-label="配件类型"></div>
-        </div>
+            <div class="sc-workspace-tabs">
+                <p class="sc-tabs-label">配件类型</p>
+                <div class="sc-tabs" id="scTabs" role="tablist" aria-label="配件类型"></div>
+            </div>
 
-        <div class="sc-panel sc-data-panel">
-            <div class="sc-meta-bar" id="scMetaBar"></div>
+            <div class="sc-workspace-body">
             <p class="sc-mobile-scroll-hint" id="scMobileScrollHint" aria-hidden="true">表格可左右滑动查看更多列</p>
 
             <div class="sc-table-shell" id="scTableShell">
@@ -136,6 +152,8 @@
                     </thead>
                     <tbody id="scTableBody"></tbody>
                 </table>
+            </div>
+            <div class="sc-meta-bar" id="scMetaBar"></div>
             </div>
         </div>
 

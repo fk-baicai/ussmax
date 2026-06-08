@@ -20,6 +20,9 @@
         loadingMore: false,
         expanded: {},
         searchTimer: null,
+        suggestTimer: null,
+        suggestController: null,
+        suggestItems: [],
         listFetchController: null,
         loadMoreController: null,
         sortKey: 'size',
@@ -35,6 +38,7 @@
         metaBar: document.getElementById('scMetaBar'),
         footnote: document.getElementById('scFootnote'),
         search: document.getElementById('scSearch'),
+        suggest: document.getElementById('scSearchSuggest'),
         loadSentinel: document.getElementById('scLoadSentinel'),
     };
 
@@ -125,10 +129,19 @@
     function buildQuery(page) {
         var q = els.search ? String(els.search.value || '').trim() : '';
         var params = new URLSearchParams();
+        if (state.type) params.set('type', state.type);
         if (q) params.set('q', q);
-        if (state.type && !q) params.set('type', state.type);
         params.set('limit', String(PAGE_SIZE));
         params.set('page', String(page || 1));
+        return params.toString();
+    }
+
+    function buildSuggestQuery() {
+        var q = els.search ? String(els.search.value || '').trim() : '';
+        var params = new URLSearchParams();
+        if (q) params.set('q', q);
+        if (state.type) params.set('exclude_type', state.type);
+        params.set('limit', '8');
         return params.toString();
     }
 
@@ -208,6 +221,7 @@
                 state.type = key;
                 state.expanded = {};
                 if (els.search) els.search.value = '';
+                hideSuggest();
                 syncBodyMode();
                 renderTabs();
                 loadList();
@@ -227,14 +241,8 @@
         return 'sc-size-badge sc-size-badge--unknown';
     }
 
-    function isSearchActive() {
-        return !!(els.search && String(els.search.value || '').trim());
-    }
-
     function syncBodyMode() {
-        var cls = 'ship-components-body sc-type-' + state.type;
-        if (isSearchActive()) cls += ' sc-mode-search';
-        document.body.className = cls;
+        document.body.className = 'ship-components-body sc-type-' + state.type;
         syncTableColumns();
     }
 
@@ -289,18 +297,15 @@
     }
 
     function isTypeColumnVisible() {
-        if (isSearchActive()) return true;
         var t = state.type;
         return t !== 'quantum' && t !== 'jump' && t !== 'radar';
     }
 
     function isSpeedColumnVisible() {
-        if (isSearchActive()) return true;
         return state.type === 'quantum' || state.type === 'jump';
     }
 
     function isMassVolumeVisible() {
-        if (isSearchActive()) return true;
         return state.type !== 'radar';
     }
 
@@ -464,6 +469,95 @@
             .replace(/"/g, '&quot;');
     }
 
+    function isInternalItemKey(s) {
+        var v = String(s || '').trim();
+        if (!v || /\s/.test(v) || /[\u4e00-\u9fff]/.test(v)) return false;
+        return /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(v);
+    }
+
+    function resolveItemDisplayNames(item) {
+        var zh = String((item && item.name_zh) || '').trim();
+        var en = String((item && item.name_en) || '').trim();
+        var primary = zh || en || '—';
+        var subtitle = '';
+
+        if (!item || !item.loc_matched) {
+            if (isInternalItemKey(primary)) primary = '—';
+            if (isInternalItemKey(en)) en = '';
+        }
+
+        if (en && en !== zh && en !== primary) subtitle = en;
+        return { primary: primary, subtitle: subtitle };
+    }
+
+    var LOCATION_LABEL_OMIT = {
+        '舰船配件': 1,
+        'ship parts': 1,
+        'shipparts': 1,
+        'ship components': 1,
+        '商店终端': 1,
+        'shop terminal': 1,
+        shopterminal: 1,
+    };
+
+    function shouldOmitLocSegment(val) {
+        var raw = String(val || '').trim();
+        if (!raw) return true;
+        var key = raw.toLowerCase();
+        if (LOCATION_LABEL_OMIT[key]) return true;
+        return !!LOCATION_LABEL_OMIT[key.replace(/\s+/g, '')];
+    }
+
+    function getLocationHierarchyParts(loc) {
+        if (!loc) return [];
+        var parts = [];
+        var seen = {};
+        function push(val) {
+            val = String(val || '').trim();
+            if (!val || seen[val] || shouldOmitLocSegment(val)) return;
+            seen[val] = true;
+            parts.push(val);
+        }
+        if (loc.star_system_zh || loc.planet_zh || loc.city_zh || loc.moon_zh || loc.outpost_zh || loc.space_station_zh) {
+            push(loc.star_system_zh);
+            push(loc.planet_zh);
+            push(loc.city_zh || loc.moon_zh || loc.outpost_zh || loc.space_station_zh);
+            var term = loc.terminal_name_zh || loc.terminal_name || '';
+            if (term) {
+                term.split(/\s*[·•]\s*/).forEach(function (seg) {
+                    push(seg);
+                });
+            }
+        } else {
+            var label = loc.location_label_zh || loc.terminal_name_zh || loc.terminal_name || '';
+            label.split(/\s*[·•]\s*/).forEach(function (seg) {
+                push(seg);
+            });
+        }
+        return parts;
+    }
+
+    function renderLocationLevelsHtml(loc) {
+        var parts = getLocationHierarchyParts(loc);
+        if (!parts.length) return escapeHtml('—');
+        return (
+            '<span class="sc-loc-path">' +
+            parts
+                .map(function (part, i) {
+                    var level = Math.min(i, 4);
+                    return (
+                        '<span class="sc-loc-level sc-loc-level--' +
+                        level +
+                        '">' +
+                        escapeHtml(part) +
+                        '</span>'
+                    );
+                })
+                .join('') +
+            '</span>'
+        );
+    }
+
     function renderRow(item) {
         var tr = document.createElement('tr');
         tr.dataset.id = item.id_item;
@@ -471,20 +565,19 @@
 
         var nameTd = document.createElement('td');
         nameTd.className = 'sc-col-name';
-        var nameZh = item.name_zh || item.name_en || '—';
-        var nameEn = item.name_en || '';
-        var zhClass = item.loc_matched ? 'sc-name-zh sc-name-zh--matched' : 'sc-name-zh';
+        var names = resolveItemDisplayNames(item);
+        var zhClass = item.loc_matched
+            ? 'sc-name-zh sc-name-zh--matched'
+            : names.primary === '—'
+              ? 'sc-name-zh sc-name-zh--unknown'
+              : 'sc-name-zh';
         nameTd.innerHTML =
             '<span class="' +
             zhClass +
             '">' +
-            escapeHtml(nameZh) +
+            escapeHtml(names.primary) +
             '</span>' +
-            (nameEn && nameEn !== nameZh
-                ? '<span class="sc-name-en">' + escapeHtml(nameEn) + '</span>'
-                : nameEn && !item.loc_matched
-                  ? '<span class="sc-name-en">' + escapeHtml(nameEn) + '</span>'
-                  : '');
+            (names.subtitle ? '<span class="sc-name-en">' + escapeHtml(names.subtitle) + '</span>' : '');
 
         var typeTd = document.createElement('td');
         typeTd.className = 'sc-col-type-cell';
@@ -539,7 +632,7 @@
         locTd.className = 'sc-loc-summary sc-col-loc';
         if (item.cheapest_location) {
             locTd.innerHTML =
-                escapeHtml(item.cheapest_location.location_label_zh || item.cheapest_location.terminal_name || '') +
+                renderLocationLevelsHtml(item.cheapest_location) +
                 '<span class="sc-loc-count">（共 ' +
                 (item.purchase_count || 0) +
                 ' 处）</span>';
@@ -590,14 +683,12 @@
             inner.textContent = '暂无购买地点数据';
         } else {
             var html =
-                '<table class="sc-loc-table"><thead><tr><th>地点</th><th>终端</th><th>买入价</th></tr></thead><tbody>';
+                '<table class="sc-loc-table"><thead><tr><th class="sc-loc-th-location">地点</th><th class="sc-loc-th-price">买入价</th></tr></thead><tbody>';
             locs.forEach(function (loc) {
                 html +=
-                    '<tr><td>' +
-                    escapeHtml(loc.location_label_zh || loc.terminal_name_zh || loc.terminal_name || '') +
-                    '</td><td>' +
-                    escapeHtml(loc.terminal_name_zh || loc.terminal_name || loc.terminal_code || '—') +
-                    '</td><td class="sc-price">' +
+                    '<tr><td class="sc-loc-cell">' +
+                    renderLocationLevelsHtml(loc) +
+                    '</td><td class="sc-price sc-loc-price-cell">' +
                     formatPrice(loc.price_buy) +
                     '</td></tr>';
             });
@@ -675,19 +766,20 @@
 
     function updateMetaBar() {
         if (els.metaBar) {
-            var typeHint = isSearchActive()
-                ? '搜索全部类型'
+            var q = els.search ? String(els.search.value || '').trim() : '';
+            var typeHint = q
+                ? '当前：' + typeLabel(state.type) + ' · 搜索「' + q + '」'
                 : '当前：' + typeLabel(state.type);
             var shown = state.items ? state.items.length : 0;
             var total = state.total || 0;
             var countHint = '共 ' + total + ' 条';
             if (shown > 0 && total > shown) {
                 countHint = '共 ' + total + ' 条（已加载 ' + shown + ' 条，向下滚动加载更多）';
-            } else if (shown > 0 && total === shown && total > PAGE_SIZE) {
+            } else if (shown > 0 && total === shown && !state.hasMore) {
                 countHint = '共 ' + total + ' 条（已全部加载）';
             }
             var loadHint = '';
-            if (state.loadingMore) loadHint = ' · 正在加载更多…';
+            if (state.loadingMore && state.hasMore) loadHint = ' · 正在加载更多…';
             els.metaBar.textContent =
                 typeHint +
                 ' · ' +
@@ -710,6 +802,101 @@
 
     function hideGate() {
         if (els.gate) els.gate.classList.add('is-hidden');
+    }
+
+    function setSuggestOpen(open) {
+        if (!els.search) return;
+        els.search.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (!els.suggest) return;
+        if (open && state.suggestItems.length) {
+            els.suggest.hidden = false;
+        } else {
+            els.suggest.hidden = true;
+            els.suggest.innerHTML = '';
+        }
+    }
+
+    function hideSuggest() {
+        state.suggestItems = [];
+        setSuggestOpen(false);
+    }
+
+    function displayItemName(item) {
+        if (!item) return '—';
+        var names = resolveItemDisplayNames(item);
+        if (names.subtitle) return names.primary + ' (' + names.subtitle + ')';
+        return names.primary;
+    }
+
+    function renderSuggest() {
+        if (!els.suggest) return;
+        els.suggest.innerHTML = '';
+        if (!state.suggestItems.length) {
+            setSuggestOpen(false);
+            return;
+        }
+        var label = document.createElement('p');
+        label.className = 'sc-search-suggest-label';
+        label.textContent = '其他类型中也有匹配';
+        els.suggest.appendChild(label);
+        state.suggestItems.forEach(function (item) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'sc-search-suggest-item';
+            btn.setAttribute('role', 'option');
+            btn.dataset.type = item.type;
+            btn.dataset.idItem = String(item.id_item);
+            var name = document.createElement('span');
+            name.className = 'sc-search-suggest-name';
+            name.textContent = displayItemName(item);
+            var type = document.createElement('span');
+            type.className = 'sc-search-suggest-type';
+            type.textContent = item.type_label_zh || typeLabel(item.type);
+            btn.appendChild(name);
+            btn.appendChild(type);
+            btn.addEventListener('mousedown', function (e) {
+                e.preventDefault();
+            });
+            btn.addEventListener('click', function () {
+                applySuggestPick(item);
+            });
+            els.suggest.appendChild(btn);
+        });
+        setSuggestOpen(true);
+    }
+
+    function applySuggestPick(item) {
+        if (!item || !item.type) return;
+        state.type = item.type;
+        state.expanded = {};
+        if (els.search) els.search.value = item.name_en || item.name_zh || '';
+        hideSuggest();
+        syncBodyMode();
+        renderTabs();
+        loadList();
+    }
+
+    async function loadSuggest() {
+        var q = els.search ? String(els.search.value || '').trim() : '';
+        if (!q) {
+            hideSuggest();
+            return;
+        }
+        if (state.suggestController) state.suggestController.abort();
+        state.suggestController = new AbortController();
+        var signal = state.suggestController.signal;
+        try {
+            var res = await fetch(apiUrl('/api/sc/components/suggest?' + buildSuggestQuery()), { signal: signal });
+            var data = await res.json();
+            if (!res.ok || !data.ok) return;
+            state.suggestItems = data.items || [];
+            renderSuggest();
+        } catch (e) {
+            if (e && e.name === 'AbortError') return;
+            hideSuggest();
+        } finally {
+            state.suggestController = null;
+        }
     }
 
     async function loadList() {
@@ -790,7 +977,8 @@
         } finally {
             state.loadingMore = false;
             state.loadMoreController = null;
-            if (state.hasMore) removeLoadMoreRow();
+            removeLoadMoreRow();
+            updateMetaBar();
         }
     }
 
@@ -942,9 +1130,26 @@
             els.search.addEventListener('input', function () {
                 syncBodyMode();
                 clearTimeout(state.searchTimer);
+                clearTimeout(state.suggestTimer);
                 state.searchTimer = setTimeout(loadList, 300);
+                state.suggestTimer = setTimeout(loadSuggest, 180);
+            });
+            els.search.addEventListener('focus', function () {
+                if (state.suggestItems.length) setSuggestOpen(true);
+                else if (String(els.search.value || '').trim()) loadSuggest();
+            });
+            els.search.addEventListener('blur', function () {
+                setTimeout(hideSuggest, 160);
+            });
+            els.search.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') hideSuggest();
             });
         }
+        document.addEventListener('click', function (e) {
+            if (!els.search || !els.suggest) return;
+            if (els.search.contains(e.target) || els.suggest.contains(e.target)) return;
+            hideSuggest();
+        });
         initInfiniteScroll();
         loadList();
     }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>USSXC | 星际公民工具站|新手教程|服务器查询|机库计时</title>
-    <link rel="stylesheet" href="styles.css?v=20260603v">
+    <link rel="stylesheet" href="styles.css?v=20260608a">
     <link rel="icon" href="/favicon.ico" sizes="48x48">
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -214,8 +214,15 @@
             <div class="ship-info-inner">
                 <div class="ship-details">
                     <p class="ship-hero-copy">
-                        <strong class="ship-hero-name">USS 星巢</strong>
-                        <span class="ship-hero-tagline">欢迎每一位星际公民成员的加入，平等尊重每一位公民。</span>
+                        <span class="ship-hero-title" aria-label="USS 星巢">
+                            <span class="ship-hero-uss">USS</span>
+                            <span class="ship-hero-title-vrule" aria-hidden="true"></span>
+                            <strong class="ship-hero-name">星巢</strong>
+                        </span>
+                        <span class="ship-hero-tagline">
+                            <span class="ship-hero-tagline-hrule" aria-hidden="true"></span>
+                            <span class="ship-hero-tagline-text">欢迎舰长登舰！</span>
+                        </span>
                     </p>
                 </div>
             </div>
@@ -288,40 +295,41 @@
                 </div>
             </div>
 
-            <div class="oopz-user-prefs" id="oopzUserPrefs" aria-label="我的 OOPZ 设置">
-                <div class="oopz-user-prefs__layout">
-                    <div class="oopz-user-prefs__main">
-                        <div class="oopz-user-prefs__row">
-                            <p class="oopz-user-prefs__stats" id="oopzVoiceTimeText">登录并绑定 OOPZ 后可查看语音在线时长</p>
-                            <span class="oopz-user-prefs__live" id="oopzVoiceLiveBadge" hidden>在语音中</span>
-                        </div>
-                        <label class="oopz-user-prefs__toggle" id="oopzAnnounceToggleWrap" hidden>
-                            <input type="checkbox" id="oopzAnnounceToggle" checked aria-label="开/关语音提示" />
-                            <span class="oopz-user-prefs__toggle-ui" aria-hidden="true"></span>
-                            <span class="oopz-user-prefs__toggle-label">开/关语音提示</span>
-                        </label>
-                    </div>
-                    <div class="oopz-user-prefs__checkin" id="oopzAutoCheckinPanel" hidden aria-label="OOPZ 自动签到">
-                        <div class="oopz-user-prefs__checkin-single" id="oopzAutoCheckinSingle">
-                            <p class="oopz-user-prefs__checkin-title">自动签到</p>
-                            <p class="oopz-user-prefs__checkin-remain" id="oopzAutoCheckinRemain">—</p>
-                            <div class="oopz-user-prefs__checkin-branches" id="oopzAutoCheckinBranches">
-                                <span class="oopz-user-prefs__checkin-branches-label">开启分部：</span>
-                                <span class="oopz-user-prefs__checkin-branch-list" id="oopzAutoCheckinBranchList">—</span>
-                            </div>
-                        </div>
-                        <div class="oopz-user-prefs__checkin-cards" id="oopzAutoCheckinCards" hidden></div>
-                    </div>
-                </div>
-            </div>
-
-            <p id="oopzBridgeError" class="oopz-bridge-error" hidden></p>
-
             <div class="oopz-bridge-panel">
                 <div class="oopz-bridge-panel-bar">
                     <span class="oopz-bridge-panel-bar-icon" aria-hidden="true"></span>
                     <span class="oopz-bridge-panel-bar-title">实时频道</span>
                 </div>
+
+                <div class="oopz-user-prefs" id="oopzUserPrefs" aria-label="我的 OOPZ 设置">
+                    <div class="oopz-user-prefs__layout">
+                        <div class="oopz-user-prefs__main">
+                            <div class="oopz-user-prefs__row">
+                                <p class="oopz-user-prefs__stats" id="oopzVoiceTimeText">登录并绑定 OOPZ 后可查看语音在线时长</p>
+                                <span class="oopz-user-prefs__live" id="oopzVoiceLiveBadge" hidden>在语音中</span>
+                            </div>
+                            <label class="oopz-user-prefs__toggle" id="oopzAnnounceToggleWrap" hidden>
+                                <input type="checkbox" id="oopzAnnounceToggle" checked aria-label="开/关语音提示" />
+                                <span class="oopz-user-prefs__toggle-ui" aria-hidden="true"></span>
+                                <span class="oopz-user-prefs__toggle-label">开/关语音提示</span>
+                            </label>
+                        </div>
+                        <div class="oopz-user-prefs__checkin" id="oopzAutoCheckinPanel" hidden aria-label="OOPZ 自动签到">
+                            <div class="oopz-user-prefs__checkin-single" id="oopzAutoCheckinSingle">
+                                <p class="oopz-user-prefs__checkin-title">自动签到</p>
+                                <p class="oopz-user-prefs__checkin-remain" id="oopzAutoCheckinRemain">—</p>
+                                <div class="oopz-user-prefs__checkin-branches" id="oopzAutoCheckinBranches">
+                                    <span class="oopz-user-prefs__checkin-branches-label">开启分部：</span>
+                                    <span class="oopz-user-prefs__checkin-branch-list" id="oopzAutoCheckinBranchList">—</span>
+                                </div>
+                            </div>
+                            <div class="oopz-user-prefs__checkin-cards" id="oopzAutoCheckinCards" hidden></div>
+                        </div>
+                    </div>
+                </div>
+
+                <p id="oopzBridgeError" class="oopz-bridge-error" hidden></p>
+
                 <div class="oopz-bridge-body">
                     <div class="oopz-bridge-col oopz-bridge-col--channels">
                         <h3 class="oopz-bridge-col-title">频道与成员</h3>
@@ -4226,7 +4234,8 @@
                 if (!file || !file.size) return;
                 const mime = String(file.type || '').toLowerCase();
                 if (mime && mime.indexOf('image/') !== 0 && mime !== 'application/octet-stream') return;
-                const key = file.size + ':' + file.lastModified + ':' + mime;
+                // 剪贴板同一张图常同时出现在 items 与 files，用体积去重即可
+                const key = String(file.size);
                 if (seen.has(key)) return;
                 seen.add(key);
                 const outMime = mime.indexOf('image/') === 0 ? mime : 'image/png';
@@ -4249,8 +4258,7 @@
                     if (type && type.indexOf('image/') !== 0 && type !== 'application/octet-stream') return;
                     pushFile(file);
                 });
-            }
-            if (clipboardData.files && clipboardData.files.length) {
+            } else if (clipboardData.files && clipboardData.files.length) {
                 Array.from(clipboardData.files).forEach(pushFile);
             }
             if (!out.length) {
@@ -4263,12 +4271,15 @@
         }
 
         function handleCommunityChatPaste(ev) {
+            if (ev._ussChatPasteHandled) return false;
             const cd = ev.clipboardData;
             if (!cd || !isLoggedIn()) return false;
 
             const imageFiles = collectClipboardImageFiles(cd);
             if (imageFiles.length) {
+                ev._ussChatPasteHandled = true;
                 ev.preventDefault();
+                ev.stopPropagation();
                 ingestCommunityChatFiles(imageFiles, true);
                 return true;
             }
