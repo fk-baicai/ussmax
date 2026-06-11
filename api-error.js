@@ -42,6 +42,21 @@
         REG_P002: '注册任务已过期，请重新提交注册。',
     };
 
+    var FORGOT_PW_HINTS = {
+        AUTH_P007: '邮件服务未配置，请联系管理员。',
+        AUTH_P008: '验证码邮件发送失败，请稍后重试或联系管理员。',
+        AUTH_P009: '发送过于频繁，请稍后再试。',
+        AUTH_P001: '请填写有效的注册邮箱。',
+        AUTH_P002: '请输入 6 位数字验证码。',
+        AUTH_P005: '验证码不正确或已过期，请重新获取。',
+        NET_E503: '服务暂时不可用，请稍后重试。',
+    };
+
+    function forgotPasswordHintForCode(code) {
+        var c = String(code || '').trim();
+        return FORGOT_PW_HINTS[c] || '';
+    }
+
     /** 用户可见文案（仅错误码） */
     function formatUserError(code) {
         var c = String(code || DEFAULT_CODE).trim() || DEFAULT_CODE;
@@ -88,6 +103,7 @@
         pickCode: pickCode,
         formatUserError: formatUserError,
         registerHintForCode: registerHintForCode,
+        forgotPasswordHintForCode: forgotPasswordHintForCode,
         createApiError: createApiError,
         sanitizeUserMessage: sanitizeUserMessage,
     };

@@ -84,7 +84,7 @@
         '</div>' +
         '<div class="uss-site-footer-bottom">' +
         '<div class="uss-site-footer-bottom-inner">' +
-        '<a class="uss-site-footer-copy" href="index.html" aria-label="回到首页">© UMBRELLA FLEET · USS</a>' +
+        '<a class="uss-site-footer-copy" href="index.html" aria-label="回到首页">© UMBRELLA FLEET · USSXC</a>' +
         '</div>' +
         '</div>';
 

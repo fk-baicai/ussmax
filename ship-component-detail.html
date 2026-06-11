@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>舰船配件 · USSXC</title>
-    <meta name="description" content="星际公民舰船配件查询：组件、武器、舰船矿头等，含价格与购买地点。">
+    <title>配件详情 · USSXC</title>
+    <meta name="description" content="星际公民舰船配件详细参数与购买地点。">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="ship-components.css">
     <link rel="icon" href="/favicon.ico" sizes="48x48">
@@ -14,7 +14,7 @@
     <link rel="manifest" href="/site.webmanifest">
     <script src="auth-config.js"></script>
 </head>
-<body class="ship-components-body">
+<body class="ship-components-body sc-detail-page">
     <header class="site-header">
     <div class="navbar-top" role="banner" aria-label="舰队标识">
         <span class="navbar-top-brand">UMBRELLA FLEET</span>
@@ -59,7 +59,7 @@
         <div class="nav-mega-inner">
             <div class="nav-mega-col">
                 <ul class="nav-mega-list">
-                    <li><a href="ship-components.html" class="nav-mega-link is-current" id="navMegaLinkShip"><span class="nav-mega-link-title">舰船配件</span><span class="nav-mega-link-desc">舰船组件 · 舰船武器 · 舰船矿头</span></a></li>
+                    <li><a href="ship-components.html" class="nav-mega-link"><span class="nav-mega-link-title">舰船配件</span><span class="nav-mega-link-desc">舰船组件 · 舰船武器 · 舰船矿头</span></a></li>
                 </ul>
             </div>
         </div>
@@ -76,65 +76,57 @@
     </div>
     </header>
 
-    <main class="sc-main">
-        <header class="sc-hero">
-            <div class="sc-hero-head" aria-label="舰船配件">
-                <span class="sc-hero-kicker" id="scHeroKicker">COMPONENTS</span>
-                <span class="sc-hero-vrule" aria-hidden="true"></span>
-                <h1 class="sc-title" id="scHeroTitle">舰船组件</h1>
-                <span class="sc-version-badge" id="scVersionBadge" hidden>—</span>
-            </div>
-            <span class="sc-hero-hrule" aria-hidden="true"></span>
-            <nav class="sc-lead" id="scLeadNav" aria-label="当前大类子项">
-                <span class="sc-lead-item">散热</span>
-                <span class="sc-lead-sep" aria-hidden="true"></span>
-                <span class="sc-lead-item">电源</span>
-                <span class="sc-lead-sep" aria-hidden="true"></span>
-                <span class="sc-lead-item">护盾</span>
-                <span class="sc-lead-sep" aria-hidden="true"></span>
-                <span class="sc-lead-item">量子驱动器</span>
-                <span class="sc-lead-sep" aria-hidden="true"></span>
-                <span class="sc-lead-item">跳跃驱动器</span>
-                <span class="sc-lead-sep" aria-hidden="true"></span>
-                <span class="sc-lead-item">雷达</span>
-            </nav>
-        </header>
+    <main class="sc-main sc-detail-main">
+        <nav class="sc-detail-back" aria-label="返回">
+            <a href="/ship-components?group=component&amp;type=cooling" class="sc-detail-back-link" id="scDetailBackLink">← 返回列表</a>
+        </nav>
 
-        <div id="scGate" class="sc-gate is-hidden" role="alert"></div>
+        <div id="scDetailGate" class="sc-gate" role="alert">加载中…</div>
 
-        <div class="sc-workspace sc-panel">
-            <div class="sc-filter-deck">
-                <div class="sc-filter-deck__search">
-                    <label class="sc-search-wrap">
-                        <span class="sc-sr-only">搜索配件名称</span>
-                        <input type="search" id="scSearch" class="sc-search" placeholder="搜索配件（中/英）…" autocomplete="off" aria-autocomplete="list" aria-controls="scSearchSuggest" aria-expanded="false">
-                        <div id="scSearchSuggest" class="sc-search-suggest" role="listbox" hidden aria-label="搜索匹配配件"></div>
-                    </label>
+        <article id="scDetailArticle" class="sc-detail-article is-hidden" aria-live="polite">
+            <section class="sc-detail-hero sc-panel" aria-label="配件概览">
+                <div class="sc-detail-hero-inner">
+                    <div class="sc-detail-hero-copy">
+                        <div class="sc-detail-hero-head">
+                            <span class="sc-type-badge" id="scDetailTypeBadge"></span>
+                            <h1 class="sc-detail-title" id="scDetailTitleZh"></h1>
+                            <p class="sc-detail-subtitle" id="scDetailTitleEn"></p>
+                        </div>
+                        <div class="sc-detail-hero-stats" id="scDetailHighlights" aria-label="关键参数"></div>
+                    </div>
+                    <figure class="sc-detail-hero-media" id="scDetailMedia" hidden>
+                        <button type="button" class="sc-detail-media-btn" id="scDetailImageBtn" aria-label="点击放大图片" hidden>
+                            <img id="scDetailImage" class="sc-detail-image" alt="" decoding="async" loading="eager">
+                        </button>
+                    </figure>
                 </div>
-                <nav class="sc-filter-deck__nav" aria-label="配件筛选">
-                    <div class="sc-nav-row sc-nav-row--major sc-tabs" id="scGroupTabs" role="tablist" aria-label="装备大类"></div>
-                    <div class="sc-nav-row sc-nav-row--minor sc-tabs" id="scTabs" role="tablist" aria-label="装备类型"></div>
-                </nav>
+            </section>
+
+            <div class="sc-detail-mission-body">
+                <section class="sc-blueprint-mission-section sc-detail-section--basics">
+                    <h2 class="sc-blueprint-mission-section-title">基础信息</h2>
+                    <div class="sc-detail-field-grid" id="scDetailBasics"></div>
+                </section>
+
+                <div id="scDetailSpecs" class="sc-detail-specs" aria-label="技术参数" hidden></div>
+
+                <div class="sc-detail-locations-blueprint-row">
+                    <section class="sc-blueprint-mission-section sc-detail-section--locations">
+                        <h2 class="sc-blueprint-mission-section-title">购买地点</h2>
+                        <div class="sc-detail-locations-body" id="scDetailLocations"></div>
+                    </section>
+
+                    <section class="sc-blueprint-mission-section sc-detail-section--blueprint">
+                        <h2 class="sc-blueprint-mission-section-title">蓝图任务</h2>
+                        <div id="scDetailBlueprint" class="sc-detail-blueprint" data-blueprint-panel>
+                            <p class="sc-acquire-loading">加载蓝图任务…</p>
+                        </div>
+                    </section>
+                </div>
             </div>
 
-            <div class="sc-workspace-body">
-            <p class="sc-mobile-scroll-hint" id="scMobileScrollHint" aria-hidden="true">表格可左右滑动查看更多列</p>
-
-            <div class="sc-table-shell" id="scTableShell">
-                <table class="sc-table" id="scTable">
-                    <colgroup></colgroup>
-                    <thead id="scTableHead">
-                        <tr></tr>
-                    </thead>
-                    <tbody id="scTableBody"></tbody>
-                </table>
-            </div>
-            <div class="sc-meta-bar" id="scMetaBar"></div>
-            </div>
-        </div>
-
-        <div id="scLoadSentinel" class="sc-load-sentinel" aria-hidden="true"></div>
-        <p class="sc-footnote" id="scFootnote"></p>
+            <p class="sc-footnote sc-detail-footnote" id="scDetailFootnote"></p>
+        </article>
     </main>
 
     <script src="nav-dropdown.js" defer></script>
@@ -143,6 +135,7 @@
     <script src="ship-component-wiki-scalar-zh.js?v=19" defer></script>
     <script src="ship-component-wiki.js?v=19" defer></script>
     <script src="ship-component-blueprints.js?v=17" defer></script>
-    <script src="ship-components.js" defer></script>
+    <script src="community-image-lightbox.js" defer></script>
+    <script src="ship-component-detail.js" defer></script>
 </body>
 </html>

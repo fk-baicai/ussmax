@@ -16,6 +16,20 @@
 
     if (!channelsRoot && !logRoot) return;
 
+    var bridgePollTimer = null;
+
+    function isLoggedIn() {
+        try {
+            var key = 'ussHangzhouAuthSession';
+            var raw = sessionStorage.getItem(key) || localStorage.getItem(key);
+            if (!raw) return false;
+            var sess = JSON.parse(raw);
+            return !!(sess && sess.token);
+        } catch (e) {
+            return false;
+        }
+    }
+
     function apiBase() {
         if (window.UssAuthApi && window.UssAuthApi.base) {
             return String(window.UssAuthApi.base).replace(/\/$/, '');
@@ -577,6 +591,7 @@
     }
 
     function fetchState() {
+        if (!isLoggedIn()) return;
         fetch(apiBase() + '/api/oopz-bridge/state', { cache: 'no-store' })
             .then(function (r) {
                 return r.json().then(function (j) {
@@ -600,12 +615,14 @@
     setupMemberIdCopy();
 
     function startPolling() {
+        if (!isLoggedIn() || bridgePollTimer != null) return;
         fetchState();
-        setInterval(fetchState, POLL_MS);
+        bridgePollTimer = setInterval(fetchState, POLL_MS);
     }
 
     function scheduleBridgeInit() {
         var run = function () {
+            if (!isLoggedIn()) return;
             if (window.UssHomeBoot && typeof window.UssHomeBoot.scheduleIdle === 'function') {
                 window.UssHomeBoot.scheduleIdle(startPolling, 900);
             } else if (window.UssLazyMedia && typeof window.UssLazyMedia.runWhenIdle === 'function') {
@@ -630,6 +647,18 @@
             },
             { once: true }
         );
+    }
+
+    try {
+        var authObs = new MutationObserver(function () {
+            if (isLoggedIn()) startPolling();
+        });
+        authObs.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class'],
+        });
+    } catch (e) {
+        /* ignore */
     }
 
     scheduleBridgeInit();

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SC 数据库管理 · USS</title>
+    <title>SC 数据库管理 · USSXC</title>
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="stylesheet" href="admin-sc-database.css" />
     <script src="auth-config.js"></script>
@@ -20,11 +20,28 @@
     <main>
         <p id="gateMsg"></p>
         <div id="app" hidden>
+            <section id="secScSource">
+                <h2>配件数据来源</h2>
+                <p class="hint">前台展示的数据库可在 UEX 与 SC Wiki API 之间切换；建议两边都定期同步，便于互为备份。</p>
+                <div class="row sc-source-row">
+                    <label class="sc-source-label" for="scActiveSource">当前展示</label>
+                    <select id="scActiveSource" class="sc-source-select">
+                        <option value="uex">UEX 社区数据库</option>
+                        <option value="wiki">WIKI（星际公民中文百科）</option>
+                    </select>
+                    <button type="button" id="btnScApplySource" class="btn-secondary">应用切换</button>
+                    <span id="scSourceStatus" class="hint"></span>
+                </div>
+                <div id="scSourceVersions" class="sc-source-versions hint"></div>
+                <div id="scSourceErr" class="err" hidden></div>
+            </section>
+
             <section id="secScSync">
                 <h2>舰船配件数据同步</h2>
-                <p class="hint">从 UEX 同步配件名录、价格与购买地点（数据存于配件服务器 / sc-database）。</p>
+                <p class="hint">分别从 UEX 与 SC Wiki API 同步到本地缓存（sc-database/data/ship-components*）。</p>
                 <div class="row">
-                    <button type="button" id="btnScSync">同步配件数据</button>
+                    <button type="button" id="btnScSync">同步 UEX 数据</button>
+                    <button type="button" id="btnScSyncWiki" class="btn-secondary">同步 Wiki 数据</button>
                     <span id="scSyncStatus" class="hint"></span>
                 </div>
                 <p id="scTokenHint" class="hint"></p>
@@ -35,6 +52,29 @@
                     <button type="button" id="btnReloadScSyncLog" class="btn-secondary">刷新日志</button>
                 </div>
                 <ul id="scSyncLogList"></ul>
+            </section>
+
+            <section id="secScImages">
+                <h2>配件图片本地化</h2>
+                <p class="hint">
+                    图片保存在配件服务器 <code>data/component-images/</code>，状态记录在
+                    <code>sync-state.json</code>。<strong>Wiki 数据同步不会改动已有本地图</strong>，仅更新配件参数。
+                    新配件请点「补齐缺失」；失败项可「重试失败」；Wiki 换图后由管理员点「强制更新全部」。
+                    手动上传（<code>manual</code>）与已本地化（<code>local</code>）的图片默认都不会被自动覆盖。
+                </p>
+                <div id="scImageStatus" class="hint sc-image-status">加载中…</div>
+                <div class="row sc-image-actions">
+                    <button type="button" id="btnScImageMissing">补齐缺失</button>
+                    <button type="button" id="btnScImageRetry" class="btn-secondary">重试失败</button>
+                    <button type="button" id="btnScImageForce" class="btn-secondary">强制更新全部</button>
+                    <button type="button" id="btnScImageRefreshStatus" class="btn-secondary">刷新统计</button>
+                    <span id="scImageSyncStatus" class="hint"></span>
+                </div>
+                <div id="scImageSyncErr" class="err" hidden></div>
+                <div id="scImageFailedWrap" class="sc-image-failed-wrap" hidden>
+                    <h3 style="margin-top: 1rem; font-size: 0.95rem">最近失败 / 无图样本</h3>
+                    <ul id="scImageFailedList" class="sc-image-failed-list"></ul>
+                </div>
             </section>
 
             <section id="secScManualLoc">

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>USSXC | 星际公民工具站|新手教程|服务器查询|机库计时</title>
-    <link rel="stylesheet" href="styles.css?v=20260608a">
+    <title>星际公民工具站|USS星巢</title>
+    <link rel="stylesheet" href="styles.css?v=20260609c">
     <link rel="icon" href="/favicon.ico" sizes="48x48">
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -118,7 +118,7 @@
                     <li>
                         <a href="ship-components.html" class="nav-mega-link">
                             <span class="nav-mega-link-title">舰船配件</span>
-                            <span class="nav-mega-link-desc">散热 · 电源 · 护盾 · 量子驱动器 · 跳跃驱动器 · 雷达</span>
+                            <span class="nav-mega-link-desc">舰船组件 · 舰船武器 · 舰船矿头</span>
                         </a>
                     </li>
                 </ul>
@@ -208,6 +208,29 @@
                 </div>
             </div>
         </div>
+
+        <div class="hero-sc-search" aria-label="舰船配件搜索">
+            <div class="hero-sc-search-inner">
+                <form class="hero-sc-search-form" id="heroScSearchForm" action="ship-components.html" method="get" role="search">
+                    <label class="hero-sc-search-field">
+                        <input
+                            type="search"
+                            id="heroScSearchInput"
+                            name="q"
+                            class="hero-sc-search-input"
+                            placeholder="搜索"
+                            autocomplete="off"
+                            enterkeyhint="search"
+                            aria-label="搜索"
+                            aria-autocomplete="list"
+                            aria-controls="heroScSearchSuggest"
+                            aria-expanded="false"
+                        >
+                    </label>
+                    <div id="heroScSearchSuggest" class="hero-sc-search-suggest" role="listbox" aria-label="配件匹配结果" hidden></div>
+                </form>
+            </div>
+        </div>
         
         <!-- 添加左下角信息 -->
         <div class="ship-info">
@@ -262,7 +285,26 @@
         </div>
     </section>
 
-    <section class="oopz-bridge-section" id="oopz-bridge-section" aria-label="OOPZ语音">
+    <section class="home-exec-hangar-section" id="home-exec-hangar-section" aria-label="行政机库">
+        <div class="home-exec-hangar-wrap">
+            <header class="home-exec-hangar-head">
+                <div class="home-exec-hangar-head-text">
+                    <h2 class="home-exec-hangar-title rsi-status-title">行政机库</h2>
+                    <div class="home-exec-hangar-lead-row">
+                        <p class="home-exec-hangar-lead">Pyro 行政机库 · 185 分钟周期 · <a href="executive-hangar.html">打开完整版</a></p>
+                    </div>
+                </div>
+            </header>
+
+            <div id="homeExecHangarError" class="home-exec-hangar-error rsi-status-error is-hidden" role="alert"></div>
+
+            <div class="home-exec-hangar-grid rsi-status-grid" id="homeExecHangarGrid" aria-live="polite">
+                <div class="rsi-status-loading" role="status">正在同步行政机库…</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="oopz-bridge-section auth-member-gated" id="oopz-bridge-section" aria-label="OOPZ语音">
         <div class="oopz-bridge-wrap">
             <header class="oopz-bridge-head">
                 <h2 class="oopz-bridge-title rsi-status-title">OOPZ语音</h2>
@@ -348,7 +390,7 @@
         </div>
     </section>
 
-    <section class="community-section" id="community-section" aria-label="社区">
+    <section class="community-section auth-member-gated" id="community-section" aria-label="社区">
         <div class="community-wrap">
 
             <div class="community-stack">
@@ -820,6 +862,7 @@
     <script defer src="material-icons-svg.js"></script>
     <script defer src="pw-toggle-icons.js"></script>
     <script defer src="bilibili-hero.js"></script>
+    <script defer src="hero-sc-search.js?v=2"></script>
     <script defer src="script.js"></script>
     <script defer src="rsi-client.js"></script>
     <script src="rsi-sync.js"></script>
@@ -3656,7 +3699,6 @@
             if (!log || !window.UssAuthApi) return;
             clearCommunityChatHint();
             if (!isLoggedIn()) {
-                renderCommunityChatGuestPreview();
                 communityChatMaxSeq = 0;
                 return;
             }
@@ -3694,9 +3736,7 @@
             if (!log || !window.UssAuthApi) return;
             clearCommunityChatHint();
             if (!isLoggedIn() || communityChatKind !== 'dm' || !communityChatDmPeer) {
-                if (!isLoggedIn()) {
-                    renderCommunityChatGuestPreview();
-                } else {
+                if (isLoggedIn()) {
                     log.innerHTML = '';
                 }
                 communityDmMaxSeq = 0;
@@ -3903,7 +3943,6 @@
             if (!isLoggedIn() || !window.UssAuthApi) {
                 communityRosterSearchQuery = '';
                 communityChatRosterMembersList = [];
-                renderCommunityChatGuestRoster();
                 return;
             }
             inner.hidden = false;
@@ -4309,7 +4348,6 @@
             if (!logged) {
                 closeCommunitySendMenus();
                 closeCommunityChatEmojiPicker();
-                renderCommunityChatGuestPreview();
                 communityChatMaxSeq = 0;
                 communityDmMaxSeq = 0;
                 communityChatKind = 'fleet';
@@ -5000,6 +5038,18 @@
             updatePageScrollLock();
         }
 
+        function forgotPasswordErrorHint(err) {
+            var code = '';
+            if (err && typeof err === 'object' && err.code) {
+                code = String(err.code).trim();
+            }
+            if (code && typeof UssApiError !== 'undefined' && UssApiError.forgotPasswordHintForCode) {
+                var hint = UssApiError.forgotPasswordHintForCode(code);
+                if (hint) return hint;
+            }
+            return safeUserFacingMessage(err);
+        }
+
         async function submitForgotPasswordSendCode() {
             clearForgotPasswordHint();
             const email = String(document.getElementById('forgotPwEmail')?.value || '').trim();
@@ -5020,7 +5070,7 @@
             } catch (e) {
                 if (e.cooldownSec) startForgotPwSendCooldown(e.cooldownSec);
                 else stopForgotPwSendCooldown();
-                setForgotPasswordHint(safeUserFacingMessage(e));
+                setForgotPasswordHint(forgotPasswordErrorHint(e));
             }
         }
 
@@ -5073,7 +5123,7 @@
                     }
                 }, 1200);
             } catch (e) {
-                setForgotPasswordHint(safeUserFacingMessage(e));
+                setForgotPasswordHint(forgotPasswordErrorHint(e));
             } finally {
                 if (btn) {
                     btn.disabled = false;
@@ -5178,6 +5228,7 @@
                 }, true);
                 refreshNavLoginState();
                 loadCommunityChatFull();
+                loadCommunityPosts();
                 if (regBtn) {
                     regBtn.textContent = '已注册';
                     regBtn.disabled = true;
@@ -5237,6 +5288,7 @@
                 );
                 refreshNavLoginState();
                 loadCommunityChatFull();
+                loadCommunityPosts();
                 ensureUserProfileWithRetry({ reason: 'login' }).then(function () {
                     refreshLoginDrawerView();
                 });
@@ -5285,6 +5337,7 @@
     <script defer src="oopz-user-prefs.js"></script>
     <script defer src="rsi-server-status.js?v=20260603g"></script>
     <script defer src="sc-festival-countdown.js?v=20260606a"></script>
+    <script defer src="home-exec-hangar.js?v=20260609b"></script>
     <script defer src="oopz-bridge.js"></script>
     <script defer src="site-footer.js"></script>
 </body>

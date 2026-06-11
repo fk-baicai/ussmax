@@ -59,13 +59,226 @@
         return typeKey || '—';
     }
 
+    function formatSourceVersionLine(src) {
+        if (!src) return '';
+        var live =
+            src.live_api && src.live_api.live_game_version
+                ? '线上最新 ' + src.live_api.live_game_version
+                : src.live_api_error
+                  ? '线上版本获取失败'
+                  : '';
+        var cached = src.ready
+            ? '本地已同步 ' + (src.total_items || 0) + ' 条 · 游戏版本 ' + (src.game_version || '—')
+            : '本地尚未同步';
+        var apiVer = src.api_version ? 'API v' + src.api_version : '';
+        return (
+            '<div class="sc-source-version-line"><strong>' +
+            escHtml(src.label_zh || src.id) +
+            '</strong> · ' +
+            escHtml(apiVer) +
+            ' · ' +
+            escHtml(cached) +
+            (live ? ' · ' + escHtml(live) : '') +
+            '</div>'
+        );
+    }
+
+    function renderSourcePanel(data) {
+        var sel = document.getElementById('scActiveSource');
+        var versionsEl = document.getElementById('scSourceVersions');
+        var statusEl = document.getElementById('scSourceStatus');
+        if (sel && data.active_source) sel.value = data.active_source;
+        if (statusEl) {
+            statusEl.textContent = data.active_label_zh
+                ? '前台当前：' + data.active_label_zh
+                : '';
+        }
+        if (versionsEl && data.sources) {
+            versionsEl.innerHTML =
+                formatSourceVersionLine(data.sources.uex) + formatSourceVersionLine(data.sources.wiki);
+        }
+    }
+
+    async function loadScSources() {
+        var s = loadSess();
+        var errEl = document.getElementById('scSourceErr');
+        if (errEl) errEl.hidden = true;
+        try {
+            var r = await fetch(scApiBase().replace(/\/$/, '') + '/api/admin/sc/sources', {
+                headers: { Authorization: 'Bearer ' + s.token },
+            });
+            var data = await r.json();
+            if (!r.ok || !data.ok) throw new Error((data && data.message) || '读取失败');
+            renderSourcePanel(data);
+            return data;
+        } catch (e) {
+            if (errEl) {
+                errEl.textContent = (e && e.message) || '读取数据来源失败';
+                errEl.hidden = false;
+            }
+            return null;
+        }
+    }
+
+    async function applyScSource() {
+        var s = loadSess();
+        var sel = document.getElementById('scActiveSource');
+        var errEl = document.getElementById('scSourceErr');
+        var statusEl = document.getElementById('scSourceStatus');
+        if (!sel) return;
+        if (errEl) errEl.hidden = true;
+        if (statusEl) statusEl.textContent = '切换中…';
+        try {
+            var r = await fetch(scApiBase().replace(/\/$/, '') + '/api/admin/sc/data-source', {
+                method: 'PUT',
+                headers: { Authorization: 'Bearer ' + s.token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ source: sel.value }),
+            });
+            var data = await r.json();
+            if (!r.ok || !data.ok) throw new Error((data && data.message) || '切换失败');
+            if (statusEl) statusEl.textContent = '已切换至 ' + (data.active_label_zh || sel.value);
+            await loadScSources();
+            loadScAdminStatus();
+        } catch (e) {
+            if (errEl) {
+                errEl.textContent = (e && e.message) || '切换失败';
+                errEl.hidden = false;
+            }
+            if (statusEl) statusEl.textContent = '';
+        }
+    }
+
+    function imageReasonLabel(reason) {
+        if (reason === 'remote_forbidden') return '远程 CDN 拒绝下载（403）';
+        if (reason === 'no_remote_url') return 'Wiki 无图片';
+        if (reason === 'download_failed') return '下载失败';
+        return reason || '未知';
+    }
+
+    function renderScImageStatus(data) {
+        var el = document.getElementById('scImageStatus');
+        var failedWrap = document.getElementById('scImageFailedWrap');
+        var failedList = document.getElementById('scImageFailedList');
+        if (!el || !data || !data.totals) return;
+        var t = data.totals;
+        var lines = [
+            '共 ' + t.items + ' 条 · 已本地化 <strong>' + t.local + '</strong> · 手动上传 ' + t.manual,
+            '仅远程链接 ' + t.remote_only + ' · Wiki 暂无图 ' + t.missing,
+        ];
+        if (data.last_run && data.last_run.at) {
+            var st = data.last_run.stats || {};
+            lines.push(
+                '上次任务：' +
+                    formatAt(data.last_run.at) +
+                    ' · 模式 ' +
+                    escHtml(st.mode || '—') +
+                    ' · 新增 ' +
+                    (st.cached != null ? st.cached : 0) +
+                    ' · 更新 ' +
+                    (st.refreshed != null ? st.refreshed : 0) +
+                    ' · 失败 ' +
+                    (st.failed != null ? st.failed : 0)
+            );
+        }
+        if (data.failed_count || data.no_url_count) {
+            lines.push('待重试记录：失败 ' + data.failed_count + ' · 无图 ' + data.no_url_count);
+        }
+        el.innerHTML = lines.map(function (line) {
+            return '<div>' + line + '</div>';
+        }).join('');
+        var sample = []
+            .concat(data.failed_sample || [])
+            .slice(0, 12);
+        if (failedWrap && failedList) {
+            if (!sample.length) {
+                failedWrap.hidden = true;
+                failedList.innerHTML = '';
+            } else {
+                failedWrap.hidden = false;
+                failedList.innerHTML = sample
+                    .map(function (row) {
+                        return (
+                            '<li><strong>' +
+                            escHtml(row.name_zh || row.name_en || row.id_item) +
+                            '</strong> · ' +
+                            escHtml(imageReasonLabel(row.reason)) +
+                            (row.slug ? ' · <code>' + escHtml(row.slug) + '</code>' : '') +
+                            '</li>'
+                        );
+                    })
+                    .join('');
+            }
+        }
+    }
+
+    async function loadScImageStatus() {
+        var s = loadSess();
+        var el = document.getElementById('scImageStatus');
+        try {
+            var r = await fetch(
+                scApiBase().replace(/\/$/, '') + '/api/admin/sc/component-image-status?source=wiki',
+                { headers: { Authorization: 'Bearer ' + s.token } }
+            );
+            var data = await r.json();
+            if (!r.ok || !data.ok) throw new Error((data && data.message) || '读取失败');
+            renderScImageStatus(data);
+        } catch (e) {
+            if (el) el.textContent = (e && e.message) || '无法读取图片状态';
+        }
+    }
+
+    async function runScImageSync(mode) {
+        var s = loadSess();
+        var errEl = document.getElementById('scImageSyncErr');
+        var statusEl = document.getElementById('scImageSyncStatus');
+        var label =
+            mode === 'force' ? '强制更新' : mode === 'retry_failed' ? '重试失败' : '补齐缺失';
+        if (errEl) errEl.hidden = true;
+        if (statusEl) statusEl.textContent = label + '进行中…（视数量约 1–10 分钟）';
+        try {
+            var r = await fetch(scApiBase().replace(/\/$/, '') + '/api/admin/sc/sync-component-images', {
+                method: 'POST',
+                headers: { Authorization: 'Bearer ' + s.token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ source: 'wiki', mode: mode }),
+            });
+            var data = await r.json();
+            if (!r.ok || !data.ok) throw new Error((data && data.message) || '同步失败');
+            if (statusEl) statusEl.textContent = data.message || label + '完成';
+            loadScImageStatus();
+            loadScSyncLog();
+        } catch (e) {
+            if (errEl) {
+                errEl.textContent = (e && e.message) || '同步失败';
+                errEl.hidden = false;
+            }
+            if (statusEl) statusEl.textContent = '';
+        }
+    }
+
     function wireUi() {
         var btnSync = document.getElementById('btnScSync');
+        var btnSyncWiki = document.getElementById('btnScSyncWiki');
         var btnLog = document.getElementById('btnReloadScSyncLog');
         var btnManual = document.getElementById('btnReloadScManualLoc');
-        if (btnSync) btnSync.onclick = runScSync;
+        var btnApplySource = document.getElementById('btnScApplySource');
+        var btnImageMissing = document.getElementById('btnScImageMissing');
+        var btnImageRetry = document.getElementById('btnScImageRetry');
+        var btnImageForce = document.getElementById('btnScImageForce');
+        var btnImageRefresh = document.getElementById('btnScImageRefreshStatus');
+        if (btnSync) btnSync.onclick = function () { runScSync('uex'); };
+        if (btnSyncWiki) btnSyncWiki.onclick = function () { runScSync('wiki'); };
         if (btnLog) btnLog.onclick = loadScSyncLog;
         if (btnManual) btnManual.onclick = loadScManualLoc;
+        if (btnApplySource) btnApplySource.onclick = applyScSource;
+        if (btnImageMissing) btnImageMissing.onclick = function () { runScImageSync('missing'); };
+        if (btnImageRetry) btnImageRetry.onclick = function () { runScImageSync('retry_failed'); };
+        if (btnImageForce) {
+            btnImageForce.onclick = function () {
+                if (!window.confirm('将重新下载 Wiki 配件图（不含手动上传），确定继续？')) return;
+                runScImageSync('force');
+            };
+        }
+        if (btnImageRefresh) btnImageRefresh.onclick = loadScImageStatus;
         wireManualLocFilters();
     }
 
@@ -481,16 +694,21 @@
         }
     }
 
-    async function runScSync() {
+    async function runScSync(source) {
         var s = loadSess();
         var errEl = document.getElementById('scSyncErr');
         var statusEl = document.getElementById('scSyncStatus');
+        var src = source || 'uex';
         if (errEl) errEl.hidden = true;
-        if (statusEl) statusEl.textContent = '同步中…（约 1–2 分钟）';
+        if (statusEl) {
+            statusEl.textContent =
+                src === 'wiki' ? 'Wiki 同步中…（约 1–2 分钟）' : 'UEX 同步中…（约 1–2 分钟）';
+        }
         try {
             var r = await fetch(scApiBase().replace(/\/$/, '') + '/api/admin/sc/sync-ship-components', {
                 method: 'POST',
                 headers: { Authorization: 'Bearer ' + s.token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ source: src }),
             });
             var data = await r.json();
             if (!r.ok || !data.ok) throw new Error((data && data.message) || '同步失败');
@@ -500,7 +718,9 @@
             }
             loadScSyncLog();
             loadScAdminStatus();
+            loadScSources();
             loadScManualLoc();
+            if (src === 'wiki') loadScImageStatus();
         } catch (e) {
             if (errEl) {
                 errEl.textContent = (e && e.message) || '同步失败';
@@ -573,7 +793,9 @@
         app.hidden = false;
         wireUi();
         loadScAdminStatus();
+        loadScSources();
         loadScSyncLog();
+        loadScImageStatus();
         loadScManualLoc();
     }
 

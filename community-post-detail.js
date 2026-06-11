@@ -489,7 +489,7 @@
                 showError('帖子不存在');
                 return;
             }
-            document.title = (data.post.bindingId || '帖子') + ' · 贴子 · USS';
+            document.title = (data.post.bindingId || '帖子') + ' · 贴子 · USSXC';
             renderPostDetail(data.post);
         } catch (e) {
             showError((e && e.message) || '加载失败');
