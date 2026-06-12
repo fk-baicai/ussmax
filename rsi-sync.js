@@ -1,8 +1,10 @@
 /**
- * 登录/注册后同步 RSI 资料：优先用户浏览器抓取（走用户 IP），失败则服务端 Headless Edge 抓取。
+ * 登录/注册后同步 RSI 资料：用户浏览器静默 fetch（不新开 RSI 页），失败则跳过（不自动走服务端 Edge）。
  */
 (function (global) {
     'use strict';
+
+    var RSI_LOGIN_REFRESH_MS = 24 * 60 * 60 * 1000;
 
     function sleep(ms) {
         return new Promise(function (resolve) {
@@ -33,9 +35,52 @@
             if (!clientScrapedLooksUsable(scraped)) return null;
             return await global.UssAuthApi.syncRsiProfile(token, scraped);
         } catch (e) {
-            console.warn('[rsi] 浏览器抓取失败，改走服务端', e && e.message ? e.message : e);
+            console.warn('[rsi] 浏览器抓取失败', e && e.message ? e.message : e);
             return null;
         }
+    }
+
+    function profileLooksIncomplete(profile) {
+        if (!profile || !profile.bindingId) return true;
+        var enlisted = profile.rsiEnlisted && String(profile.rsiEnlisted).trim();
+        var location = profile.rsiLocation && String(profile.rsiLocation).trim();
+        var rank = profile.rsiRankLabel && String(profile.rsiRankLabel).trim();
+        var handle = profile.rsiProfileHandle && String(profile.rsiProfileHandle).trim();
+        var orgSid = profile.rsiOrgSid && String(profile.rsiOrgSid).trim();
+        var orgName = profile.rsiOrgName && String(profile.rsiOrgName).trim();
+        var any = enlisted || location || rank || handle || orgSid || orgName;
+        if (!any) return true;
+        if (!enlisted && !location && !orgSid) return true;
+        return false;
+    }
+
+    /** 距上次同步是否已超过 24 小时（或从未同步 / 资料不全） */
+    function shouldRefreshRsiOnLogin(profile) {
+        if (!profile || !profile.bindingId) return false;
+        if (profileLooksIncomplete(profile)) return true;
+        var syncedAt = profile.rsiProfileSyncedAt && String(profile.rsiProfileSyncedAt).trim();
+        if (!syncedAt) return true;
+        var t = Date.parse(syncedAt);
+        if (!Number.isFinite(t)) return true;
+        return Date.now() - t >= RSI_LOGIN_REFRESH_MS;
+    }
+
+    /**
+     * 登录后静默更新：仅用户浏览器 fetch RSI 页并 POST，不触发服务端 Edge（不弹 RSI 窗口）
+     */
+    async function refreshUserRsiFromBrowserOnLogin(token, handle, options) {
+        options = options || {};
+        var maxAttempts = options.maxAttempts != null ? options.maxAttempts : 2;
+        var baseDelayMs = options.baseDelayMs != null ? options.baseDelayMs : 1200;
+        if (!token || !handle) return null;
+        for (var attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            var user = await syncUserRsiFromBrowserClient(token, handle);
+            if (user && typeof user === 'object') return user;
+            if (attempt < maxAttempts) {
+                await sleep(Math.min(8000, baseDelayMs * attempt));
+            }
+        }
+        return null;
     }
 
     /**
@@ -62,6 +107,7 @@
         options = options || {};
         var maxAttempts = options.maxAttempts != null ? options.maxAttempts : 3;
         var baseDelayMs = options.baseDelayMs != null ? options.baseDelayMs : 1200;
+        var allowServerFallback = options.serverFallback === true;
         var handle =
             options.handle ||
             (global.UssAuthSessionSync &&
@@ -83,7 +129,7 @@
                 if (handle) {
                     user = await syncUserRsiFromBrowserClient(token, handle);
                 }
-                if (!user) {
+                if (!user && allowServerFallback) {
                     user = await refreshUserRsiOnAuth(token);
                 }
                 if (user && typeof user === 'object') return user;
@@ -139,8 +185,11 @@
 
     global.UssRsiSync = {
         clientScrapedLooksUsable: clientScrapedLooksUsable,
+        profileLooksIncomplete: profileLooksIncomplete,
+        shouldRefreshRsiOnLogin: shouldRefreshRsiOnLogin,
         scrapeCitizenPublicProfileWithRetry: scrapeCitizenPublicProfileWithRetry,
         syncUserRsiFromBrowserClient: syncUserRsiFromBrowserClient,
+        refreshUserRsiFromBrowserOnLogin: refreshUserRsiFromBrowserOnLogin,
         refreshUserRsiOnAuth: refreshUserRsiOnAuth,
         refreshUserRsiOnAuthWithRetry: refreshUserRsiOnAuthWithRetry,
         syncUserRsiFromBrowser: syncUserRsiFromBrowser,

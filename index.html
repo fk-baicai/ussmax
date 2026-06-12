@@ -1554,6 +1554,8 @@
                 rsiOrgLogoUrl: u.rsiOrgLogoUrl !== undefined ? u.rsiOrgLogoUrl : p.rsiOrgLogoUrl,
                 rsiOrgRoleLabel: u.rsiOrgRoleLabel !== undefined ? u.rsiOrgRoleLabel : p.rsiOrgRoleLabel,
                 rsiOrgRankSlots: u.rsiOrgRankSlots !== undefined ? u.rsiOrgRankSlots : p.rsiOrgRankSlots,
+                rsiProfileSyncedAt:
+                    u.rsiProfileSyncedAt !== undefined ? u.rsiProfileSyncedAt : p.rsiProfileSyncedAt,
                 isAdmin: u.isAdmin !== undefined ? !!u.isAdmin : !!p.isAdmin,
                 isSuperAdmin: u.isSuperAdmin !== undefined ? !!u.isSuperAdmin : !!p.isSuperAdmin,
             };
@@ -1618,7 +1620,7 @@
 
         let ensureUserProfilePromise = null;
 
-        /** 优先 /api/me，资料不全则 RSI 同步；均带重试 */
+        /** 优先 /api/me；超过 24h 或资料不全时用浏览器静默抓 RSI（不弹窗、不走服务端 Edge） */
         async function ensureUserProfileWithRetry(options) {
             if (!isLoggedIn()) return null;
             if (ensureUserProfilePromise) return ensureUserProfilePromise;
@@ -1659,36 +1661,24 @@
 
                 let sess = loadAuthSession();
                 if (!sess || !sess.token) return null;
-                if (!sessionProfileLooksIncomplete(sess)) return sess;
 
                 if (
                     window.UssRsiSync &&
-                    typeof window.UssRsiSync.refreshUserRsiOnAuthWithRetry === 'function'
+                    typeof window.UssRsiSync.shouldRefreshRsiOnLogin === 'function' &&
+                    window.UssRsiSync.shouldRefreshRsiOnLogin(sess) &&
+                    typeof window.UssRsiSync.refreshUserRsiFromBrowserOnLogin === 'function'
                 ) {
-                    const user = await window.UssRsiSync.refreshUserRsiOnAuthWithRetry(sess.token, {
-                        maxAttempts: 3,
-                        baseDelayMs: 1500,
-                        handle: sess.bindingId,
-                    });
+                    const user = await window.UssRsiSync.refreshUserRsiFromBrowserOnLogin(
+                        sess.token,
+                        sess.bindingId,
+                        { maxAttempts: 2 }
+                    );
                     if (user) {
                         saveAuthSessionFromUser(sess.token, user, undefined, sess);
                         onProfileUpdated();
-                        return loadAuthSession();
-                    }
-                } else {
-                    const user = await refreshUserRsiFromServer(sess.token);
-                    if (user) {
-                        saveAuthSessionFromUser(sess.token, user, undefined, sess);
-                        onProfileUpdated();
-                        return loadAuthSession();
                     }
                 }
 
-                sess = loadAuthSession();
-                if (sessionProfileLooksIncomplete(sess) && profileSnapshot) {
-                    restoreProfileFromSnapshot(sess0.token, profileSnapshot, remember);
-                    onProfileUpdated();
-                }
                 return loadAuthSession();
             })().finally(function () {
                 ensureUserProfilePromise = null;
@@ -5260,6 +5250,7 @@
                     rsiOrgLogoUrl: res.user.rsiOrgLogoUrl || null,
                     rsiOrgRoleLabel: res.user.rsiOrgRoleLabel || null,
                     rsiOrgRankSlots: res.user.rsiOrgRankSlots != null ? res.user.rsiOrgRankSlots : 0,
+                    rsiProfileSyncedAt: res.user.rsiProfileSyncedAt || null,
                     isAdmin: !!res.user.isAdmin,
                     isSuperAdmin: !!res.user.isSuperAdmin
                 }, true);
