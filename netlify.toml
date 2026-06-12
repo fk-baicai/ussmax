@@ -40,6 +40,24 @@
     Cache-Control = "no-store, no-cache, must-revalidate"
     Netlify-CDN-Cache-Control = "no-store"
 
+[[headers]]
+  for = "/api/sc/*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    Netlify-CDN-Cache-Control = "no-store"
+
+[[headers]]
+  for = "/api/sc/components/*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    Netlify-CDN-Cache-Control = "no-store"
+
+[[redirects]]
+  from = "/index.html"
+  to = "/"
+  status = 301
+  force = true
+
 [[redirects]]
   from = "/oopz-bridge.html"
   to = "/index.html#oopz-bridge-section"

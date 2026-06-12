@@ -277,7 +277,36 @@
     var LIST_RETURN_PATHNAME_KEY = 'scComponentListReturnPathname';
     var LIST_RETURN_SCROLL_KEY = 'scComponentListReturnScrollY';
     var LIST_RETURN_PAGE_KEY = 'scComponentListReturnPage';
+    var LIST_RETURN_EXPANDED_KEY = 'scComponentListReturnExpandedId';
     var LIST_RESTORE_FLAG_KEY = 'scComponentListRestorePending';
+
+    function getExpandedItemId() {
+        var keys = Object.keys(state.expanded || {});
+        for (var i = 0; i < keys.length; i++) {
+            if (state.expanded[keys[i]]) return String(keys[i]);
+        }
+        if (els.body) {
+            var detailRow = els.body.querySelector('.sc-detail-row[data-detail-for]');
+            if (detailRow && detailRow.dataset.detailFor) return String(detailRow.dataset.detailFor);
+            var openBtn = els.body.querySelector('.sc-expand-btn.is-open');
+            if (openBtn) {
+                var row = openBtn.closest('tr[data-id]');
+                if (row && row.dataset.id) return String(row.dataset.id);
+            }
+        }
+        return '';
+    }
+
+    function applyListScrollRestore(scrollY) {
+        if (!scrollY || scrollY <= 0) return;
+        var apply = function () {
+            window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
+        };
+        requestAnimationFrame(apply);
+        setTimeout(apply, 100);
+        setTimeout(apply, 400);
+        setTimeout(apply, 1200);
+    }
 
     function inferGroupFromTypeKey(typeKey) {
         var key = String(typeKey || '').trim();
@@ -324,23 +353,35 @@
             sessionStorage.setItem(LIST_RETURN_TYPE_KEY, state.type);
             sessionStorage.setItem(LIST_RETURN_SCROLL_KEY, String(window.scrollY || 0));
             sessionStorage.setItem(LIST_RETURN_PAGE_KEY, String(state.page || 1));
+            sessionStorage.setItem(LIST_RETURN_EXPANDED_KEY, getExpandedItemId());
             sessionStorage.setItem(LIST_RESTORE_FLAG_KEY, '1');
         } catch (e) {
             /* ignore */
         }
     }
 
-    function consumeListRestoreState() {
+    function readPendingListRestoreMeta() {
         try {
             if (sessionStorage.getItem(LIST_RESTORE_FLAG_KEY) !== '1') return null;
-            sessionStorage.removeItem(LIST_RESTORE_FLAG_KEY);
             return {
                 scrollY: Number(sessionStorage.getItem(LIST_RETURN_SCROLL_KEY) || 0),
                 page: Math.max(1, Number(sessionStorage.getItem(LIST_RETURN_PAGE_KEY) || 1)),
+                expandedId: String(sessionStorage.getItem(LIST_RETURN_EXPANDED_KEY) || '').trim(),
             };
         } catch (e) {
             return null;
         }
+    }
+
+    function consumeListRestoreState() {
+        var meta = readPendingListRestoreMeta();
+        if (!meta) return null;
+        try {
+            sessionStorage.removeItem(LIST_RESTORE_FLAG_KEY);
+        } catch (e) {
+            /* ignore */
+        }
+        return meta;
     }
 
     async function maybeRestoreListView() {
@@ -349,11 +390,11 @@
         while (state.page < pending.page && state.hasMore && !state.loading && !state.loadingMore) {
             await loadMore();
         }
-        if (pending.scrollY > 0) {
-            requestAnimationFrame(function () {
-                window.scrollTo({ top: pending.scrollY, left: 0, behavior: 'auto' });
-            });
+        if (pending.expandedId && !state.expanded[pending.expandedId]) {
+            state.expanded[pending.expandedId] = true;
+            renderTable();
         }
+        applyListScrollRestore(pending.scrollY);
     }
 
     /** 按配件类型的列表列顺序（未列出的类型仍用默认顺序） */
@@ -1426,7 +1467,7 @@
 
     function shortSourceLabel(meta) {
         if (!meta) return '—';
-        if (meta.data_source === 'wiki') return 'wiki中文百科';
+        if (meta.data_source === 'wiki') return 'WIKI百科';
         if (meta.data_source === 'uex') return 'UEX';
         if (meta.data_source_label_zh) return meta.data_source_label_zh;
         return '—';
@@ -1894,10 +1935,18 @@
             hideSuggest();
         });
         initInfiniteScroll();
+        var pendingRestore = readPendingListRestoreMeta();
+        if (pendingRestore && pendingRestore.expandedId) {
+            state.expanded[pendingRestore.expandedId] = true;
+        }
         loadList().then(function () {
             return maybeRestoreListView();
         });
     }
+
+    window.UssScComponentsListNav = {
+        rememberListReturnState: rememberListReturnState,
+    };
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);

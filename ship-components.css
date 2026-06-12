@@ -918,6 +918,23 @@
 
 .sc-acquire-loc-table {
     margin-top: 0.1rem;
+    table-layout: fixed;
+    width: 100%;
+}
+
+.sc-acquire-col--shops .sc-acquire-body,
+.sc-acquire-col--shops .sc-acquire-loc-table {
+    max-width: 100%;
+}
+
+.sc-acquire-col--shops .sc-loc-cell {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.sc-acquire-col--shops .sc-loc-path {
+    max-width: 100%;
+    flex-wrap: wrap;
 }
 
 .sc-blueprint-mission-list {
@@ -1965,7 +1982,29 @@ body:not(.sc-source-wiki) #scTable td.sc-col-wiki-stat {
 }
 
 .sc-detail-locations-blueprint-row .sc-detail-locations-body {
-    overflow-x: auto;
+    overflow-x: visible;
+    overflow-y: visible;
+}
+
+.sc-detail-page .sc-detail-locations-body .sc-loc-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.sc-detail-page .sc-detail-locations-body .sc-loc-cell {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.sc-detail-page .sc-detail-locations-body .sc-loc-path {
+    max-width: 100%;
+    flex-wrap: wrap;
+}
+
+.sc-detail-page .sc-detail-locations-body .sc-loc-level {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .sc-detail-section--blueprint .sc-detail-blueprint {

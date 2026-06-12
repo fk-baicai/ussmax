@@ -7742,6 +7742,11 @@ a.community-author-avatar-link:focus-visible {
     grid-row: 2;
 }
 
+.uss-footer-link-list--duo > li:nth-child(4) {
+    grid-column: 2;
+    grid-row: 2;
+}
+
 .uss-footer-link-list li {
     margin: 0;
     padding: 0;
@@ -7867,7 +7872,8 @@ a.community-author-avatar-link:focus-visible {
 
 .uss-footer-hanghua-logo,
 .uss-footer-erkul-logo,
-.uss-footer-chub-logo {
+.uss-footer-chub-logo,
+.uss-footer-sctools-logo {
     width: var(--uss-footer-icon);
     height: var(--uss-footer-icon);
     object-fit: contain;
@@ -7899,6 +7905,7 @@ a.community-author-avatar-link:focus-visible {
 .uss-footer-link-row:hover .uss-footer-hanghua-logo,
 .uss-footer-link-row:hover .uss-footer-erkul-logo,
 .uss-footer-link-row:hover .uss-footer-chub-logo,
+.uss-footer-link-row:hover .uss-footer-sctools-logo,
 .uss-footer-link-row:hover .uss-footer-rsi-logo {
     opacity: 1;
 }
@@ -8091,6 +8098,7 @@ a.community-author-avatar-link:focus-visible {
     .uss-footer-link-list--duo > li:nth-child(1),
     .uss-footer-link-list--duo > li:nth-child(2),
     .uss-footer-link-list--duo > li:nth-child(3),
+    .uss-footer-link-list--duo > li:nth-child(4),
     .uss-footer-link-list--middle > li {
         display: flex;
         align-items: center;

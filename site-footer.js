@@ -53,6 +53,9 @@
         '<li><a class="uss-footer-link-row uss-footer-link-row--erkul" href="https://www.erkul.games/live/calculator" target="_blank" rel="noopener noreferrer" aria-label="DPS 计算器 · Erkul.games">' +
         '<span class="uss-footer-link-row-icon"><img class="uss-footer-erkul-logo" src="sp/png/erkul.png" alt="" width="32" height="32" decoding="async"><span class="uss-footer-link-desc-tip" role="tooltip">Erkul.games</span></span>' +
         '<span class="uss-footer-link-row-text"><span class="uss-footer-link-title">DPS 计算器</span></span></a></li>' +
+        '<li><a class="uss-footer-link-row uss-footer-link-row--sctools" href="https://starcitizen.tools/" target="_blank" rel="noopener noreferrer" aria-label="SC Wiki · Star Citizen Wiki">' +
+        '<span class="uss-footer-link-row-icon"><img class="uss-footer-sctools-logo" src="sp/svg/sctools-logo.svg" alt="" width="32" height="32" decoding="async"><span class="uss-footer-link-desc-tip" role="tooltip">Star Citizen Wiki</span></span>' +
+        '<span class="uss-footer-link-row-text"><span class="uss-footer-link-title">SC Wiki</span></span></a></li>' +
         '</ul>' +
         '</nav>' +
         '</div>' +

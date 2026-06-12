@@ -22,6 +22,20 @@
         return API_BASE + path;
     }
 
+    async function parseJsonResponse(res, fallbackMessage) {
+        var text = await res.text();
+        try {
+            return JSON.parse(text);
+        } catch (parseErr) {
+            var preview = String(text || '').replace(/\s+/g, ' ').trim();
+            if (preview.length > 60) preview = preview.slice(0, 60) + '…';
+            var msg = fallbackMessage || '响应解析失败';
+            if (preview) msg += '（收到非 JSON 内容: ' + preview + '）';
+            msg += '。若持续出现，请强制刷新页面或清除浏览器缓存。';
+            throw new Error(msg);
+        }
+    }
+
     function escapeHtml(s) {
         return String(s || '')
             .replace(/&/g, '&amp;')
@@ -401,6 +415,15 @@
         }
     }
 
+    function stashListReturnForDetailNav() {
+        if (
+            window.UssScComponentsListNav &&
+            typeof window.UssScComponentsListNav.rememberListReturnState === 'function'
+        ) {
+            window.UssScComponentsListNav.rememberListReturnState();
+        }
+    }
+
     function renderBlueprintPoolChip(item, navContext) {
         var label = (item && (item.name_zh || item.name_en)) || '';
         if (!label) return '';
@@ -446,6 +469,7 @@
                 );
                 if (href) {
                     rememberComponentDetailId(data.item.id_item || data.item.uuid);
+                    stashListReturnForDetailNav();
                     window.location.href = href;
                     return;
                 }
@@ -479,6 +503,7 @@
                 );
                 if (hrefExact) {
                     rememberComponentDetailId(exact.id_item);
+                    stashListReturnForDetailNav();
                     window.location.href = hrefExact;
                 }
             }
@@ -901,8 +926,13 @@
         var cacheKey = String(id);
         if (listCache[cacheKey]) return listCache[cacheKey];
 
-        var res = await fetch(apiUrl('/api/sc/components/' + encodeURIComponent(cacheKey) + '/blueprint-missions'));
-        var data = await res.json();
+        var res = await fetch(
+            apiUrl('/api/sc/components/' + encodeURIComponent(cacheKey) + '/blueprint-missions') +
+                '?_=' +
+                Date.now(),
+            { cache: 'no-store' }
+        );
+        var data = await parseJsonResponse(res, '蓝图任务响应解析失败');
         if (!res.ok || !data.ok) throw new Error((data && data.message) || '蓝图任务加载失败');
         listCache[cacheKey] = data.missions || [];
         return listCache[cacheKey];
@@ -924,7 +954,7 @@
             url += '&debug_name=' + encodeURIComponent(String(debugName));
         }
         var res = await fetch(url, { cache: 'no-store' });
-        var data = await res.json();
+        var data = await parseJsonResponse(res, '任务详情响应解析失败');
         if (!res.ok || !data.ok || !data.mission) {
             throw new Error((data && data.message) || '任务详情加载失败');
         }
@@ -986,11 +1016,16 @@
     function wirePanel(container) {
         if (!container || container.dataset.blueprintWired === '1') return;
         container.dataset.blueprintWired = '1';
+        container.addEventListener('mousedown', function (ev) {
+            var chipLink = ev.target.closest('.sc-mission-chip--link[href]');
+            if (chipLink && container.contains(chipLink)) stashListReturnForDetailNav();
+        });
         container.addEventListener('click', function (ev) {
             var chipLink = ev.target.closest('.sc-mission-chip--link[href]');
             if (chipLink && container.contains(chipLink)) {
                 var cid = chipLink.getAttribute('data-component-id');
                 if (cid) rememberComponentDetailId(cid);
+                stashListReturnForDetailNav();
                 return;
             }
             var chipResolve = ev.target.closest('.sc-mission-chip--resolve[data-pool-item-ref]');
