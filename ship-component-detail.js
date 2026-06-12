@@ -26,6 +26,22 @@
 
     var currentImageLightboxSrc = '';
 
+    function isPlaceholderItemName(s) {
+        var v = String(s || '').trim();
+        if (!v) return false;
+        if (/\[(?:PH|WIP|TMP|TBD|TODO)\]/i.test(v)) return true;
+        if (/WCPR-Made|XIAN Nox Cooler Name/i.test(v)) return true;
+        return false;
+    }
+
+    function resolveDetailDisplayName(item) {
+        var zh = String((item && item.name_zh) || '').trim();
+        var en = String((item && item.name_en) || '').trim();
+        if (isPlaceholderItemName(zh)) zh = '';
+        var primary = zh || en || '—';
+        var subtitle = en && en !== primary ? en : '';
+        return { primary: primary, subtitle: subtitle };
+    }
 
     var TYPE_LABELS = {
         cooling: '散热',
@@ -35,6 +51,7 @@
         jump: '跳跃驱动器',
         radar: '雷达',
         ship_weapon: '舰炮',
+        ship_turret: '舰船炮台',
         ship_missile: '导弹',
         missile_rack: '导弹架',
         mining_laser: '矿头',
@@ -43,6 +60,7 @@
 
     var TYPE_GROUP = {
         ship_weapon: 'weapon',
+        ship_turret: 'weapon',
         ship_missile: 'weapon',
         missile_rack: 'weapon',
         mining_laser: 'mining',
@@ -457,18 +475,15 @@
         hideGate();
         if (els.article) els.article.classList.remove('is-hidden');
 
-        document.title = (item.name_zh || item.name_en || '配件') + ' · USSXC';
+        var names = resolveDetailDisplayName(item);
+        document.title = names.primary + ' · USSXC';
 
         if (els.typeBadge) {
             els.typeBadge.className = 'sc-type-badge sc-type-badge--' + (item.type || 'unknown');
             els.typeBadge.textContent = TYPE_LABELS[item.type] || item.type || '—';
         }
-        if (els.titleZh) els.titleZh.textContent = item.name_zh || item.name_en || '—';
-        if (els.titleEn) {
-            var en = item.name_en;
-            if (en && en !== item.name_zh) els.titleEn.textContent = en;
-            else els.titleEn.textContent = '';
-        }
+        if (els.titleZh) els.titleZh.textContent = names.primary;
+        if (els.titleEn) els.titleEn.textContent = names.subtitle;
 
         renderHighlights(item);
         renderBasics(item);

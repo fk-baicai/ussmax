@@ -106,6 +106,9 @@ set('Gun', map['Ship.Weapon.Gun']);
 set('Rocket', map.Rocket);
 set('ElectricArc', '电弧');
 set('collectionbeam', '采集光束'); set('CollectionBeam', '采集光束');
+set('SingleAxis', '单轴'); set('DualAxis', '双轴'); set('Full', '全向');
+set('P D C Turret', '点防炮塔'); set('Manned Turret', '有人炮塔'); set('Gun Turret', '炮塔');
+set('Utility', '功能');
 const wp = { Ballistic:'实弹', Laser:'激光', Distortion:'畸变', Plasma:'电浆', Neutron:'中子', Tachyon:'快子', 'Mass Driver':'电磁', Gatling:'加特林', Repeater:'速射炮', Cannon:'加农炮', Scattergun:'霰弹炮', ScatterGun:'霰弹炮', Beam:'光束炮', Turret:'炮塔', Gun:'舰炮', Pod:'巢', 'Mining Laser':'采矿激光', 'Rocket Pod':'火箭巢', 'Mass Driver Cannon':'电磁加农炮' };
 Object.entries(wp).forEach(([a,b]) => set(a,b));
 function compose(en) {

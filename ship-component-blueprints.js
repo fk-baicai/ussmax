@@ -7,7 +7,7 @@
 
     var listCache = Object.create(null);
     var detailCache = Object.create(null);
-    var DETAIL_SCHEMA_VERSION = 11;
+    var DETAIL_SCHEMA_VERSION = 12;
  
     function isUsableMissionDetail(detail) {
         return (
@@ -22,11 +22,22 @@
         return API_BASE + path;
     }
 
+    function looksLikeGzipBody(text) {
+        return text && text.length >= 2 && text.charCodeAt(0) === 0x1f && text.charCodeAt(1) === 0x8b;
+    }
+
+    function isJsonParseFailureMessage(message) {
+        return /json|非 JSON|解析失败|Unexpected token/i.test(String(message || ''));
+    }
+
     async function parseJsonResponse(res, fallbackMessage) {
         var text = await res.text();
         try {
             return JSON.parse(text);
         } catch (parseErr) {
+            if (looksLikeGzipBody(text)) {
+                throw new Error('蓝图任务响应异常（网络缓存损坏），请强制刷新页面后重试');
+            }
             var preview = String(text || '').replace(/\s+/g, ' ').trim();
             if (preview.length > 60) preview = preview.slice(0, 60) + '…';
             var msg = fallbackMessage || '响应解析失败';
@@ -34,6 +45,13 @@
             msg += '。若持续出现，请强制刷新页面或清除浏览器缓存。';
             throw new Error(msg);
         }
+    }
+
+    function itemHasBlueprintHints(item) {
+        var wf = item && item.wiki_fields;
+        if (wf && Array.isArray(wf.blueprint_refs) && wf.blueprint_refs.length) return true;
+        if (wf && Array.isArray(wf.blueprint_unlock_missions) && wf.blueprint_unlock_missions.length) return true;
+        return false;
     }
 
     function escapeHtml(s) {
@@ -885,10 +903,7 @@
     function renderMissionDetailBody(detail, navContext) {
         if (!detail) return '<p class="sc-acquire-empty">暂无任务详情</p>';
         var ctx = navContext || readNavContext();
-        var body =
-            detail.description_zh ||
-            detail.description_en ||
-            (detail.description_html ? detail.description_html.replace(/<[^>]+>/g, ' ') : '');
+        var body = detail.description_zh || '';
         var html = '<div class="sc-blueprint-mission-detail-inner">';
         html += renderMissionSummarySections(detail.fields, detail, ['overview']);
         if (body) {
@@ -898,6 +913,11 @@
                 '<div class="sc-blueprint-mission-desc">' +
                 formatMissionBody(body) +
                 '</div></section>';
+        } else if (detail.description_en) {
+            html +=
+                '<section class="sc-blueprint-mission-section sc-blueprint-mission-section--briefing">' +
+                '<h4 class="sc-blueprint-mission-section-title">任务简报</h4>' +
+                '<p class="sc-acquire-empty">任务简报暂未汉化</p></section>';
         }
         html += renderMissionFieldSections(detail.fields, detail, ctx);
         html += renderMissionSummarySections(detail.fields, detail, MISSION_SUMMARY_DEFERRED_IDS);
@@ -1046,7 +1066,7 @@
     function inferNavGroupFromItemType(typeKey) {
         var key = String(typeKey || '').trim();
         if (!key) return 'component';
-        if (key === 'ship_weapon' || key === 'ship_missile' || key === 'missile_rack') return 'weapon';
+        if (key === 'ship_weapon' || key === 'ship_turret' || key === 'ship_missile' || key === 'missile_rack') return 'weapon';
         if (key === 'mining_laser' || key === 'ship_module') return 'mining';
         return 'component';
     }
@@ -1068,6 +1088,15 @@
             container.innerHTML = renderMissionListHtml(missions, expandedId);
         } catch (e) {
             if (!container.isConnected) return;
+            var expandedId = (options && options.expandedId) || container.dataset.expandedMission || '';
+            if (!itemHasBlueprintHints(item) && isJsonParseFailureMessage(e && e.message)) {
+                container.innerHTML = renderMissionListHtml([], expandedId);
+                return;
+            }
+            if (!itemHasBlueprintHints(item) && e && /Wiki API|蓝图任务加载失败|配件不存在|404/i.test(String(e.message || ''))) {
+                container.innerHTML = renderMissionListHtml([], expandedId);
+                return;
+            }
             container.innerHTML =
                 '<p class="sc-acquire-empty">' + escapeHtml((e && e.message) || '蓝图任务加载失败') + '</p>';
         }

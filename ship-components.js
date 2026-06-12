@@ -16,7 +16,7 @@
         weapon: {
             label_zh: '舰船武器',
             kicker: 'WEAPONS',
-            lead: ['舰炮', '导弹', '导弹架'],
+            lead: ['舰炮', '导弹', '导弹架', '舰船炮台'],
         },
         mining: {
             label_zh: '舰船矿头',
@@ -31,19 +31,18 @@
     };
     var GROUP_ORDER = ['component', 'weapon', 'mining'];
     var TYPE_ORDER_BY_GROUP = {
+        weapon: ['ship_weapon', 'ship_missile', 'missile_rack', 'ship_turret'],
         mining: ['mining_laser', 'ship_module'],
     };
     var TYPE_FALLBACK_LABELS = {
         mining_laser: '矿头',
         ship_module: '模组',
+        ship_turret: '舰船炮台',
     };
     function normalizeGroupState() {
         if (state.group === 'module') {
             state.group = 'mining';
             if (state.type !== 'mining_laser') state.type = 'ship_module';
-        }
-        if (state.type === 'ship_module' && state.group !== 'mining') {
-            state.group = 'mining';
         }
         if (GROUP_ORDER.indexOf(state.group) < 0) {
             state.group = 'component';
@@ -131,6 +130,9 @@
     };
 
     var loadMoreObserver = null;
+    var tableColumnSyncRaf = 0;
+    var desktopTableShellWidth = 0;
+    var expandColumnWidthCache = 0;
 
     var SORT_GETTERS = {
         name: function (item) {
@@ -311,7 +313,7 @@
     function inferGroupFromTypeKey(typeKey) {
         var key = String(typeKey || '').trim();
         if (!key) return '';
-        if (key === 'ship_weapon' || key === 'ship_missile' || key === 'missile_rack') return 'weapon';
+        if (key === 'ship_weapon' || key === 'ship_turret' || key === 'ship_missile' || key === 'missile_rack') return 'weapon';
         if (key === 'mining_laser' || key === 'ship_module') return 'mining';
         if (
             key === 'cooling' ||
@@ -399,6 +401,98 @@
 
     /** 按配件类型的列表列顺序（未列出的类型仍用默认顺序） */
     var COLUMN_ORDER_BY_TYPE = {
+        cooling: [
+            'name',
+            'type',
+            'class',
+            'grade',
+            'size',
+            'wiki_cool_seg',
+            'mfg',
+            'mass',
+            'volume',
+            'price',
+            'loc',
+            'expand',
+        ],
+        power: [
+            'name',
+            'type',
+            'class',
+            'grade',
+            'size',
+            'wiki_pwr_seg',
+            'mfg',
+            'mass',
+            'volume',
+            'price',
+            'loc',
+            'expand',
+        ],
+        shield: [
+            'name',
+            'type',
+            'class',
+            'grade',
+            'size',
+            'wiki_sh_hp',
+            'wiki_sh_regen',
+            'wiki_sh_time',
+            'mfg',
+            'mass',
+            'volume',
+            'price',
+            'loc',
+            'expand',
+        ],
+        quantum: [
+            'name',
+            'type',
+            'grade',
+            'class',
+            'size',
+            'speed',
+            'wiki_q_speed',
+            'wiki_q_engage',
+            'mfg',
+            'mass',
+            'volume',
+            'price',
+            'loc',
+            'expand',
+        ],
+        jump: [
+            'name',
+            'type',
+            'grade',
+            'class',
+            'size',
+            'speed',
+            'wiki_j_align',
+            'wiki_j_tune',
+            'mfg',
+            'mass',
+            'volume',
+            'price',
+            'loc',
+            'expand',
+        ],
+        radar: [
+            'name',
+            'type',
+            'grade',
+            'class',
+            'size',
+            'wiki_r_cd',
+            'wiki_r_ir',
+            'wiki_r_em',
+            'wiki_r_dist_min',
+            'wiki_r_dist_max',
+            'mfg',
+            'price',
+            'loc',
+            'expand',
+        ],
         ship_weapon: [
             'name',
             'type',
@@ -409,6 +503,20 @@
             'wiki_w_range',
             'wiki_w_dps',
             'wiki_w_cap',
+            'mfg',
+            'mass',
+            'volume',
+            'price',
+            'loc',
+            'expand',
+        ],
+        ship_turret: [
+            'name',
+            'type',
+            'size',
+            'wiki_t_sub',
+            'wiki_t_mounts',
+            'wiki_t_wsize',
             'mfg',
             'mass',
             'volume',
@@ -433,6 +541,19 @@
             'loc',
             'expand',
         ],
+        missile_rack: [
+            'name',
+            'type',
+            'size',
+            'wiki_r_count',
+            'wiki_r_size',
+            'mfg',
+            'mass',
+            'volume',
+            'price',
+            'loc',
+            'expand',
+        ],
         mining_laser: [
             'name',
             'type',
@@ -442,9 +563,25 @@
             'wiki_ml_maxrange',
             'wiki_m_throughput',
             'wiki_m_slots',
+            'wiki_ml_power_transfer',
             'mfg',
-            'mass',
-            'volume',
+            'price',
+            'loc',
+            'expand',
+        ],
+        ship_module: [
+            'name',
+            'size',
+            'type',
+            'wiki_mod_overcharge_rate',
+            'wiki_mod_shatter_damage',
+            'wiki_mod_optimal_charge_rate',
+            'wiki_mod_optimal_charge_window_size',
+            'wiki_mod_all_charge_rates',
+            'wiki_mod_inert_materials',
+            'wiki_mod_type',
+            'wiki_mod_resistance',
+            'wiki_mod_instability',
             'price',
             'loc',
             'expand',
@@ -454,7 +591,7 @@
     function getColumnOrder() {
         var typeOrder = COLUMN_ORDER_BY_TYPE[state.type];
         if (typeOrder) return typeOrder.slice();
-        var order = ['name', 'type', 'grade', 'size', 'mfg', 'mass', 'volume', 'speed'];
+        var order = ['name', 'type', 'grade', 'class', 'size', 'mfg', 'mass', 'volume', 'speed'];
         getWikiTableColumns().forEach(function (col) {
             order.push(col.key);
         });
@@ -466,8 +603,27 @@
         return getColumnOrder().filter(isColumnVisible);
     }
 
+    function usesDesktopColumnGaps() {
+        return !isMobileTableLayout();
+    }
+
+    function getTableStructureItems() {
+        var visible = getVisibleColumnOrder();
+        if (!usesDesktopColumnGaps()) {
+            return visible.map(function (key) {
+                return { type: 'data', key: key };
+            });
+        }
+        var items = [];
+        visible.forEach(function (key, index) {
+            items.push({ type: 'data', key: key });
+            if (index < visible.length - 1) items.push({ type: 'gap' });
+        });
+        return items;
+    }
+
     function getColCount() {
-        return getVisibleColumnOrder().length;
+        return getTableStructureItems().length;
     }
 
     function formatSynced(iso) {
@@ -555,9 +711,7 @@
                 els.body.appendChild(renderDetailRow(item));
             }
         });
-        if (refreshMobileTableScrollState) {
-            requestAnimationFrame(refreshMobileTableScrollState);
-        }
+        scheduleSyncTableColumns();
         window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
     }
 
@@ -615,13 +769,13 @@
     }
 
     function ensureTypeInGroup() {
-        normalizeGroupState();
         var filtered = typesForGroup(state.group);
         var keys = Object.keys(filtered);
         if (!keys.length) return;
         if (keys.indexOf(state.type) < 0) {
             state.type = DEFAULT_TYPE_BY_GROUP[state.group] || keys[0];
         }
+        normalizeGroupState();
     }
 
     function updateUrlState() {
@@ -674,10 +828,7 @@
                 if (state.group === key) return;
                 state.group = key;
                 ensureTypeInGroup();
-                if (!isGradeColumnVisible() && state.sortKey === 'grade') {
-                    state.sortKey = 'size';
-                    state.sortDir = 'asc';
-                }
+                resetSortIfHiddenGradeClassColumns();
                 state.expanded = {};
                 if (els.search) els.search.value = '';
                 hideSuggest();
@@ -743,7 +894,7 @@
     var COLUMN_LABELS = {
         name: '名称',
         type: '类型',
-        class: '等级用途',
+        class: '用途',
         grade: '等级',
         size: '尺寸',
         mfg: '制造商',
@@ -773,11 +924,24 @@
         var headRow = els.tableHead ? els.tableHead.querySelector('tr') : null;
         if (!colgroup || !headRow) return;
 
-        var order = getVisibleColumnOrder();
+        var items = getTableStructureItems();
         colgroup.innerHTML = '';
         headRow.innerHTML = '';
 
-        order.forEach(function (key) {
+        items.forEach(function (item) {
+            if (item.type === 'gap') {
+                var gapCol = document.createElement('col');
+                gapCol.className = 'sc-col-gap';
+                colgroup.appendChild(gapCol);
+
+                var gapTh = document.createElement('th');
+                gapTh.className = 'sc-col-gap';
+                gapTh.setAttribute('aria-hidden', 'true');
+                headRow.appendChild(gapTh);
+                return;
+            }
+
+            var key = item.key;
             var col = document.createElement('col');
             col.className = 'sc-col-' + key;
             if (key === 'speed') col.classList.add('sc-col-quantum-only');
@@ -905,6 +1069,17 @@
         return state.group !== 'weapon' && state.group !== 'mining';
     }
 
+    function isClassColumnVisible() {
+        return isGradeColumnVisible();
+    }
+
+    function resetSortIfHiddenGradeClassColumns() {
+        if (!isGradeColumnVisible() && (state.sortKey === 'grade' || state.sortKey === 'class')) {
+            state.sortKey = 'size';
+            state.sortDir = 'asc';
+        }
+    }
+
     function isMassVolumeVisible() {
         return state.type !== 'radar';
     }
@@ -922,61 +1097,20 @@
         }
         if (key === 'type') return isTypeColumnVisible();
         if (key === 'grade') return isGradeColumnVisible();
+        if (key === 'class') return isClassColumnVisible();
         if (key === 'speed') return isSpeedColumnVisible();
         if (key === 'mass' || key === 'volume') return isMassVolumeVisible();
         return true;
     }
 
-    var COLUMN_WEIGHTS = {
-        name: 1.45,
-        type: 0.85,
-        class: 0.95,
-        grade: 0.75,
-        size: 0.75,
-        mfg: 1.05,
-        mass: 0.85,
-        volume: 0.85,
-        speed: 0.95,
-        wiki_sh_hp: 0.92,
-        wiki_sh_regen: 0.92,
-        wiki_sh_time: 0.88,
-        wiki_cool_seg: 0.88,
-        wiki_pwr_seg: 0.88,
-        wiki_q_speed: 0.95,
-        wiki_q_engage: 0.9,
-        wiki_j_align: 0.88,
-        wiki_j_tune: 0.88,
-        wiki_r_cd: 0.85,
-        wiki_r_ir: 0.88,
-        wiki_r_em: 0.88,
-        wiki_w_type: 0.95,
-        wiki_w_dmg: 0.88,
-        wiki_w_rpm: 0.88,
-        wiki_w_range: 0.88,
-        wiki_w_dps: 0.92,
-        wiki_w_cap: 0.85,
-        wiki_m_type: 0.92,
-        wiki_m_dmg: 0.88,
-        wiki_m_speed: 0.88,
-        wiki_m_locktime: 0.88,
-        wiki_m_lock: 0.88,
-        wiki_m_blast: 0.88,
-        wiki_ml_type: 0.92,
-        wiki_ml_maxrange: 0.9,
-        wiki_m_range: 0.88,
-        wiki_m_throughput: 0.92,
-        wiki_m_slots: 0.85,
-        price: 0.95,
-        loc: 1.35,
-        expand: 0.38,
-    };
+    var LOC_LIST_MAX_WIDTH = 168;
 
     var MOBILE_COL_WIDTHS = {
         name: '7.75rem',
         type: '4.35rem',
-        class: '4.35rem',
+        class: '5rem',
         grade: '2.9rem',
-        size: '2.9rem',
+        size: '3.4rem',
         speed: '5.35rem',
         wiki_sh_hp: '5.5rem',
         wiki_sh_regen: '5.5rem',
@@ -990,12 +1124,19 @@
         wiki_r_cd: '4.5rem',
         wiki_r_ir: '5rem',
         wiki_r_em: '5rem',
+        wiki_r_dist_min: '5.75rem',
+        wiki_r_dist_max: '5.75rem',
+        wiki_r_count: '4.5rem',
+        wiki_r_size: '4.75rem',
         wiki_w_type: '5rem',
         wiki_w_dmg: '4.75rem',
         wiki_w_rpm: '4.75rem',
         wiki_w_range: '5rem',
         wiki_w_dps: '5rem',
         wiki_w_cap: '4.5rem',
+        wiki_t_sub: '5.25rem',
+        wiki_t_mounts: '3.5rem',
+        wiki_t_wsize: '4.75rem',
         wiki_m_type: '5rem',
         wiki_m_dmg: '4.75rem',
         wiki_m_speed: '5rem',
@@ -1007,10 +1148,129 @@
         wiki_ml_maxrange: '5.25rem',
         wiki_m_throughput: '5.5rem',
         wiki_m_slots: '4.5rem',
+        wiki_ml_power_transfer: '5.25rem',
+        wiki_mod_overcharge_rate: '5.25rem',
+        wiki_mod_shatter_damage: '4.75rem',
+        wiki_mod_optimal_charge_rate: '5.25rem',
+        wiki_mod_optimal_charge_window_size: '5rem',
+        wiki_mod_all_charge_rates: '5.25rem',
+        wiki_mod_inert_materials: '5rem',
+        wiki_mod_type: '4.5rem',
+        wiki_mod_resistance: '4.5rem',
+        wiki_mod_instability: '5rem',
         price: '5.85rem',
         loc: '11.5rem',
-        expand: '3.2rem',
+        expand: '4.25rem',
     };
+
+    function getMobileColWidth(key) {
+        if (key === 'expand') {
+            var px = getExpandColumnWidth();
+            return Math.ceil((px / 16) * 100) / 100 + 'rem';
+        }
+        if (MOBILE_COL_WIDTHS[key]) return MOBILE_COL_WIDTHS[key];
+        if (key.indexOf('wiki_') === 0) return '5rem';
+        return '';
+    }
+
+    function getExpandColumnWidth() {
+        if (expandColumnWidthCache > 0) return expandColumnWidthCache;
+        var probe = document.createElement('button');
+        probe.type = 'button';
+        probe.className = 'sc-expand-btn';
+        probe.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;pointer-events:none;';
+        document.body.appendChild(probe);
+        probe.textContent = ACQUIRE_BTN_LABEL;
+        var acquireW = probe.getBoundingClientRect().width;
+        probe.textContent = '收起';
+        probe.classList.add('is-open');
+        var collapseW = probe.getBoundingClientRect().width;
+        document.body.removeChild(probe);
+        expandColumnWidthCache = Math.ceil(Math.max(acquireW, collapseW)) + 24;
+        return expandColumnWidthCache;
+    }
+
+    function getColKeyFromElement(el) {
+        if (el.classList && el.classList.contains('sc-col-gap')) return '';
+        var parts = (el.className || '').split(/\s+/);
+        for (var i = 0; i < parts.length; i++) {
+            if (parts[i] === 'sc-col-gap') return '';
+            if (parts[i].indexOf('sc-col-') === 0) {
+                return parts[i].replace('sc-col-', '');
+            }
+        }
+        return '';
+    }
+
+    function measureDesktopColumnWidths(table, visible) {
+        var widths = {};
+        visible.forEach(function (key) {
+            widths[key] = 0;
+        });
+
+        var prevTableLayout = table.style.tableLayout;
+        var prevWidth = table.style.width;
+        var prevMinWidth = table.style.minWidth;
+        var prevMaxWidth = table.style.maxWidth;
+        var cols = Array.prototype.slice.call(table.querySelectorAll('colgroup col'));
+        var prevCols = cols.map(function (col) {
+            return {
+                width: col.style.width,
+                minWidth: col.style.minWidth,
+                maxWidth: col.style.maxWidth,
+            };
+        });
+
+        cols.forEach(function (col) {
+            col.style.width = '';
+            col.style.minWidth = '';
+            col.style.maxWidth = '';
+        });
+        table.style.tableLayout = 'auto';
+        table.style.width = 'max-content';
+        table.style.minWidth = 'max-content';
+        table.style.maxWidth = 'none';
+        void table.offsetWidth;
+
+        function scan(selector) {
+            table.querySelectorAll(selector).forEach(function (cell) {
+                var key = getColKeyFromElement(cell);
+                if (!key || !Object.prototype.hasOwnProperty.call(widths, key)) return;
+                var w = cell.getBoundingClientRect().width;
+                if (w > widths[key]) widths[key] = Math.ceil(w);
+            });
+        }
+
+        scan('thead th');
+        scan('tbody tr:not(.sc-detail-row) td');
+        if (Object.prototype.hasOwnProperty.call(widths, 'expand')) {
+            widths.expand = getExpandColumnWidth();
+        }
+        if (Object.prototype.hasOwnProperty.call(widths, 'loc') && widths.loc > LOC_LIST_MAX_WIDTH) {
+            widths.loc = LOC_LIST_MAX_WIDTH;
+        }
+
+        table.style.tableLayout = prevTableLayout;
+        table.style.width = prevWidth;
+        table.style.minWidth = prevMinWidth;
+        table.style.maxWidth = prevMaxWidth;
+        cols.forEach(function (col, idx) {
+            col.style.width = prevCols[idx].width;
+            col.style.minWidth = prevCols[idx].minWidth;
+            col.style.maxWidth = prevCols[idx].maxWidth;
+        });
+
+        return widths;
+    }
+
+    function scheduleSyncTableColumns() {
+        if (tableColumnSyncRaf) cancelAnimationFrame(tableColumnSyncRaf);
+        tableColumnSyncRaf = requestAnimationFrame(function () {
+            tableColumnSyncRaf = 0;
+            syncTableColumns();
+            if (refreshMobileTableScrollState) refreshMobileTableScrollState();
+        });
+    }
 
     function syncTableColumns() {
         var visible = getVisibleColumnOrder();
@@ -1019,7 +1279,7 @@
             var table = document.getElementById('scTable');
             var totalRem = 0;
             visible.forEach(function (key) {
-                var w = MOBILE_COL_WIDTHS[key];
+                var w = getMobileColWidth(key);
                 if (!w) return;
                 totalRem += parseFloat(w) || 0;
             });
@@ -1029,16 +1289,15 @@
                 table.style.maxWidth = totalRem + 'rem';
             }
             document.querySelectorAll('#scTable col').forEach(function (col) {
-                var key = '';
-                var parts = (col.className || '').split(/\s+/);
-                for (var i = 0; i < parts.length; i++) {
-                    if (parts[i].indexOf('sc-col-') === 0) {
-                        key = parts[i].replace('sc-col-', '');
-                        break;
-                    }
+                if (col.classList.contains('sc-col-gap')) {
+                    col.style.width = '0';
+                    col.style.minWidth = '0';
+                    col.style.maxWidth = '0';
+                    return;
                 }
+                var key = getColKeyFromElement(col);
                 if (!key) return;
-                var mobileW = visible.indexOf(key) >= 0 ? MOBILE_COL_WIDTHS[key] : '';
+                var mobileW = visible.indexOf(key) >= 0 ? getMobileColWidth(key) : '';
                 if (mobileW) {
                     col.style.width = mobileW;
                     col.style.minWidth = mobileW;
@@ -1053,60 +1312,95 @@
         }
 
         var tableDesktop = document.getElementById('scTable');
-        if (tableDesktop) {
-            tableDesktop.style.width = '';
-            tableDesktop.style.minWidth = '';
-            tableDesktop.style.maxWidth = '';
+        if (!tableDesktop || !visible.length) return;
+
+        var widths = measureDesktopColumnWidths(tableDesktop, visible);
+        var sumWidths = 0;
+        visible.forEach(function (key) {
+            sumWidths += widths[key] || 0;
+        });
+
+        var shell = els.tableShell;
+        var containerWidth = shell ? shell.clientWidth : tableDesktop.clientWidth;
+        if (!containerWidth) containerWidth = sumWidths;
+        desktopTableShellWidth = containerWidth;
+
+        var gapCount = visible.length > 1 ? visible.length - 1 : 0;
+        var gap = 0;
+        if (gapCount > 0) {
+            gap = Math.max(0, (containerWidth - sumWidths) / gapCount);
         }
+        gap = Math.round(gap * 100) / 100;
 
-        var expandPct = 4;
-        var budget = 100 - expandPct;
-        var weightSum = 0;
-        visible.forEach(function (key) {
-            if (key !== 'expand') weightSum += COLUMN_WEIGHTS[key] || 1;
-        });
-
-        var classMap = {};
-        visible.forEach(function (key) {
-            classMap['sc-col-' + key] = 0;
-        });
-
-        var assigned = 0;
-        var dataKeys = visible.filter(function (key) {
-            return key !== 'expand';
-        });
-        dataKeys.forEach(function (key, idx) {
-            var colKey = 'sc-col-' + key;
-            var pct;
-            if (idx === dataKeys.length - 1) {
-                pct = budget - assigned;
-            } else {
-                pct = Math.round(((COLUMN_WEIGHTS[key] || 1) / weightSum) * budget * 10) / 10;
-                assigned += pct;
+        if (gap <= 0 && sumWidths > containerWidth && sumWidths > 0) {
+            var expandWidth = visible.indexOf('expand') >= 0 ? getExpandColumnWidth() : 0;
+            var shrinkableSum = 0;
+            visible.forEach(function (key) {
+                if (key === 'expand') return;
+                shrinkableSum += widths[key] || 0;
+            });
+            var shrinkBudget = Math.max(0, containerWidth - expandWidth - gapCount * gap);
+            var scale = shrinkableSum > 0 ? shrinkBudget / shrinkableSum : 1;
+            var scaledSum = 0;
+            visible.forEach(function (key) {
+                if (key === 'expand') {
+                    widths[key] = expandWidth;
+                    scaledSum += expandWidth;
+                    return;
+                }
+                var scaled = Math.floor((widths[key] || 0) * scale);
+                widths[key] = scaled;
+                scaledSum += scaled;
+            });
+            var drift = containerWidth - scaledSum - gapCount * gap;
+            if (drift !== 0) {
+                var adjustKey = visible.indexOf('loc') >= 0 ? 'loc' : visible[visible.length - 2] || visible[0];
+                if (adjustKey === 'expand') adjustKey = visible[visible.length - 2] || visible[0];
+                widths[adjustKey] = Math.max(0, (widths[adjustKey] || 0) + drift);
             }
-            classMap[colKey] = pct;
-        });
-        if (visible.indexOf('expand') >= 0) {
-            classMap['sc-col-expand'] = expandPct;
         }
+
+        if (Object.prototype.hasOwnProperty.call(widths, 'loc') && widths.loc > LOC_LIST_MAX_WIDTH) {
+            widths.loc = LOC_LIST_MAX_WIDTH;
+        }
+
+        var finalSum = 0;
+        visible.forEach(function (key) {
+            finalSum += widths[key] || 0;
+        });
+        if (gapCount > 0) {
+            gap = Math.max(0, (containerWidth - finalSum) / gapCount);
+            gap = Math.round(gap * 100) / 100;
+        }
+
+        tableDesktop.style.width = '100%';
+        tableDesktop.style.minWidth = '';
+        tableDesktop.style.maxWidth = '';
 
         document.querySelectorAll('#scTable col').forEach(function (col) {
-            var parts = (col.className || '').split(/\s+/);
-            for (var i = 0; i < parts.length; i++) {
-                var key = parts[i];
-                if (!Object.prototype.hasOwnProperty.call(classMap, key)) continue;
-                var w = classMap[key];
-                if (!w) {
-                    col.style.width = '0';
-                    col.style.minWidth = '0';
-                    col.style.maxWidth = '0';
-                } else {
-                    col.style.width = w + '%';
-                    col.style.minWidth = '';
-                    col.style.maxWidth = '';
-                }
-                break;
+            if (col.classList.contains('sc-col-gap')) {
+                col.style.width = gap + 'px';
+                col.style.minWidth = gap + 'px';
+                col.style.maxWidth = gap + 'px';
+                return;
             }
+            var key = getColKeyFromElement(col);
+            if (!key || visible.indexOf(key) < 0) {
+                col.style.width = '0';
+                col.style.minWidth = '0';
+                col.style.maxWidth = '0';
+                return;
+            }
+            var px = widths[key] || 0;
+            if (!px) {
+                col.style.width = '0';
+                col.style.minWidth = '0';
+                col.style.maxWidth = '0';
+                return;
+            }
+            col.style.width = px + 'px';
+            col.style.minWidth = px + 'px';
+            col.style.maxWidth = px + 'px';
         });
     }
 
@@ -1124,13 +1418,24 @@
         return /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(v);
     }
 
+    function isPlaceholderItemName(s) {
+        var v = String(s || '').trim();
+        if (!v) return false;
+        if (/\[(?:PH|WIP|TMP|TBD|TODO)\]/i.test(v)) return true;
+        if (/WCPR-Made|XIAN Nox Cooler Name/i.test(v)) return true;
+        return false;
+    }
+
     function resolveItemDisplayNames(item) {
         var zh = String((item && item.name_zh) || '').trim();
         var en = String((item && item.name_en) || '').trim();
+        if (isPlaceholderItemName(zh)) {
+            zh = '';
+        }
         var primary = zh || en || '—';
         var subtitle = '';
 
-        if (!item || !item.loc_matched) {
+        if (!item || !item.loc_matched || isPlaceholderItemName(item.name_zh)) {
             if (isInternalItemKey(primary)) primary = '—';
             if (isInternalItemKey(en)) en = '';
         }
@@ -1212,6 +1517,29 @@
         );
     }
 
+    function renderLocationSummaryHtml(loc) {
+        var parts = getLocationHierarchyParts(loc);
+        if (!parts.length) return { html: escapeHtml('—'), title: '' };
+        var compact = parts.length <= 2 ? parts : parts.slice(-2);
+        var title = parts.join(' · ');
+        var html =
+            '<span class="sc-loc-path sc-loc-path--compact">' +
+            compact
+                .map(function (part, i) {
+                    var level = Math.min(parts.length - compact.length + i, 4);
+                    return (
+                        '<span class="sc-loc-level sc-loc-level--' +
+                        level +
+                        '">' +
+                        escapeHtml(part) +
+                        '</span>'
+                    );
+                })
+                .join('') +
+            '</span>';
+        return { html: html, title: title };
+    }
+
     function renderRowCell(key, item, tr, expanded) {
         var td = document.createElement('td');
         td.className = 'sc-col-' + key;
@@ -1256,12 +1584,12 @@
                 td.appendChild(typeBadge);
             }
         } else if (key === 'class') {
+            td.classList.add('sc-class');
             td.textContent = item.class_zh || item.class_short_zh || '—';
-            td.title = item.class_en || '';
+            if (item.class_en && item.class_en !== td.textContent) td.title = item.class_en;
         } else if (key === 'grade') {
             td.classList.add('sc-grade');
             td.textContent = item.grade || item.grade_letter || '—';
-            td.title = item.grade_combo_full_zh || item.grade_combo_zh || '';
         } else if (key === 'size') {
             var sizeLabel = item.size_label || '—';
             var sizeBadge = document.createElement('span');
@@ -1290,11 +1618,13 @@
         } else if (key === 'loc') {
             td.classList.add('sc-loc-summary');
             if (item.cheapest_location) {
+                var locSummary = renderLocationSummaryHtml(item.cheapest_location);
                 td.innerHTML =
-                    renderLocationLevelsHtml(item.cheapest_location) +
+                    locSummary.html +
                     '<span class="sc-loc-count">（共 ' +
                     (item.purchase_count || 0) +
                     ' 处）</span>';
+                if (locSummary.title) td.title = locSummary.title;
             } else {
                 td.textContent = '—';
             }
@@ -1320,8 +1650,15 @@
         var tr = document.createElement('tr');
         tr.dataset.id = item.id_item;
         var expanded = !!state.expanded[item.id_item];
-        getVisibleColumnOrder().forEach(function (key) {
-            tr.appendChild(renderRowCell(key, item, tr, expanded));
+        getTableStructureItems().forEach(function (structItem) {
+            if (structItem.type === 'gap') {
+                var gapTd = document.createElement('td');
+                gapTd.className = 'sc-col-gap';
+                gapTd.setAttribute('aria-hidden', 'true');
+                tr.appendChild(gapTd);
+                return;
+            }
+            tr.appendChild(renderRowCell(structItem.key, item, tr, expanded));
         });
         return tr;
     }
@@ -1404,9 +1741,7 @@
                 els.body.appendChild(renderDetailRow(item));
             }
         });
-        if (refreshMobileTableScrollState) {
-            requestAnimationFrame(refreshMobileTableScrollState);
-        }
+        scheduleSyncTableColumns();
     }
 
     function collapseAllExpanded() {
@@ -1852,9 +2187,7 @@
         function onMobileLayoutChange() {
             updateScrollableState();
             rebuildTableStructure();
-            syncTableColumns();
             renderTable();
-            if (refreshMobileTableScrollState) refreshMobileTableScrollState();
         }
 
         if (typeof mq.addEventListener === 'function') {
@@ -1872,6 +2205,29 @@
     }
 
     var refreshMobileTableScrollState = null;
+
+    function initDesktopTableColumnSync() {
+        var shell = els.tableShell;
+        if (!shell) return;
+
+        desktopTableShellWidth = shell.clientWidth || 0;
+
+        function onShellWidthChange() {
+            if (isMobileTableLayout()) return;
+            var nextWidth = shell.clientWidth || 0;
+            if (Math.abs(nextWidth - desktopTableShellWidth) < 1) return;
+            desktopTableShellWidth = nextWidth;
+            scheduleSyncTableColumns();
+        }
+
+        if (typeof ResizeObserver === 'function') {
+            var ro = new ResizeObserver(function () {
+                onShellWidthChange();
+            });
+            ro.observe(shell);
+        }
+        window.addEventListener('resize', onShellWidthChange);
+    }
 
     async function loadMeta() {
         try {
@@ -1891,6 +2247,7 @@
         bindSortHeaders();
         syncBodyMode();
         refreshMobileTableScrollState = initMobileTableDragScroll();
+        initDesktopTableColumnSync();
         loadMeta();
         try {
             var typesRes = await fetch(apiUrl('/api/sc/components/types'));

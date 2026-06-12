@@ -103,6 +103,7 @@
         fuel_tank_size: '',
         radius_min: ' m',
         radius_max: ' m',
+        time_to_full_speed: ' s',
     };
     var WIKI_BOOLEAN_NUM_KEYS = {
         enable_lifetime: true,
@@ -138,10 +139,12 @@
         return display + unit;
     }
 
-    /** Wiki 同义键：渲染时跳过后者，避免「最大/最小」重复 */
+    /** Wiki 同义键：渲染时跳过后者，避免重复展示 */
     var WIKI_DUPLICATE_FIELD_SKIP = {
         maximum: 'max',
         minimum: 'min',
+        max_shield_health: 'max_health',
+        max_shield_regen: 'regen_rate',
     };
 
     /** 汉化库未收录时的兜底（优先使用 global.WIKI_SCALAR_LOC） */
@@ -272,6 +275,13 @@
         max_missiles: '最大导弹数',
         min_size: '最小尺寸',
         max_size: '最大尺寸',
+        rotation_style: '旋转方式',
+        mounts: '炮位数量',
+        time_to_full_speed: '全速时间',
+        acceleration_decay: '加速衰减',
+        slaved_only: '仅从属模式',
+        pitch_axis: '俯仰轴',
+        yaw_axis: '偏航轴',
         signal_type: '信号类型',
         fuel_tank_size: '燃料箱容量',
         cluster_size: '集群数量',
@@ -298,6 +308,7 @@
         safety_distance: '安全距离',
         proximity: '近炸距离',
         is_cluster: '集群弹头',
+        shatter_damage: '碎裂伤害',
         overcharge_rate: '过载充能率',
         inert_materials: '惰性物质',
         all_charge_rates: '全部充能速率',
@@ -371,6 +382,7 @@
     function wikiFieldLabel(key, itemType) {
         if (key === 'type') {
             if (itemType === 'ship_weapon') return '武器类型';
+            if (itemType === 'ship_turret') return '炮台类型';
             if (itemType === 'mining_laser') return '激光类型';
             if (itemType === 'ship_module') return '模组类型';
         }
@@ -387,6 +399,7 @@
         jump: 'jump_drive',
         radar: 'radar',
         ship_weapon: 'vehicle_weapon',
+        ship_turret: 'turret',
         ship_missile: 'missile',
         missile_rack: 'missile_rack',
         mining_laser: 'mining_laser',
@@ -399,9 +412,7 @@
                 title: '护盾性能',
                 fields: [
                     'max_health',
-                    'max_shield_health',
                     'regen_rate',
-                    'max_shield_regen',
                     'regen_time',
                     'regen_delay',
                     'decay_ratio',
@@ -534,6 +545,22 @@
                 ],
             },
         ],
+        ship_turret: [
+            {
+                title: '炮台参数',
+                fields: ['rotation_style', 'mounts', 'min_size', 'max_size'],
+            },
+            {
+                title: '俯仰轴',
+                nested: 'pitch_axis',
+                fields: ['speed', 'time_to_full_speed', 'acceleration_decay', 'slaved_only'],
+            },
+            {
+                title: '偏航轴',
+                nested: 'yaw_axis',
+                fields: ['speed', 'time_to_full_speed', 'acceleration_decay', 'slaved_only'],
+            },
+        ],
         ship_missile: [
             {
                 title: '导弹性能',
@@ -627,6 +654,16 @@
         ],
     };
 
+    function dedupeWikiDetailRows(rows) {
+        var seenLabels = Object.create(null);
+        return (rows || []).filter(function (row) {
+            if (!row || !row.label) return false;
+            if (seenLabels[row.label]) return false;
+            seenLabels[row.label] = true;
+            return true;
+        });
+    }
+
     function shouldSkipRawWikiKey(key, obj) {
         if (SKIP_DETAIL_KEYS[key]) return true;
         if (key.endsWith('_formatted')) return false;
@@ -683,6 +720,33 @@
         return rows;
     }
 
+    var MODULE_MODIFIER_LIST_ORDER = [
+        'overcharge_rate',
+        'shatter_damage',
+        'optimal_charge_rate',
+        'optimal_charge_window_size',
+        'all_charge_rates',
+        'inert_materials',
+    ];
+
+    function getModuleModifierMap(item) {
+        var m = item && item.wiki_fields && item.wiki_fields.mining_modifier;
+        return m && m.modifier_map;
+    }
+
+    function makeModuleModifierColumn(key) {
+        return {
+            key: 'wiki_mod_' + key,
+            label: wikiFieldLabel(key),
+            get: function (item) {
+                var map = getModuleModifierMap(item);
+                var val = map && map[key];
+                if (val == null || val === '') return null;
+                return formatWikiFieldDisplay(key, val);
+            },
+        };
+    }
+
     function groupWikiFieldsForDetail(item) {
         var wf = item && item.wiki_fields;
         if (!wf) return [];
@@ -710,11 +774,9 @@
             if (def.nested) {
                 rows = rowsFromWikiObject(block[def.nested], def.fields, type);
             } else if (def.fields) {
-                def.fields.forEach(function (key) {
-                    var row = buildRowForWikiField(block, key, type);
-                    if (row) rows.push(row);
-                });
+                rows = rowsFromWikiObject(block, def.fields, type);
             }
+            rows = dedupeWikiDetailRows(rows);
             if (rows.length) sections.push({ title: def.title, rows: rows });
         });
         return sections;
@@ -725,6 +787,8 @@
         if (!obj || typeof obj !== 'object') return rows;
         Object.keys(obj).forEach(function (key) {
             if (SKIP_DETAIL_KEYS[key]) return;
+            if (shouldSkipRawWikiKey(key, obj)) return;
+            if (shouldSkipDuplicateWikiKey(key, obj)) return;
             var val = obj[key];
             if (val == null || val === '') return;
             var label = wikiFieldLabel(key);
@@ -736,7 +800,7 @@
                 rows.push({ label: prefix ? prefix + ' · ' + label : label, value: display });
             }
         });
-        return rows;
+        return dedupeWikiDetailRows(rows);
     }
 
     function shieldBlock(item) {
@@ -855,6 +919,28 @@
                     return sens ? formatWikiScalar(sens.electromagnetic) : null;
                 },
             },
+            {
+                key: 'wiki_r_dist_min',
+                label: '最小分配距离',
+                get: function (item) {
+                    var r = item.wiki_fields && item.wiki_fields.radar;
+                    var aim = r && r.aim_assist;
+                    return aim
+                        ? formatWikiFieldDisplay('distance_min_assignment', aim.distance_min_assignment)
+                        : null;
+                },
+            },
+            {
+                key: 'wiki_r_dist_max',
+                label: '最大分配距离',
+                get: function (item) {
+                    var r = item.wiki_fields && item.wiki_fields.radar;
+                    var aim = r && r.aim_assist;
+                    return aim
+                        ? formatWikiFieldDisplay('distance_max_assignment', aim.distance_max_assignment)
+                        : null;
+                },
+            },
         ],
         ship_weapon: [
             {
@@ -904,6 +990,40 @@
                 get: function (item) {
                     var w = item.wiki_fields && item.wiki_fields.vehicle_weapon;
                     return w && w.capacity != null ? formatWikiScalar(w.capacity) + ' 发' : null;
+                },
+            },
+        ],
+        ship_turret: [
+            {
+                key: 'wiki_t_sub',
+                label: '炮台类型',
+                get: function (item) {
+                    var wf = item.wiki_fields || {};
+                    return wf.sub_type_label || wf.sub_type ? formatWikiScalar(wf.sub_type_label || wf.sub_type) : null;
+                },
+            },
+            {
+                key: 'wiki_t_mounts',
+                label: '炮位',
+                get: function (item) {
+                    var t = item.wiki_fields && item.wiki_fields.turret;
+                    return t && t.mounts != null ? formatWikiScalar(t.mounts) : null;
+                },
+            },
+            {
+                key: 'wiki_t_wsize',
+                label: '兼容尺寸',
+                get: function (item) {
+                    var wf = item.wiki_fields || {};
+                    var t = wf.turret || {};
+                    var min = t.min_size != null ? t.min_size : wf.min_size;
+                    var max = t.max_size != null ? t.max_size : wf.max_size;
+                    if (min == null && max == null) return null;
+                    if (min != null && max != null && String(min) !== String(max)) {
+                        return 'S' + min + '–S' + max;
+                    }
+                    var val = min != null ? min : max;
+                    return val != null ? 'S' + val : null;
                 },
             },
         ],
@@ -1025,8 +1145,16 @@
                     return m && m.module_slots != null ? formatWikiScalar(m.module_slots) : null;
                 },
             },
+            {
+                key: 'wiki_ml_power_transfer',
+                label: '功率传输',
+                get: function (item) {
+                    var m = item.wiki_fields && item.wiki_fields.mining_laser;
+                    return m && m.power_transfer != null ? formatWikiFieldDisplay('power_transfer', m.power_transfer) : null;
+                },
+            },
         ],
-        ship_module: [
+        ship_module: MODULE_MODIFIER_LIST_ORDER.map(makeModuleModifierColumn).concat([
             {
                 key: 'wiki_mod_type',
                 label: '类型',
@@ -1039,8 +1167,7 @@
                 key: 'wiki_mod_resistance',
                 label: '抗性',
                 get: function (item) {
-                    var m = item.wiki_fields && item.wiki_fields.mining_modifier;
-                    var map = m && m.modifier_map;
+                    var map = getModuleModifierMap(item);
                     return map && map.resistance != null ? formatWikiScalar(map.resistance) : null;
                 },
             },
@@ -1048,20 +1175,11 @@
                 key: 'wiki_mod_instability',
                 label: '不稳定性',
                 get: function (item) {
-                    var m = item.wiki_fields && item.wiki_fields.mining_modifier;
-                    var map = m && m.modifier_map;
+                    var map = getModuleModifierMap(item);
                     return map && map.laser_instability != null ? formatWikiScalar(map.laser_instability) : null;
                 },
             },
-            {
-                key: 'wiki_mod_hp',
-                label: '生命值',
-                get: function (item) {
-                    var d = item.wiki_fields && item.wiki_fields.durability;
-                    return d && d.health != null ? formatWikiScalar(d.health) : null;
-                },
-            },
-        ],
+        ]),
     };
 
     function getWikiTableColumns(typeKey) {

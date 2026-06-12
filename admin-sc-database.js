@@ -59,6 +59,134 @@
         return typeKey || '—';
     }
 
+    var STATUS_LABELS = {
+        ok: '正常',
+        warn: '待更新',
+        error: '需处理',
+        info: '参考',
+    };
+
+    function scrollToSection(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function triggerUpdateAction(action) {
+        if (!action) return;
+        if (action.type === 'scroll') {
+            scrollToSection(action.target);
+            if (action.button_id) {
+                var btn = document.getElementById(action.button_id);
+                if (btn) btn.focus();
+            }
+            return;
+        }
+        if (action.type === 'cmd' && action.command) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(action.command).catch(function () {});
+            }
+            window.alert('请在项目根目录终端执行：\n\n' + action.command);
+        }
+    }
+
+    function renderScUpdateChecklist(data) {
+        var summaryEl = document.getElementById('scUpdateSummary');
+        var listEl = document.getElementById('scUpdateList');
+        if (!summaryEl || !listEl || !data) return;
+        var s = data.summary || {};
+        if (s.all_clear) {
+            summaryEl.innerHTML =
+                '<span style="color:var(--ok)">全部就绪</span> · 共检查 ' +
+                (s.total || 0) +
+                ' 项 · ' +
+                escHtml(formatAt(data.checked_at));
+        } else {
+            summaryEl.innerHTML =
+                (s.has_error
+                    ? '<span style="color:var(--danger)">' + (s.needs_action || 0) + ' 项需处理</span>'
+                    : '<span style="color:#ffd27a">' + (s.needs_action || 0) + ' 项建议更新</span>') +
+                ' · 共 ' +
+                (s.total || 0) +
+                ' 项 · ' +
+                escHtml(formatAt(data.checked_at)) +
+                (data.active_label_zh ? ' · 前台数据源：' + escHtml(data.active_label_zh) : '');
+        }
+        if (!data.items || !data.items.length) {
+            listEl.innerHTML = '<p class="hint">暂无检查项</p>';
+            return;
+        }
+        listEl.innerHTML = data.items
+            .map(function (item, idx) {
+                var badgeClass = 'sc-update-badge sc-update-badge--' + (item.status || 'info');
+                var actionHtml = '';
+                if (item.action && item.action.label) {
+                    actionHtml =
+                        '<div class="sc-update-card-action"><button type="button" data-update-action="' +
+                        idx +
+                        '">' +
+                        escHtml(item.action.label) +
+                        '</button></div>';
+                }
+                return (
+                    '<article class="sc-update-card" data-status="' +
+                    escHtml(item.status || 'info') +
+                    '">' +
+                    '<div class="sc-update-card-head">' +
+                    '<h3 class="sc-update-card-title">' +
+                    escHtml(item.title || item.id) +
+                    '</h3>' +
+                    '<span class="' +
+                    badgeClass +
+                    '">' +
+                    escHtml(STATUS_LABELS[item.status] || item.status) +
+                    '</span>' +
+                    '</div>' +
+                    '<p class="sc-update-card-summary">' +
+                    escHtml(item.summary || '') +
+                    '</p>' +
+                    (item.detail
+                        ? '<p class="sc-update-card-detail">' + escHtml(item.detail) + '</p>'
+                        : '') +
+                    actionHtml +
+                    '</article>'
+                );
+            })
+            .join('');
+        listEl.querySelectorAll('[data-update-action]').forEach(function (btn) {
+            btn.onclick = function () {
+                var i = parseInt(btn.getAttribute('data-update-action'), 10);
+                if (!isNaN(i) && data.items[i]) triggerUpdateAction(data.items[i].action);
+            };
+        });
+    }
+
+    async function loadScUpdateChecklist() {
+        var s = loadSess();
+        var errEl = document.getElementById('scUpdateErr');
+        var summaryEl = document.getElementById('scUpdateSummary');
+        if (errEl) errEl.hidden = true;
+        if (summaryEl) summaryEl.textContent = '检查中…';
+        try {
+            var r = await fetch(scApiBase().replace(/\/$/, '') + '/api/admin/sc/update-checklist', {
+                headers: { Authorization: 'Bearer ' + s.token },
+            });
+            var data = await r.json();
+            if (!r.ok || !data.ok) throw new Error((data && data.message) || '读取失败');
+            renderScUpdateChecklist(data);
+            return data;
+        } catch (e) {
+            if (summaryEl) summaryEl.textContent = '';
+            if (errEl) {
+                errEl.textContent = (e && e.message) || '读取更新清单失败';
+                errEl.hidden = false;
+            }
+            var listEl = document.getElementById('scUpdateList');
+            if (listEl) listEl.innerHTML = '';
+            return null;
+        }
+    }
+
     function formatSourceVersionLine(src) {
         if (!src) return '';
         var live =
@@ -246,6 +374,7 @@
             if (statusEl) statusEl.textContent = data.message || label + '完成';
             loadScImageStatus();
             loadScSyncLog();
+            loadScUpdateChecklist();
         } catch (e) {
             if (errEl) {
                 errEl.textContent = (e && e.message) || '同步失败';
@@ -265,6 +394,8 @@
         var btnImageRetry = document.getElementById('btnScImageRetry');
         var btnImageForce = document.getElementById('btnScImageForce');
         var btnImageRefresh = document.getElementById('btnScImageRefreshStatus');
+        var btnUpdateChecklist = document.getElementById('btnReloadScUpdateChecklist');
+        if (btnUpdateChecklist) btnUpdateChecklist.onclick = loadScUpdateChecklist;
         if (btnSync) btnSync.onclick = function () { runScSync('uex'); };
         if (btnSyncWiki) btnSyncWiki.onclick = function () { runScSync('wiki'); };
         if (btnLog) btnLog.onclick = loadScSyncLog;
@@ -593,6 +724,7 @@
             var data = await r.json();
             if (!r.ok || !data.ok) throw new Error((data && data.message) || '保存失败');
             await loadScManualLoc();
+            loadScUpdateChecklist();
         } finally {
             if (btn) {
                 btn.disabled = false;
@@ -614,6 +746,7 @@
         var data = await r.json();
         if (!r.ok || !data.ok) throw new Error((data && data.message) || '删除失败');
         await loadScManualLoc();
+        loadScUpdateChecklist();
     }
 
     function renderScManualLocTables(data) {
@@ -720,6 +853,7 @@
             loadScAdminStatus();
             loadScSources();
             loadScManualLoc();
+            loadScUpdateChecklist();
             if (src === 'wiki') loadScImageStatus();
         } catch (e) {
             if (errEl) {
@@ -792,6 +926,7 @@
         gate.textContent = '';
         app.hidden = false;
         wireUi();
+        loadScUpdateChecklist();
         loadScAdminStatus();
         loadScSources();
         loadScSyncLog();

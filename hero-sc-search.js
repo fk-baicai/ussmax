@@ -35,7 +35,7 @@
     function inferGroupFromType(typeKey) {
         var key = String(typeKey || '').trim();
         if (!key) return '';
-        if (key === 'ship_weapon' || key === 'ship_missile' || key === 'missile_rack') return 'weapon';
+        if (key === 'ship_weapon' || key === 'ship_turret' || key === 'ship_missile' || key === 'missile_rack') return 'weapon';
         if (key === 'mining_laser' || key === 'ship_module') return 'mining';
         if (key === 'cooling' || key === 'power' || key === 'shield' || key === 'quantum' || key === 'jump' || key === 'radar') {
             return 'component';

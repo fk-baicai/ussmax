@@ -20,6 +20,16 @@
     <main>
         <p id="gateMsg"></p>
         <div id="app" hidden>
+            <section id="secScUpdateChecklist" class="sc-update-section">
+                <div class="sc-update-head">
+                    <h2>需要更新的数据</h2>
+                    <button type="button" id="btnReloadScUpdateChecklist" class="btn-secondary">刷新检查</button>
+                </div>
+                <p id="scUpdateSummary" class="hint">加载中…</p>
+                <div id="scUpdateList" class="sc-update-list"></div>
+                <div id="scUpdateErr" class="err" hidden></div>
+            </section>
+
             <section id="secScSource">
                 <h2>配件数据来源</h2>
                 <p class="hint">前台展示的数据库可在 UEX 与 SC Wiki API 之间切换；建议两边都定期同步，便于互为备份。</p>
