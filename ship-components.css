@@ -2702,8 +2702,70 @@ body.sc-mode-search #scTable th.sc-col-volume {
         white-space: nowrap;
     }
 
+    .sc-table tr.sc-detail-row td {
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+    }
+
     .sc-detail-inner {
-        min-width: min(100%, 20rem);
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow-x: hidden;
+    }
+
+    .sc-acquire-grid,
+    .sc-acquire-col,
+    .sc-acquire-col--blueprint,
+    [data-blueprint-panel],
+    [data-blueprint-panel] .sc-blueprint-mission-list,
+    [data-blueprint-panel] .sc-blueprint-mission-detail,
+    [data-blueprint-panel] .sc-blueprint-mission-detail-inner {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    [data-blueprint-panel] .sc-blueprint-mission-desc,
+    [data-blueprint-panel] .sc-mission-para {
+        font-size: 0.75rem;
+        line-height: 1.55;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    [data-blueprint-panel] .sc-mission-summary-value {
+        font-size: 0.72rem;
+    }
+
+    [data-blueprint-panel] .sc-mission-summary-label {
+        font-size: 0.64rem;
+    }
+
+    [data-blueprint-panel] .sc-mission-kv-value,
+    [data-blueprint-panel] .sc-mission-field-value {
+        font-size: 0.72rem;
+    }
+
+    [data-blueprint-panel] .sc-blueprint-mission-section-title {
+        font-size: 0.64rem;
+    }
+
+    [data-blueprint-panel] .sc-blueprint-mission-title {
+        font-size: 0.78rem;
+    }
+
+    [data-blueprint-panel] .sc-mission-loc-list {
+        flex-wrap: wrap;
+        overflow-x: hidden;
+    }
+
+    [data-blueprint-panel] .sc-mission-loc-list .sc-loc-level {
+        font-size: 0.7rem;
+        white-space: normal;
+        word-break: break-word;
+        max-width: 100%;
     }
 }
 

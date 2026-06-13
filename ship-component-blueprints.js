@@ -994,32 +994,26 @@
         });
     }
 
-    async function toggleMissionDetail(container, ref) {
+    async function loadMissionDetail(container, ref) {
         var panelRoot = container.closest('[data-blueprint-panel]') || container;
-        var expanded = panelRoot.dataset.expandedMission || '';
         var missions = listCache[panelRoot.dataset.itemId || ''] || [];
-        var nextRef = expanded === ref ? '' : ref;
-        panelRoot.dataset.expandedMission = nextRef;
-        container.innerHTML = renderMissionListHtml(missions, nextRef);
-
-        if (!nextRef) return;
-        var detailEl = container.querySelector('[data-mission-detail="' + cssEscape(nextRef) + '"]');
+        var detailEl = container.querySelector('[data-mission-detail="' + cssEscape(ref) + '"]');
         if (!detailEl) return;
 
-        var summary = findMissionInList(missions, nextRef);
+        var summary = findMissionInList(missions, ref);
         var debugName = summary && summary.debug_name ? summary.debug_name : '';
 
-        if (detailCache[nextRef] && isUsableMissionDetail(detailCache[nextRef])) {
+        if (detailCache[ref] && isUsableMissionDetail(detailCache[ref])) {
             detailEl.hidden = false;
-            detailEl.innerHTML = renderMissionDetailBody(detailCache[nextRef], readNavContext(container));
+            detailEl.innerHTML = renderMissionDetailBody(detailCache[ref], readNavContext(container));
             return;
         }
 
         detailEl.hidden = false;
         detailEl.innerHTML = '<p class="sc-acquire-loading">加载任务详情…</p>';
         try {
-            var detail = await fetchMissionDetail(nextRef, debugName);
-            if (panelRoot.dataset.expandedMission !== nextRef) return;
+            var detail = await fetchMissionDetail(ref, debugName);
+            if (panelRoot.dataset.expandedMission !== ref) return;
             detailEl.innerHTML = renderMissionDetailBody(detail, readNavContext(container));
             if (summary && detail.title_zh) {
                 summary.title_zh = stripMissionFlowTitleSuffix(detail.title_zh);
@@ -1027,10 +1021,25 @@
                 summary.loc_matched = detail.loc_matched;
             }
         } catch (e) {
-            if (panelRoot.dataset.expandedMission !== nextRef) return;
+            if (panelRoot.dataset.expandedMission !== ref) return;
             detailEl.innerHTML =
                 '<p class="sc-acquire-empty">' + escapeHtml((e && e.message) || '任务详情加载失败') + '</p>';
         }
+    }
+
+    async function toggleMissionDetail(container, ref) {
+        var panelRoot = container.closest('[data-blueprint-panel]') || container;
+        var expanded = panelRoot.dataset.expandedMission || '';
+        var missions = listCache[panelRoot.dataset.itemId || ''] || [];
+        var nextRef = expanded === ref ? '' : ref;
+        panelRoot.dataset.expandedMission = nextRef;
+        if (typeof container._bpOnExpandedChange === 'function') {
+            container._bpOnExpandedChange(nextRef);
+        }
+        container.innerHTML = renderMissionListHtml(missions, nextRef);
+
+        if (!nextRef) return;
+        await loadMissionDetail(container, nextRef);
     }
 
     function wirePanel(container) {
@@ -1073,8 +1082,10 @@
 
     async function mount(container, item, options) {
         if (!container || !item) return;
+        options = options || {};
         var itemId = String(item.id_item || item.uuid || '');
         container.dataset.itemId = itemId;
+        container._bpOnExpandedChange = options.onExpandedChange || null;
         var panelRoot = container.closest('[data-blueprint-panel]') || container;
         panelRoot.dataset.navGroup = inferNavGroupFromItemType(item.type);
         panelRoot.dataset.navType = String(item.type || '');
@@ -1084,11 +1095,13 @@
         try {
             var missions = await fetchBlueprintMissions(item);
             if (!container.isConnected) return;
-            var expandedId = (options && options.expandedId) || container.dataset.expandedMission || '';
+            var expandedId = options.expandedId || container.dataset.expandedMission || '';
+            if (expandedId) panelRoot.dataset.expandedMission = expandedId;
             container.innerHTML = renderMissionListHtml(missions, expandedId);
+            if (expandedId) await loadMissionDetail(container, expandedId);
         } catch (e) {
             if (!container.isConnected) return;
-            var expandedId = (options && options.expandedId) || container.dataset.expandedMission || '';
+            var expandedId = options.expandedId || container.dataset.expandedMission || '';
             if (!itemHasBlueprintHints(item) && isJsonParseFailureMessage(e && e.message)) {
                 container.innerHTML = renderMissionListHtml([], expandedId);
                 return;

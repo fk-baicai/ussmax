@@ -106,6 +106,7 @@
         loadMoreController: null,
         sortKey: 'size',
         sortDir: 'asc',
+        blueprintExpandedByItem: {},
     };
 
     var ACQUIRE_BTN_LABEL = '获取';
@@ -1691,11 +1692,29 @@
         return '<p class="sc-acquire-empty">蓝图模块未加载</p>';
     }
 
+    function captureBlueprintExpandedState() {
+        if (!els.body) return;
+        els.body.querySelectorAll('[data-blueprint-panel]').forEach(function (panel) {
+            var tr = panel.closest('tr.sc-detail-row');
+            if (!tr || !tr.dataset.detailFor) return;
+            var exp = panel.dataset.expandedMission || '';
+            if (exp) state.blueprintExpandedByItem[tr.dataset.detailFor] = exp;
+            else delete state.blueprintExpandedByItem[tr.dataset.detailFor];
+        });
+    }
+
     function loadBlueprintMissionsIntoRow(tr, item) {
         var container = tr.querySelector('[data-acquire-blueprint]');
         if (!container) return;
         if (window.ShipComponentBlueprints && window.ShipComponentBlueprints.mount) {
-            window.ShipComponentBlueprints.mount(container, item);
+            var itemId = String(item.id_item);
+            window.ShipComponentBlueprints.mount(container, item, {
+                expandedId: state.blueprintExpandedByItem[itemId] || '',
+                onExpandedChange: function (ref) {
+                    if (ref) state.blueprintExpandedByItem[itemId] = ref;
+                    else delete state.blueprintExpandedByItem[itemId];
+                },
+            });
             return;
         }
         container.innerHTML = '<p class="sc-acquire-empty">蓝图模块未加载</p>';
@@ -1729,6 +1748,7 @@
 
     function renderTable() {
         if (!els.body) return;
+        captureBlueprintExpandedState();
         els.body.innerHTML = '';
         var items = sortItems(state.items.filter(isBrowsableItem));
         if (!items.length) {
@@ -2185,9 +2205,10 @@
         );
 
         function onMobileLayoutChange() {
+            captureBlueprintExpandedState();
             updateScrollableState();
             rebuildTableStructure();
-            renderTable();
+            scheduleSyncTableColumns();
         }
 
         if (typeof mq.addEventListener === 'function') {
