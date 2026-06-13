@@ -2727,33 +2727,91 @@ body.sc-mode-search #scTable th.sc-col-volume {
         max-width: 100%;
     }
 
+    [data-blueprint-panel] {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+        font-size: 12px;
+    }
+
+    [data-blueprint-panel] .sc-blueprint-mission-section-title {
+        font-size: 10.5px;
+        letter-spacing: 0.1em;
+        line-height: 1.35;
+        margin-bottom: 0.4rem;
+    }
+
     [data-blueprint-panel] .sc-blueprint-mission-desc,
     [data-blueprint-panel] .sc-mission-para {
-        font-size: 0.75rem;
+        font-size: 12px;
         line-height: 1.55;
         overflow-wrap: anywhere;
         word-break: break-word;
     }
 
-    [data-blueprint-panel] .sc-mission-summary-value {
-        font-size: 0.72rem;
+    [data-blueprint-panel] .sc-mission-summary-item {
+        grid-template-columns: minmax(3.6rem, 4.4rem) minmax(0, 1fr);
+        gap: 0.12rem 0.4rem;
     }
 
-    [data-blueprint-panel] .sc-mission-summary-label {
-        font-size: 0.64rem;
+    [data-blueprint-panel] .sc-mission-summary-label,
+    [data-blueprint-panel] .sc-mission-kv-label,
+    [data-blueprint-panel] .sc-mission-field-label,
+    [data-blueprint-panel] .sc-mission-loc-group-label,
+    [data-blueprint-panel] .sc-blueprint-meta-label {
+        font-size: 10.5px;
+        letter-spacing: 0.03em;
     }
 
+    [data-blueprint-panel] .sc-mission-summary-value,
     [data-blueprint-panel] .sc-mission-kv-value,
-    [data-blueprint-panel] .sc-mission-field-value {
-        font-size: 0.72rem;
+    [data-blueprint-panel] .sc-mission-field-value,
+    [data-blueprint-panel] .sc-mission-kv-value--wide,
+    [data-blueprint-panel] .sc-mission-field-value--wide,
+    [data-blueprint-panel] .sc-mission-pool-plain,
+    [data-blueprint-panel] .sc-blueprint-meta-value {
+        font-size: 11.5px;
+        line-height: 1.45;
+        font-weight: 400;
     }
 
-    [data-blueprint-panel] .sc-blueprint-mission-section-title {
-        font-size: 0.64rem;
+    [data-blueprint-panel] .sc-mission-summary-item--reward .sc-mission-summary-value,
+    [data-blueprint-panel] .sc-mission-kv--emphasis .sc-mission-kv-value,
+    [data-blueprint-panel] .sc-mission-field--emphasis .sc-mission-field-value {
+        font-size: 11.5px;
+        font-weight: 600;
+    }
+
+    [data-blueprint-panel] .sc-mission-chip,
+    [data-blueprint-panel] button.sc-mission-chip--link {
+        font-size: 10.5px;
+        line-height: 1.35;
+        padding: 0.14rem 0.36rem;
     }
 
     [data-blueprint-panel] .sc-blueprint-mission-title {
-        font-size: 0.78rem;
+        font-size: 12.5px;
+        line-height: 1.35;
+    }
+
+    [data-blueprint-panel] .sc-blueprint-mission-scope,
+    [data-blueprint-panel] .sc-blueprint-mission-variants {
+        font-size: 10.5px;
+    }
+
+    [data-blueprint-panel] .sc-rep-ladder-faction {
+        font-size: 11.5px;
+    }
+
+    [data-blueprint-panel] .sc-rep-ladder-range,
+    [data-blueprint-panel] .sc-rep-tier {
+        font-size: 10.5px;
+    }
+
+    [data-blueprint-panel] .sc-blueprint-mission-loc-note,
+    [data-blueprint-panel] .sc-acquire-empty,
+    [data-blueprint-panel] .sc-acquire-loading {
+        font-size: 10.5px;
+        line-height: 1.45;
     }
 
     [data-blueprint-panel] .sc-mission-loc-list {
@@ -2761,11 +2819,21 @@ body.sc-mode-search #scTable th.sc-col-volume {
         overflow-x: hidden;
     }
 
-    [data-blueprint-panel] .sc-mission-loc-list .sc-loc-level {
-        font-size: 0.7rem;
+    [data-blueprint-panel] .sc-mission-loc-list .sc-loc-level,
+    [data-blueprint-panel] .sc-blueprint-mission-section--location .sc-mission-loc-list .sc-loc-level {
+        font-size: 11.5px;
         white-space: normal;
         word-break: break-word;
         max-width: 100%;
+    }
+
+    [data-blueprint-panel] .sc-blueprint-mission-section {
+        padding: 0.5rem 0 0.55rem;
+    }
+
+    [data-blueprint-panel] .sc-mission-summary-grid,
+    [data-blueprint-panel] .sc-blueprint-mission-section-grid {
+        gap: 0.32rem;
     }
 }
 
