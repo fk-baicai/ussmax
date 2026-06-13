@@ -2564,6 +2564,19 @@ body.sc-mode-search #scTable th.sc-col-volume {
 }
 
 @media (max-width: 720px) {
+    .ship-components-body {
+        overscroll-behavior-x: none;
+    }
+
+    .sc-workspace.sc-panel {
+        overflow: hidden;
+    }
+
+    .sc-workspace-body {
+        min-width: 0;
+        overflow: hidden;
+    }
+
     #scTable col.sc-col-mfg,
     #scTable col.sc-col-mass,
     #scTable col.sc-col-volume,
@@ -2598,6 +2611,26 @@ body.sc-mode-search #scTable th.sc-col-volume {
         touch-action: pan-x pan-y;
         scrollbar-width: thin;
         scrollbar-color: rgba(95, 184, 255, 0.5) rgba(4, 10, 20, 0.55);
+        max-width: 100%;
+    }
+
+    .sc-table-shell.has-detail-open {
+        overscroll-behavior-x: contain;
+    }
+
+    .sc-table tr.sc-detail-row td {
+        position: sticky;
+        left: 0;
+        z-index: 4;
+        width: 1px;
+        min-width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        background: rgba(8, 16, 28, 0.98);
+        box-shadow: 0 1px 0 rgba(95, 184, 255, 0.08);
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
     }
 
     .sc-table-shell.is-h-scrollable {
@@ -2700,12 +2733,6 @@ body.sc-mode-search #scTable th.sc-col-volume {
 
     .sc-name-en {
         white-space: nowrap;
-    }
-
-    .sc-table tr.sc-detail-row td {
-        white-space: normal !important;
-        overflow: visible !important;
-        text-overflow: clip !important;
     }
 
     .sc-detail-inner {

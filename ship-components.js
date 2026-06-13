@@ -1090,7 +1090,9 @@
     }
 
     function isColumnVisible(key) {
-        if (isMobileTableLayout() && !isWikiMode() && (key === 'mfg' || key === 'mass' || key === 'volume')) return false;
+        if (isMobileTableLayout() && (key === 'loc' || (!isWikiMode() && (key === 'mfg' || key === 'mass' || key === 'volume')))) {
+            return false;
+        }
         if (key.indexOf('wiki_') === 0) {
             return getWikiTableColumns().some(function (c) {
                 return c.key === key;
@@ -1775,6 +1777,7 @@
             btn.setAttribute('aria-expanded', 'false');
         });
         state.expanded = {};
+        if (els.tableShell) els.tableShell.classList.remove('has-detail-open');
     }
 
     function toggleExpand(idItem, rowEl) {
@@ -1805,6 +1808,13 @@
                 btnOpen.classList.add('is-open');
                 btnOpen.setAttribute('aria-expanded', 'true');
             }
+            if (isMobileTableLayout() && els.tableShell) {
+                els.tableShell.scrollLeft = 0;
+                els.tableShell.classList.add('has-detail-open');
+            }
+        }
+        if (wasOpen && isMobileTableLayout() && els.tableShell) {
+            els.tableShell.classList.remove('has-detail-open');
         }
         window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
     }
@@ -2202,6 +2212,55 @@
                 }
             },
             true
+        );
+
+        var touchStartX = 0;
+        var touchStartY = 0;
+        var touchActive = false;
+
+        shell.addEventListener(
+            'touchstart',
+            function (e) {
+                if (!canHorizontalScroll() || !e.touches || !e.touches.length) return;
+                touchActive = true;
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            },
+            { passive: true }
+        );
+
+        shell.addEventListener(
+            'touchmove',
+            function (e) {
+                if (!touchActive || !canHorizontalScroll() || !e.touches || !e.touches.length) return;
+                var dx = e.touches[0].clientX - touchStartX;
+                var dy = e.touches[0].clientY - touchStartY;
+                if (Math.abs(dx) < 6 || Math.abs(dx) < Math.abs(dy) * 1.15) return;
+                var maxScroll = shell.scrollWidth - shell.clientWidth - 1;
+                if (shell.scrollLeft <= 0 && dx > 0) {
+                    e.preventDefault();
+                    return;
+                }
+                if (shell.scrollLeft >= maxScroll && dx < 0) {
+                    e.preventDefault();
+                }
+            },
+            { passive: false }
+        );
+
+        shell.addEventListener(
+            'touchend',
+            function () {
+                touchActive = false;
+            },
+            { passive: true }
+        );
+        shell.addEventListener(
+            'touchcancel',
+            function () {
+                touchActive = false;
+            },
+            { passive: true }
         );
 
         function onMobileLayoutChange() {
