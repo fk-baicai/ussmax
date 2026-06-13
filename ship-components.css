@@ -2577,15 +2577,18 @@ body.sc-mode-search #scTable th.sc-col-volume {
         overflow: hidden;
     }
 
-    #scTable col.sc-col-mfg,
-    #scTable col.sc-col-mass,
-    #scTable col.sc-col-volume,
-    #scTable th.sc-col-mfg,
-    #scTable th.sc-col-mass,
-    #scTable th.sc-col-volume,
-    #scTable td.sc-col-mfg,
-    #scTable td.sc-col-mass,
-    #scTable td.sc-col-volume {
+    .sc-nav-row--major.sc-tabs,
+    .sc-nav-row--minor.sc-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+        max-width: 100%;
+    }
+
+    .sc-nav-row--major.sc-tabs::-webkit-scrollbar,
+    .sc-nav-row--minor.sc-tabs::-webkit-scrollbar {
         display: none;
     }
 
@@ -2674,30 +2677,19 @@ body.sc-mode-search #scTable th.sc-col-volume {
 
     .sc-table th,
     .sc-table td {
-        white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
     .sc-table .sc-col-name,
-    .sc-table td.sc-col-name {
-        white-space: normal;
-        overflow: visible;
-        text-overflow: clip;
-    }
-
-    .sc-table th.sc-col-size,
-    .sc-table td.sc-col-size,
-    .sc-table th.sc-col-grade,
-    .sc-table td.sc-col-grade,
-    .sc-table th.sc-col-type,
-    .sc-table td.sc-col-type-cell,
-    .sc-table th.sc-col-price,
-    .sc-table td.sc-col-price,
+    .sc-table td.sc-col-name,
     .sc-table th.sc-col-loc,
     .sc-table td.sc-loc-summary,
+    .sc-table th.sc-col-price,
+    .sc-table td.sc-col-price,
     .sc-table th.sc-col-expand,
     .sc-table td.sc-col-expand {
+        white-space: normal;
         overflow: visible;
         text-overflow: clip;
     }
@@ -2710,12 +2702,17 @@ body.sc-mode-search #scTable th.sc-col-volume {
     }
 
     .sc-loc-summary .sc-loc-count {
+        display: inline;
         white-space: nowrap;
     }
 
     .sc-col-price {
         white-space: nowrap;
         font-variant-numeric: tabular-nums;
+    }
+
+    .sc-col-expand {
+        white-space: nowrap;
     }
 
     .sc-table th.sc-col-expand,

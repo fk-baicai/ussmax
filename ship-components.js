@@ -31,6 +31,7 @@
     };
     var GROUP_ORDER = ['component', 'weapon', 'mining'];
     var TYPE_ORDER_BY_GROUP = {
+        component: ['cooling', 'power', 'shield', 'quantum', 'jump', 'radar'],
         weapon: ['ship_weapon', 'ship_missile', 'missile_rack', 'ship_turret'],
         mining: ['mining_laser', 'ship_module'],
     };
@@ -605,8 +606,10 @@
     }
 
     function usesDesktopColumnGaps() {
-        return !isMobileTableLayout();
+        return true;
     }
+
+    var MOBILE_COL_GAP_MIN = 14;
 
     function getTableStructureItems() {
         var visible = getVisibleColumnOrder();
@@ -1090,9 +1093,6 @@
     }
 
     function isColumnVisible(key) {
-        if (isMobileTableLayout() && (key === 'loc' || (!isWikiMode() && (key === 'mfg' || key === 'mass' || key === 'volume')))) {
-            return false;
-        }
         if (key.indexOf('wiki_') === 0) {
             return getWikiTableColumns().some(function (c) {
                 return c.key === key;
@@ -1107,74 +1107,6 @@
     }
 
     var LOC_LIST_MAX_WIDTH = 168;
-
-    var MOBILE_COL_WIDTHS = {
-        name: '7.75rem',
-        type: '4.35rem',
-        class: '5rem',
-        grade: '2.9rem',
-        size: '3.4rem',
-        speed: '5.35rem',
-        wiki_sh_hp: '5.5rem',
-        wiki_sh_regen: '5.5rem',
-        wiki_sh_time: '5rem',
-        wiki_cool_seg: '5rem',
-        wiki_pwr_seg: '5rem',
-        wiki_q_speed: '5.75rem',
-        wiki_q_engage: '5.5rem',
-        wiki_j_align: '5rem',
-        wiki_j_tune: '5rem',
-        wiki_r_cd: '4.5rem',
-        wiki_r_ir: '5rem',
-        wiki_r_em: '5rem',
-        wiki_r_dist_min: '5.75rem',
-        wiki_r_dist_max: '5.75rem',
-        wiki_r_count: '4.5rem',
-        wiki_r_size: '4.75rem',
-        wiki_w_type: '5rem',
-        wiki_w_dmg: '4.75rem',
-        wiki_w_rpm: '4.75rem',
-        wiki_w_range: '5rem',
-        wiki_w_dps: '5rem',
-        wiki_w_cap: '4.5rem',
-        wiki_t_sub: '5.25rem',
-        wiki_t_mounts: '3.5rem',
-        wiki_t_wsize: '4.75rem',
-        wiki_m_type: '5rem',
-        wiki_m_dmg: '4.75rem',
-        wiki_m_speed: '5rem',
-        wiki_m_locktime: '5rem',
-        wiki_m_lock: '5rem',
-        wiki_m_blast: '5rem',
-        wiki_ml_type: '5rem',
-        wiki_m_range: '5rem',
-        wiki_ml_maxrange: '5.25rem',
-        wiki_m_throughput: '5.5rem',
-        wiki_m_slots: '4.5rem',
-        wiki_ml_power_transfer: '5.25rem',
-        wiki_mod_overcharge_rate: '5.25rem',
-        wiki_mod_shatter_damage: '4.75rem',
-        wiki_mod_optimal_charge_rate: '5.25rem',
-        wiki_mod_optimal_charge_window_size: '5rem',
-        wiki_mod_all_charge_rates: '5.25rem',
-        wiki_mod_inert_materials: '5rem',
-        wiki_mod_type: '4.5rem',
-        wiki_mod_resistance: '4.5rem',
-        wiki_mod_instability: '5rem',
-        price: '5.85rem',
-        loc: '11.5rem',
-        expand: '4.25rem',
-    };
-
-    function getMobileColWidth(key) {
-        if (key === 'expand') {
-            var px = getExpandColumnWidth();
-            return Math.ceil((px / 16) * 100) / 100 + 'rem';
-        }
-        if (MOBILE_COL_WIDTHS[key]) return MOBILE_COL_WIDTHS[key];
-        if (key.indexOf('wiki_') === 0) return '5rem';
-        return '';
-    }
 
     function getExpandColumnWidth() {
         if (expandColumnWidthCache > 0) return expandColumnWidthCache;
@@ -1249,7 +1181,7 @@
         if (Object.prototype.hasOwnProperty.call(widths, 'expand')) {
             widths.expand = getExpandColumnWidth();
         }
-        if (Object.prototype.hasOwnProperty.call(widths, 'loc') && widths.loc > LOC_LIST_MAX_WIDTH) {
+        if (!isMobileTableLayout() && Object.prototype.hasOwnProperty.call(widths, 'loc') && widths.loc > LOC_LIST_MAX_WIDTH) {
             widths.loc = LOC_LIST_MAX_WIDTH;
         }
 
@@ -1275,111 +1207,7 @@
         });
     }
 
-    function syncTableColumns() {
-        var visible = getVisibleColumnOrder();
-
-        if (isMobileTableLayout()) {
-            var table = document.getElementById('scTable');
-            var totalRem = 0;
-            visible.forEach(function (key) {
-                var w = getMobileColWidth(key);
-                if (!w) return;
-                totalRem += parseFloat(w) || 0;
-            });
-            if (table && totalRem > 0) {
-                table.style.width = totalRem + 'rem';
-                table.style.minWidth = totalRem + 'rem';
-                table.style.maxWidth = totalRem + 'rem';
-            }
-            document.querySelectorAll('#scTable col').forEach(function (col) {
-                if (col.classList.contains('sc-col-gap')) {
-                    col.style.width = '0';
-                    col.style.minWidth = '0';
-                    col.style.maxWidth = '0';
-                    return;
-                }
-                var key = getColKeyFromElement(col);
-                if (!key) return;
-                var mobileW = visible.indexOf(key) >= 0 ? getMobileColWidth(key) : '';
-                if (mobileW) {
-                    col.style.width = mobileW;
-                    col.style.minWidth = mobileW;
-                    col.style.maxWidth = mobileW;
-                } else {
-                    col.style.width = '0';
-                    col.style.minWidth = '0';
-                    col.style.maxWidth = '0';
-                }
-            });
-            return;
-        }
-
-        var tableDesktop = document.getElementById('scTable');
-        if (!tableDesktop || !visible.length) return;
-
-        var widths = measureDesktopColumnWidths(tableDesktop, visible);
-        var sumWidths = 0;
-        visible.forEach(function (key) {
-            sumWidths += widths[key] || 0;
-        });
-
-        var shell = els.tableShell;
-        var containerWidth = shell ? shell.clientWidth : tableDesktop.clientWidth;
-        if (!containerWidth) containerWidth = sumWidths;
-        desktopTableShellWidth = containerWidth;
-
-        var gapCount = visible.length > 1 ? visible.length - 1 : 0;
-        var gap = 0;
-        if (gapCount > 0) {
-            gap = Math.max(0, (containerWidth - sumWidths) / gapCount);
-        }
-        gap = Math.round(gap * 100) / 100;
-
-        if (gap <= 0 && sumWidths > containerWidth && sumWidths > 0) {
-            var expandWidth = visible.indexOf('expand') >= 0 ? getExpandColumnWidth() : 0;
-            var shrinkableSum = 0;
-            visible.forEach(function (key) {
-                if (key === 'expand') return;
-                shrinkableSum += widths[key] || 0;
-            });
-            var shrinkBudget = Math.max(0, containerWidth - expandWidth - gapCount * gap);
-            var scale = shrinkableSum > 0 ? shrinkBudget / shrinkableSum : 1;
-            var scaledSum = 0;
-            visible.forEach(function (key) {
-                if (key === 'expand') {
-                    widths[key] = expandWidth;
-                    scaledSum += expandWidth;
-                    return;
-                }
-                var scaled = Math.floor((widths[key] || 0) * scale);
-                widths[key] = scaled;
-                scaledSum += scaled;
-            });
-            var drift = containerWidth - scaledSum - gapCount * gap;
-            if (drift !== 0) {
-                var adjustKey = visible.indexOf('loc') >= 0 ? 'loc' : visible[visible.length - 2] || visible[0];
-                if (adjustKey === 'expand') adjustKey = visible[visible.length - 2] || visible[0];
-                widths[adjustKey] = Math.max(0, (widths[adjustKey] || 0) + drift);
-            }
-        }
-
-        if (Object.prototype.hasOwnProperty.call(widths, 'loc') && widths.loc > LOC_LIST_MAX_WIDTH) {
-            widths.loc = LOC_LIST_MAX_WIDTH;
-        }
-
-        var finalSum = 0;
-        visible.forEach(function (key) {
-            finalSum += widths[key] || 0;
-        });
-        if (gapCount > 0) {
-            gap = Math.max(0, (containerWidth - finalSum) / gapCount);
-            gap = Math.round(gap * 100) / 100;
-        }
-
-        tableDesktop.style.width = '100%';
-        tableDesktop.style.minWidth = '';
-        tableDesktop.style.maxWidth = '';
-
+    function applyMeasuredColumnWidths(table, visible, widths, gap) {
         document.querySelectorAll('#scTable col').forEach(function (col) {
             if (col.classList.contains('sc-col-gap')) {
                 col.style.width = gap + 'px';
@@ -1405,6 +1233,98 @@
             col.style.minWidth = px + 'px';
             col.style.maxWidth = px + 'px';
         });
+        if (!table) return;
+        if (isMobileTableLayout()) {
+            var gapCount = visible.length > 1 ? visible.length - 1 : 0;
+            var sumWidths = 0;
+            visible.forEach(function (key) {
+                sumWidths += widths[key] || 0;
+            });
+            var totalPx = sumWidths + gapCount * gap;
+            table.style.width = totalPx + 'px';
+            table.style.minWidth = totalPx + 'px';
+            table.style.maxWidth = totalPx + 'px';
+            return;
+        }
+        table.style.width = '100%';
+        table.style.minWidth = '';
+        table.style.maxWidth = '';
+    }
+
+    function syncTableColumns() {
+        var visible = getVisibleColumnOrder();
+        var table = document.getElementById('scTable');
+        if (!table || !visible.length) return;
+
+        var mobile = isMobileTableLayout();
+        var widths = measureDesktopColumnWidths(table, visible);
+        var sumWidths = 0;
+        visible.forEach(function (key) {
+            sumWidths += widths[key] || 0;
+        });
+
+        var shell = els.tableShell;
+        var containerWidth = shell ? shell.clientWidth : table.clientWidth;
+        if (!containerWidth) containerWidth = sumWidths;
+        if (!mobile) desktopTableShellWidth = containerWidth;
+
+        var gapCount = visible.length > 1 ? visible.length - 1 : 0;
+        var gap = 0;
+        if (gapCount > 0) {
+            if (mobile) {
+                var naturalWidth = sumWidths + gapCount * MOBILE_COL_GAP_MIN;
+                if (naturalWidth <= containerWidth) {
+                    gap = Math.max(MOBILE_COL_GAP_MIN, (containerWidth - sumWidths) / gapCount);
+                } else {
+                    gap = MOBILE_COL_GAP_MIN;
+                }
+                gap = Math.round(gap * 100) / 100;
+            } else {
+                gap = Math.max(0, (containerWidth - sumWidths) / gapCount);
+                gap = Math.round(gap * 100) / 100;
+
+                if (gap <= 0 && sumWidths > containerWidth && sumWidths > 0) {
+                    var expandWidth = visible.indexOf('expand') >= 0 ? getExpandColumnWidth() : 0;
+                    var shrinkableSum = 0;
+                    visible.forEach(function (key) {
+                        if (key === 'expand') return;
+                        shrinkableSum += widths[key] || 0;
+                    });
+                    var shrinkBudget = Math.max(0, containerWidth - expandWidth - gapCount * gap);
+                    var scale = shrinkableSum > 0 ? shrinkBudget / shrinkableSum : 1;
+                    var scaledSum = 0;
+                    visible.forEach(function (key) {
+                        if (key === 'expand') {
+                            widths[key] = expandWidth;
+                            scaledSum += expandWidth;
+                            return;
+                        }
+                        var scaled = Math.floor((widths[key] || 0) * scale);
+                        widths[key] = scaled;
+                        scaledSum += scaled;
+                    });
+                    var drift = containerWidth - scaledSum - gapCount * gap;
+                    if (drift !== 0) {
+                        var adjustKey = visible.indexOf('loc') >= 0 ? 'loc' : visible[visible.length - 2] || visible[0];
+                        if (adjustKey === 'expand') adjustKey = visible[visible.length - 2] || visible[0];
+                        widths[adjustKey] = Math.max(0, (widths[adjustKey] || 0) + drift);
+                    }
+                }
+
+                if (Object.prototype.hasOwnProperty.call(widths, 'loc') && widths.loc > LOC_LIST_MAX_WIDTH) {
+                    widths.loc = LOC_LIST_MAX_WIDTH;
+                }
+
+                var finalSum = 0;
+                visible.forEach(function (key) {
+                    finalSum += widths[key] || 0;
+                });
+                gap = Math.max(0, (containerWidth - finalSum) / gapCount);
+                gap = Math.round(gap * 100) / 100;
+            }
+        }
+
+        applyMeasuredColumnWidths(table, visible, widths, gap);
     }
 
     function escapeHtml(s) {
@@ -2149,7 +2069,14 @@
         }
 
         function updateScrollableState() {
-            shell.classList.toggle('is-h-scrollable', canHorizontalScroll());
+            var scrollable = canHorizontalScroll();
+            shell.classList.toggle('is-h-scrollable', scrollable);
+            var hint = document.getElementById('scMobileScrollHint');
+            if (hint) {
+                var showHint = scrollable && isMobileLayout();
+                hint.hidden = !showHint;
+                hint.setAttribute('aria-hidden', showHint ? 'false' : 'true');
+            }
         }
 
         function endDrag(e) {
