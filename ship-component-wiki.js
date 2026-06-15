@@ -633,6 +633,7 @@
             {
                 title: '采矿性能',
                 fields: [
+                    'type',
                     'optimal_range',
                     'maximum_range',
                     'extraction_throughput',
@@ -644,6 +645,20 @@
                 ],
             },
             { title: '激光功率', nested: 'laser_power', fields: ['min', 'max'] },
+            {
+                title: '属性修正',
+                nested: 'modifier_map',
+                fields: [
+                    'laser_instability',
+                    'optimal_charge_window_size',
+                    'resistance',
+                    'optimal_charge_rate',
+                    'inert_materials',
+                    'all_charge_rates',
+                    'overcharge_rate',
+                    'shatter_damage',
+                ],
+            },
         ],
         ship_module: [
             {
@@ -729,57 +744,135 @@
         'inert_materials',
     ];
 
+    var MINING_LASER_MODIFIER_ORDER = [
+        'laser_instability',
+        'optimal_charge_window_size',
+        'resistance',
+        'optimal_charge_rate',
+        'inert_materials',
+        'all_charge_rates',
+        'overcharge_rate',
+        'shatter_damage',
+    ];
+
+    var MINING_MODIFIER_META = {
+        laser_instability: { label: '不稳定性', beneficialWhen: 'negative' },
+        optimal_charge_window_size: { label: '最佳窗口', beneficialWhen: 'positive' },
+        resistance: { label: '抗性', beneficialWhen: 'negative' },
+        optimal_charge_rate: { label: '充能速率', beneficialWhen: 'positive' },
+        inert_materials: { label: '惰性材料过滤', beneficialWhen: 'negative', displayInvert: true },
+        all_charge_rates: { label: '全部充能速率', beneficialWhen: 'positive' },
+        overcharge_rate: { label: '过载速率', beneficialWhen: 'positive' },
+        shatter_damage: { label: '碎裂伤害', beneficialWhen: 'positive' },
+    };
+
     function getModuleModifierMap(item) {
         var m = item && item.wiki_fields && item.wiki_fields.mining_modifier;
         return m && m.modifier_map;
     }
 
-    function makeModuleModifierColumn(key) {
-        return {
-            key: 'wiki_mod_' + key,
-            label: wikiFieldLabel(key),
-            get: function (item) {
-                var map = getModuleModifierMap(item);
-                var val = map && map[key];
-                if (val == null || val === '') return null;
-                return formatWikiFieldDisplay(key, val);
-            },
-        };
+    function getMiningLaserModifierMap(item) {
+        var m = item && item.wiki_fields && item.wiki_fields.mining_laser;
+        return m && m.modifier_map;
     }
 
-    function groupWikiFieldsForDetail(item) {
-        var wf = item && item.wiki_fields;
-        if (!wf) return [];
-        var type = item.type;
-        var blockKey = TYPE_WIKI_BLOCK_KEY[type];
-        var block = blockKey && wf[blockKey];
-        var sectionDefs = TYPE_DETAIL_SECTIONS[type];
-        if (!block || !sectionDefs) {
-            var flat = flattenWikiFields(wf);
-            if (!flat.length) return [];
-            return [
-                {
-                    title: '技术参数',
-                    rows: flat.map(function (r) {
-                        var label = r.label;
-                        var parts = label.split(' · ');
-                        return { label: parts[parts.length - 1], value: r.value };
-                    }),
-                },
-            ];
-        }
-        var sections = [];
-        sectionDefs.forEach(function (def) {
-            var rows = [];
-            if (def.nested) {
-                rows = rowsFromWikiObject(block[def.nested], def.fields, type);
-            } else if (def.fields) {
-                rows = rowsFromWikiObject(block, def.fields, type);
-            }
-            rows = dedupeWikiDetailRows(rows);
-            if (rows.length) sections.push({ title: def.title, rows: rows });
+    function formatMiningModifierPercent(key, val) {
+        if (val == null || val === '' || !Number.isFinite(Number(val))) return null;
+        var meta = MINING_MODIFIER_META[key] || { label: wikiFieldLabel(key) };
+        var num = Number(val);
+        var displayNum = meta.displayInvert ? Math.abs(num) : num;
+        var text =
+            (displayNum > 0 ? '+' : displayNum < 0 ? '' : '') +
+            displayNum.toLocaleString('zh-CN', { maximumFractionDigits: 1 }) +
+            '%';
+        var beneficialWhen = meta.beneficialWhen || 'positive';
+        var isGood =
+            beneficialWhen === 'negative'
+                ? num < 0
+                : beneficialWhen === 'positive'
+                  ? num > 0
+                  : num === 0;
+        var tone = num === 0 ? 'neutral' : isGood ? 'good' : 'bad';
+        return { label: meta.label || wikiFieldLabel(key), text: text, tone: tone, raw: num };
+    }
+
+    function buildMiningModifierTags(item, typeKey) {
+        var map =
+            typeKey === 'ship_module'
+                ? getModuleModifierMap(item)
+                : typeKey === 'mining_laser'
+                  ? getMiningLaserModifierMap(item)
+                  : null;
+        if (!map) return [];
+        var order =
+            typeKey === 'mining_laser' ? MINING_LASER_MODIFIER_ORDER : MODULE_MODIFIER_LIST_ORDER.concat(['resistance', 'laser_instability']);
+        var tags = [];
+        var seen = Object.create(null);
+        order.forEach(function (key) {
+            if (seen[key]) return;
+            seen[key] = true;
+            if (map[key] == null || map[key] === '') return;
+            if (key === 'all_charge_rates' && map.optimal_charge_rate != null) return;
+            var tag = formatMiningModifierPercent(key, map[key]);
+            if (tag) tags.push(tag);
         });
-        return sections;
+        return tags;
+    }
+
+    var MINING_MODIFIER_TAGS_PER_ROW = 3;
+
+    function renderMiningModifierTagsMarkup(tags, escapeText) {
+        if (!tags || !tags.length) return '';
+        var esc =
+            escapeText ||
+            function (s) {
+                return String(s || '');
+            };
+        var rows = [];
+        for (var i = 0; i < tags.length; i += MINING_MODIFIER_TAGS_PER_ROW) {
+            rows.push(tags.slice(i, i + MINING_MODIFIER_TAGS_PER_ROW));
+        }
+        return (
+            '<span class="sc-mining-mod-tags">' +
+            rows
+                .map(function (row) {
+                    return (
+                        '<span class="sc-mining-mod-tags-row">' +
+                        row
+                            .map(function (tag) {
+                                return (
+                                    '<span class="sc-loc-level sc-mining-mod-tag sc-mining-mod-tag--' +
+                                    tag.tone +
+                                    '">' +
+                                    '<span class="sc-mining-mod-tag__label">' +
+                                    esc(tag.label) +
+                                    '</span>' +
+                                    '<span class="sc-mining-mod-tag__value">' +
+                                    esc(tag.text) +
+                                    '</span></span>'
+                                );
+                            })
+                            .join('') +
+                        '</span>'
+                    );
+                })
+                .join('') +
+            '</span>'
+        );
+    }
+
+    function makeModuleModifierColumn(key, mapGetter) {
+        return {
+            key: 'wiki_mod_' + key,
+            label: (MINING_MODIFIER_META[key] && MINING_MODIFIER_META[key].label) || wikiFieldLabel(key),
+            get: function (item) {
+                var map = mapGetter(item);
+                var val = map && map[key];
+                if (val == null || val === '') return null;
+                var tag = formatMiningModifierPercent(key, val);
+                return tag ? tag.text : null;
+            },
+        };
     }
 
     function flattenWikiFields(obj, prefix) {
@@ -1154,41 +1247,79 @@
                 },
             },
         ],
-        ship_module: MODULE_MODIFIER_LIST_ORDER.map(makeModuleModifierColumn).concat([
+        ship_module: [
             {
-                key: 'wiki_mod_type',
-                label: '类型',
+                key: 'wiki_sm_duration',
+                label: '持续时间',
                 get: function (item) {
                     var m = item.wiki_fields && item.wiki_fields.mining_modifier;
-                    return m && m.type ? formatWikiScalar(m.type) : null;
+                    if (!m || m.duration == null || m.duration === '') return null;
+                    return formatWikiFieldDisplay('duration', m.duration);
                 },
             },
-            {
-                key: 'wiki_mod_resistance',
-                label: '抗性',
-                get: function (item) {
-                    var map = getModuleModifierMap(item);
-                    return map && map.resistance != null ? formatWikiScalar(map.resistance) : null;
-                },
-            },
-            {
-                key: 'wiki_mod_instability',
-                label: '不稳定性',
-                get: function (item) {
-                    var map = getModuleModifierMap(item);
-                    return map && map.laser_instability != null ? formatWikiScalar(map.laser_instability) : null;
-                },
-            },
-        ]),
+        ],
     };
 
     function getWikiTableColumns(typeKey) {
         return WIKI_TABLE_COLUMNS[typeKey] || [];
     }
 
+    function rowsFromMiningModifierMap(map, fieldOrder) {
+        var rows = [];
+        if (!map) return rows;
+        (fieldOrder || MINING_LASER_MODIFIER_ORDER).forEach(function (key) {
+            if (map[key] == null || map[key] === '') return;
+            if (key === 'all_charge_rates' && map.optimal_charge_rate != null) return;
+            var tag = formatMiningModifierPercent(key, map[key]);
+            if (!tag) return;
+            rows.push({ label: tag.label, value: tag.text });
+        });
+        return rows;
+    }
+
+    function groupWikiFieldsForDetail(item) {
+        var wf = item && item.wiki_fields;
+        if (!wf) return [];
+        var type = item.type;
+        var blockKey = TYPE_WIKI_BLOCK_KEY[type];
+        var block = blockKey && wf[blockKey];
+        var sectionDefs = TYPE_DETAIL_SECTIONS[type];
+        if (!block || !sectionDefs) {
+            var flat = flattenWikiFields(wf);
+            if (!flat.length) return [];
+            return [
+                {
+                    title: '技术参数',
+                    rows: flat.map(function (r) {
+                        var label = r.label;
+                        var parts = label.split(' · ');
+                        return { label: parts[parts.length - 1], value: r.value };
+                    }),
+                },
+            ];
+        }
+        var sections = [];
+        sectionDefs.forEach(function (def) {
+            var rows = [];
+            if (def.nested === 'modifier_map') {
+                rows = rowsFromMiningModifierMap(block[def.nested], def.fields);
+            } else if (def.nested) {
+                rows = rowsFromWikiObject(block[def.nested], def.fields, type);
+            } else if (def.fields) {
+                rows = rowsFromWikiObject(block, def.fields, type);
+            }
+            rows = dedupeWikiDetailRows(rows);
+            if (rows.length) sections.push({ title: def.title, rows: rows });
+        });
+        return sections;
+    }
+
     global.ShipComponentWiki = {
         formatWikiScalar: formatWikiScalar,
         formatWikiFieldDisplay: formatWikiFieldDisplay,
+        formatMiningModifierPercent: formatMiningModifierPercent,
+        buildMiningModifierTags: buildMiningModifierTags,
+        renderMiningModifierTagsMarkup: renderMiningModifierTagsMarkup,
         wikiFieldLabel: wikiFieldLabel,
         flattenWikiFields: flattenWikiFields,
         groupWikiFieldsForDetail: groupWikiFieldsForDetail,

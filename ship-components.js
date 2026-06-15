@@ -141,6 +141,7 @@
             return item.name_zh || item.name_en || '';
         },
         type: function (item) {
+            if (item.type === 'ship_module') return resolveShipModuleActivationType(item) || '';
             return typeLabel(item.type);
         },
         class: function (item) {
@@ -284,18 +285,172 @@
     var LIST_RETURN_EXPANDED_KEY = 'scComponentListReturnExpandedId';
     var LIST_RESTORE_FLAG_KEY = 'scComponentListRestorePending';
 
+    function normalizeItemId(id) {
+        return String(id || '').trim();
+    }
+
+    function isItemExpanded(id) {
+        var key = normalizeItemId(id);
+        return !!(key && state.expanded[key]);
+    }
+
+    function captureExpandedStateFromDom() {
+        if (!els.body) return;
+        els.body.querySelectorAll('tr.sc-detail-row[data-detail-for]').forEach(function (row) {
+            var id = normalizeItemId(row.dataset.detailFor);
+            if (id) state.expanded[id] = true;
+        });
+        els.body.querySelectorAll('tr[data-id] .sc-expand-btn.is-open').forEach(function (btn) {
+            var row = btn.closest('tr[data-id]');
+            if (!row) return;
+            var id = normalizeItemId(row.dataset.id);
+            if (id) state.expanded[id] = true;
+        });
+    }
+
+    function snapshotExpandedState() {
+        captureExpandedStateFromDom();
+        var snap = Object.create(null);
+        Object.keys(state.expanded || {}).forEach(function (key) {
+            if (!state.expanded[key]) return;
+            var id = normalizeItemId(key);
+            if (id) snap[id] = true;
+        });
+        return snap;
+    }
+
+    function applyExpandedSnapshot(snapshot) {
+        state.expanded = snapshot || Object.create(null);
+    }
+
+    function getRenderedItemIds() {
+        var ids = Object.create(null);
+        if (!els.body) return ids;
+        els.body.querySelectorAll('tr[data-id]').forEach(function (row) {
+            var id = normalizeItemId(row.dataset.id);
+            if (id) ids[id] = true;
+        });
+        return ids;
+    }
+
+    function appendTableRows(items, scrollY) {
+        if (!els.body || !items || !items.length) return 0;
+        var anchor = els.body.querySelector('.sc-load-more-row');
+        var appended = 0;
+        sortItems(items.filter(isBrowsableItem)).forEach(function (item) {
+            var tr = renderRow(item);
+            if (anchor) els.body.insertBefore(tr, anchor);
+            else els.body.appendChild(tr);
+            appended += 1;
+        });
+        if (appended) {
+            scheduleSyncTableColumns();
+            fixExpandedDetailRowLayout();
+        }
+        ensureExpandedDetailPresent();
+        fixExpandedDetailRowLayout();
+        syncExpandedShellClass();
+        if (scrollY != null && scrollY >= 0) {
+            window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
+        }
+        return appended;
+    }
+
+    function syncExpandButtonState(row, expanded) {
+        if (!row) return;
+        var btn = row.querySelector('.sc-expand-btn');
+        if (!btn) return;
+        btn.textContent = expanded ? '收起' : ACQUIRE_BTN_LABEL;
+        btn.classList.toggle('is-open', !!expanded);
+        btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    }
+
+    function findDataRowByItemId(id) {
+        if (!els.body || !id) return null;
+        var rows = els.body.querySelectorAll('tr[data-id]');
+        for (var i = 0; i < rows.length; i++) {
+            if (normalizeItemId(rows[i].dataset.id) === id) return rows[i];
+        }
+        return null;
+    }
+
+    function fixExpandedDetailRowLayout() {
+        if (!els.body || !els.tableShell) return;
+        var shellW = els.tableShell.clientWidth;
+        if (!shellW) return;
+        els.body.querySelectorAll('tr.sc-detail-row > td').forEach(function (td) {
+            td.style.boxSizing = 'border-box';
+            td.style.width = shellW + 'px';
+            td.style.minWidth = shellW + 'px';
+            td.style.maxWidth = shellW + 'px';
+        });
+    }
+
+    function buildAcquirePanelHtml(item) {
+        var locs = item.purchase_locations || [];
+        return (
+            '<div class="sc-acquire-grid">' +
+            '<section class="sc-acquire-col sc-acquire-col--shops" aria-label="购买地点">' +
+            '<h3 class="sc-acquire-heading">购买地点</h3>' +
+            '<div class="sc-acquire-body" data-acquire-shops>' +
+            renderAcquireLocationsHtml(locs) +
+            '</div></section>' +
+            '<section class="sc-acquire-col sc-acquire-col--blueprint" aria-label="蓝图任务">' +
+            '<h3 class="sc-acquire-heading">蓝图任务</h3>' +
+            '<div class="sc-acquire-body" data-acquire-blueprint data-blueprint-panel><p class="sc-acquire-loading">加载蓝图任务…</p></div>' +
+            '</section></div>'
+        );
+    }
+
+    function ensureExpandedDetailPresent() {
+        if (!els.body) return false;
+        var id = getExpandedItemId();
+        if (!id) return false;
+        state.expanded[id] = true;
+        var dataRow = findDataRowByItemId(id);
+        if (!dataRow) return false;
+        var next = dataRow.nextElementSibling;
+        if (
+            next &&
+            next.classList.contains('sc-detail-row') &&
+            normalizeItemId(next.dataset.detailFor) === id
+        ) {
+            syncExpandButtonState(dataRow, true);
+            syncExpandedShellClass();
+            return true;
+        }
+        var item = state.items.find(function (x) {
+            return normalizeItemId(x.id_item) === id;
+        });
+        if (!item) return false;
+        els.body.querySelectorAll('tr.sc-detail-row[data-detail-for]').forEach(function (row) {
+            if (normalizeItemId(row.dataset.detailFor) === id) row.remove();
+        });
+        dataRow.insertAdjacentElement('afterend', renderDetailRow(item));
+        syncExpandButtonState(dataRow, true);
+        syncExpandedShellClass();
+        return true;
+    }
+
+    function syncExpandedShellClass() {
+        if (!els.tableShell) return;
+        var open = !!getExpandedItemId();
+        els.tableShell.classList.toggle('has-detail-open', open);
+        if (open && isMobileTableLayout()) els.tableShell.scrollLeft = 0;
+    }
+
     function getExpandedItemId() {
         var keys = Object.keys(state.expanded || {});
         for (var i = 0; i < keys.length; i++) {
-            if (state.expanded[keys[i]]) return String(keys[i]);
+            if (state.expanded[keys[i]]) return normalizeItemId(keys[i]);
         }
         if (els.body) {
             var detailRow = els.body.querySelector('.sc-detail-row[data-detail-for]');
-            if (detailRow && detailRow.dataset.detailFor) return String(detailRow.dataset.detailFor);
+            if (detailRow && detailRow.dataset.detailFor) return normalizeItemId(detailRow.dataset.detailFor);
             var openBtn = els.body.querySelector('.sc-expand-btn.is-open');
             if (openBtn) {
                 var row = openBtn.closest('tr[data-id]');
-                if (row && row.dataset.id) return String(row.dataset.id);
+                if (row && row.dataset.id) return normalizeItemId(row.dataset.id);
             }
         }
         return '';
@@ -394,9 +549,12 @@
         while (state.page < pending.page && state.hasMore && !state.loading && !state.loadingMore) {
             await loadMore();
         }
-        if (pending.expandedId && !state.expanded[pending.expandedId]) {
-            state.expanded[pending.expandedId] = true;
-            renderTable();
+        if (pending.expandedId) {
+            var expandedId = normalizeItemId(pending.expandedId);
+            if (expandedId) {
+                state.expanded[expandedId] = true;
+                ensureExpandedDetailPresent();
+            }
         }
         applyListScrollRestore(pending.scrollY);
     }
@@ -560,7 +718,6 @@
             'name',
             'type',
             'size',
-            'wiki_ml_type',
             'wiki_m_range',
             'wiki_ml_maxrange',
             'wiki_m_throughput',
@@ -575,15 +732,8 @@
             'name',
             'size',
             'type',
-            'wiki_mod_overcharge_rate',
-            'wiki_mod_shatter_damage',
-            'wiki_mod_optimal_charge_rate',
-            'wiki_mod_optimal_charge_window_size',
-            'wiki_mod_all_charge_rates',
-            'wiki_mod_inert_materials',
-            'wiki_mod_type',
-            'wiki_mod_resistance',
-            'wiki_mod_instability',
+            'wiki_sm_duration',
+            'mfg',
             'price',
             'loc',
             'expand',
@@ -705,23 +855,6 @@
         return out;
     }
 
-    function appendTableRows(newItems) {
-        if (!els.body || !newItems.length) return;
-        removeLoadMoreRow();
-        var scrollY = window.scrollY;
-        newItems.forEach(function (item) {
-            els.body.appendChild(renderRow(item));
-            if (state.expanded[item.id_item]) {
-                els.body.appendChild(renderDetailRow(item));
-            }
-        });
-        scheduleSyncTableColumns();
-        window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
-    }
-
-    function shouldResortOnAppend() {
-        return state.sortKey !== 'size' || state.sortDir !== 'asc';
-    }
 
     function parseUrlState() {
         try {
@@ -879,6 +1012,16 @@
     function typeLabel(typeKey) {
         var t = state.types[typeKey];
         return (t && t.label_zh) || typeKey || '—';
+    }
+
+    function resolveShipModuleActivationType(item) {
+        var block = item && item.wiki_fields && item.wiki_fields.mining_modifier;
+        if (!block || !block.type) return null;
+        var wiki = window.ShipComponentWiki;
+        if (wiki && typeof wiki.formatWikiScalar === 'function') {
+            return wiki.formatWikiScalar(block.type);
+        }
+        return String(block.type).trim() || null;
     }
 
     function sizeBadgeClass(sizeLabel) {
@@ -1106,7 +1249,16 @@
         return true;
     }
 
-    var LOC_LIST_MAX_WIDTH = 168;
+    var LOC_LIST_MIN_WIDTH = 168;
+
+    function protectLocColumnWidth(widths) {
+        if (!widths || !Object.prototype.hasOwnProperty.call(widths, 'loc')) return;
+        widths.loc = Math.max(widths.loc || 0, LOC_LIST_MIN_WIDTH);
+    }
+
+    function isProtectedColumnKey(key) {
+        return key === 'expand' || key === 'loc';
+    }
 
     function getExpandColumnWidth() {
         if (expandColumnWidthCache > 0) return expandColumnWidthCache;
@@ -1181,9 +1333,7 @@
         if (Object.prototype.hasOwnProperty.call(widths, 'expand')) {
             widths.expand = getExpandColumnWidth();
         }
-        if (!isMobileTableLayout() && Object.prototype.hasOwnProperty.call(widths, 'loc') && widths.loc > LOC_LIST_MAX_WIDTH) {
-            widths.loc = LOC_LIST_MAX_WIDTH;
-        }
+        protectLocColumnWidth(widths);
 
         table.style.tableLayout = prevTableLayout;
         table.style.width = prevWidth;
@@ -1204,6 +1354,8 @@
             tableColumnSyncRaf = 0;
             syncTableColumns();
             if (refreshMobileTableScrollState) refreshMobileTableScrollState();
+            ensureExpandedDetailPresent();
+            fixExpandedDetailRowLayout();
         });
     }
 
@@ -1223,6 +1375,7 @@
                 return;
             }
             var px = widths[key] || 0;
+            if (key === 'loc') px = Math.max(px, LOC_LIST_MIN_WIDTH);
             if (!px) {
                 col.style.width = '0';
                 col.style.minWidth = '0';
@@ -1287,16 +1440,22 @@
                     var expandWidth = visible.indexOf('expand') >= 0 ? getExpandColumnWidth() : 0;
                     var shrinkableSum = 0;
                     visible.forEach(function (key) {
-                        if (key === 'expand') return;
+                        if (isProtectedColumnKey(key)) return;
                         shrinkableSum += widths[key] || 0;
                     });
                     var shrinkBudget = Math.max(0, containerWidth - expandWidth - gapCount * gap);
+                    var locWidth = visible.indexOf('loc') >= 0 ? Math.max(widths.loc || 0, LOC_LIST_MIN_WIDTH) : 0;
+                    shrinkBudget = Math.max(0, shrinkBudget - locWidth);
                     var scale = shrinkableSum > 0 ? shrinkBudget / shrinkableSum : 1;
-                    var scaledSum = 0;
+                    var scaledSum = locWidth;
                     visible.forEach(function (key) {
                         if (key === 'expand') {
                             widths[key] = expandWidth;
                             scaledSum += expandWidth;
+                            return;
+                        }
+                        if (key === 'loc') {
+                            widths[key] = locWidth;
                             return;
                         }
                         var scaled = Math.floor((widths[key] || 0) * scale);
@@ -1305,15 +1464,18 @@
                     });
                     var drift = containerWidth - scaledSum - gapCount * gap;
                     if (drift !== 0) {
-                        var adjustKey = visible.indexOf('loc') >= 0 ? 'loc' : visible[visible.length - 2] || visible[0];
-                        if (adjustKey === 'expand') adjustKey = visible[visible.length - 2] || visible[0];
+                        var adjustCandidates = visible.filter(function (k) {
+                            return !isProtectedColumnKey(k);
+                        });
+                        var adjustKey = adjustCandidates[adjustCandidates.length - 1] || visible[0];
+                        if (adjustKey === 'expand' || adjustKey === 'loc') {
+                            adjustKey = adjustCandidates[adjustCandidates.length - 2] || visible[0];
+                        }
                         widths[adjustKey] = Math.max(0, (widths[adjustKey] || 0) + drift);
                     }
                 }
 
-                if (Object.prototype.hasOwnProperty.call(widths, 'loc') && widths.loc > LOC_LIST_MAX_WIDTH) {
-                    widths.loc = LOC_LIST_MAX_WIDTH;
-                }
+                protectLocColumnWidth(widths);
 
                 var finalSum = 0;
                 visible.forEach(function (key) {
@@ -1333,6 +1495,34 @@
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
+    }
+
+    var MFG_LINE_MAX_CHARS = 6;
+
+    function splitMfgDisplayLines(text) {
+        var s = String(text || '').trim();
+        if (!s || s === '—') return [s || '—'];
+        var chars = Array.from(s);
+        if (chars.length <= MFG_LINE_MAX_CHARS) return [s];
+        var lines = [];
+        for (var i = 0; i < chars.length; i += MFG_LINE_MAX_CHARS) {
+            lines.push(chars.slice(i, i + MFG_LINE_MAX_CHARS).join(''));
+        }
+        return lines;
+    }
+
+    function renderMfgCellHtml(text) {
+        var lines = splitMfgDisplayLines(text);
+        if (lines.length <= 1) return escapeHtml(lines[0]);
+        return (
+            '<span class="sc-mfg-multiline">' +
+            lines
+                .map(function (line) {
+                    return '<span class="sc-mfg-line">' + escapeHtml(line) + '</span>';
+                })
+                .join('') +
+            '</span>'
+        );
     }
 
     function isInternalItemKey(s) {
@@ -1440,27 +1630,65 @@
         );
     }
 
-    function renderLocationSummaryHtml(loc) {
-        var parts = getLocationHierarchyParts(loc);
-        if (!parts.length) return { html: escapeHtml('—'), title: '' };
-        var compact = parts.length <= 2 ? parts : parts.slice(-2);
-        var title = parts.join(' · ');
-        var html =
-            '<span class="sc-loc-path sc-loc-path--compact">' +
-            compact
-                .map(function (part, i) {
-                    var level = Math.min(parts.length - compact.length + i, 4);
-                    return (
-                        '<span class="sc-loc-level sc-loc-level--' +
-                        level +
-                        '">' +
-                        escapeHtml(part) +
-                        '</span>'
-                    );
+    var LOC_SUMMARY_TAGS_PER_ROW = 3;
+
+    function renderLocationCountHtml(count) {
+        if (count == null || count === '') return '';
+        return (
+            '<span class="sc-loc-count sc-loc-total-tag">共 ' + escapeHtml(String(count)) + ' 处</span>'
+        );
+    }
+
+    function renderLocationSummaryLevelsHtml(parts, purchaseCount) {
+        if (!parts.length) return escapeHtml('—');
+        var rows = [];
+        for (var i = 0; i < parts.length; i += LOC_SUMMARY_TAGS_PER_ROW) {
+            rows.push(parts.slice(i, i + LOC_SUMMARY_TAGS_PER_ROW));
+        }
+        var lastRowIndex = rows.length - 1;
+        return (
+            '<span class="sc-loc-path sc-loc-path--summary">' +
+            rows
+                .map(function (row, rowIndex) {
+                    var tags = row
+                        .map(function (part, i) {
+                            var level = Math.min(rowIndex * LOC_SUMMARY_TAGS_PER_ROW + i, 4);
+                            return (
+                                '<span class="sc-loc-level sc-loc-level--' +
+                                level +
+                                '">' +
+                                escapeHtml(part) +
+                                '</span>'
+                            );
+                        })
+                        .join('');
+                    var countHtml =
+                        rowIndex === lastRowIndex ? renderLocationCountHtml(purchaseCount) : '';
+                    return '<span class="sc-loc-path-row">' + tags + countHtml + '</span>';
                 })
                 .join('') +
-            '</span>';
-        return { html: html, title: title };
+            '</span>'
+        );
+    }
+
+    function renderLocationSummaryHtml(loc, purchaseCount) {
+        var parts = getLocationHierarchyParts(loc);
+        if (!parts.length) return { html: escapeHtml('—'), title: '' };
+        return {
+            html: renderLocationSummaryLevelsHtml(parts, purchaseCount),
+            title: parts.join(' · '),
+        };
+    }
+
+    function renderMiningModifierTagsHtml(item) {
+        var wiki = window.ShipComponentWiki;
+        if (!wiki || typeof wiki.buildMiningModifierTags !== 'function') return '';
+        var tags = wiki.buildMiningModifierTags(item, item.type);
+        if (!tags.length) return '';
+        if (typeof wiki.renderMiningModifierTagsMarkup === 'function') {
+            return wiki.renderMiningModifierTagsMarkup(tags, escapeHtml);
+        }
+        return '';
     }
 
     function renderRowCell(key, item, tr, expanded) {
@@ -1496,15 +1724,21 @@
                 '">' +
                 escapeHtml(names.primary) +
                 '</span>' +
-                (names.subtitle ? '<span class="sc-name-en">' + escapeHtml(names.subtitle) + '</span>' : '');
+                (names.subtitle ? '<span class="sc-name-en">' + escapeHtml(names.subtitle) + '</span>' : '') +
+                (item.type === 'mining_laser' || item.type === 'ship_module' ? renderMiningModifierTagsHtml(item) : '');
             td.appendChild(link);
         } else if (key === 'type') {
             td.classList.add('sc-col-type-cell');
             if (isTypeColumnVisible()) {
-                var typeBadge = document.createElement('span');
-                typeBadge.className = 'sc-type-badge sc-type-badge--' + (item.type || 'unknown');
-                typeBadge.textContent = typeLabel(item.type);
-                td.appendChild(typeBadge);
+                if (item.type === 'ship_module') {
+                    var moduleActType = resolveShipModuleActivationType(item);
+                    td.textContent = moduleActType || '—';
+                } else {
+                    var typeBadge = document.createElement('span');
+                    typeBadge.className = 'sc-type-badge sc-type-badge--' + (item.type || 'unknown');
+                    typeBadge.textContent = typeLabel(item.type);
+                    td.appendChild(typeBadge);
+                }
             }
         } else if (key === 'class') {
             td.classList.add('sc-class');
@@ -1521,7 +1755,8 @@
             td.appendChild(sizeBadge);
         } else if (key === 'mfg') {
             var mfgZh = item.manufacturer_zh || item.manufacturer || '—';
-            td.textContent = mfgZh;
+            td.innerHTML = renderMfgCellHtml(mfgZh);
+            if (splitMfgDisplayLines(mfgZh).length > 1) td.classList.add('sc-col-mfg--multiline');
             if (item.manufacturer && item.manufacturer !== mfgZh) td.title = item.manufacturer;
         } else if (key === 'mass') {
             if (isMassVolumeVisible()) td.textContent = formatMass(item.mass);
@@ -1541,12 +1776,8 @@
         } else if (key === 'loc') {
             td.classList.add('sc-loc-summary');
             if (item.cheapest_location) {
-                var locSummary = renderLocationSummaryHtml(item.cheapest_location);
-                td.innerHTML =
-                    locSummary.html +
-                    '<span class="sc-loc-count">（共 ' +
-                    (item.purchase_count || 0) +
-                    ' 处）</span>';
+                var locSummary = renderLocationSummaryHtml(item.cheapest_location, item.purchase_count);
+                td.innerHTML = '<span class="sc-loc-summary-inner">' + locSummary.html + '</span>';
                 if (locSummary.title) td.title = locSummary.title;
             } else {
                 td.textContent = '—';
@@ -1571,8 +1802,8 @@
 
     function renderRow(item) {
         var tr = document.createElement('tr');
-        tr.dataset.id = item.id_item;
-        var expanded = !!state.expanded[item.id_item];
+        tr.dataset.id = normalizeItemId(item.id_item);
+        var expanded = isItemExpanded(item.id_item);
         getTableStructureItems().forEach(function (structItem) {
             if (structItem.type === 'gap') {
                 var gapTd = document.createElement('td');
@@ -1619,17 +1850,19 @@
         els.body.querySelectorAll('[data-blueprint-panel]').forEach(function (panel) {
             var tr = panel.closest('tr.sc-detail-row');
             if (!tr || !tr.dataset.detailFor) return;
+            var itemId = normalizeItemId(tr.dataset.detailFor);
             var exp = panel.dataset.expandedMission || '';
-            if (exp) state.blueprintExpandedByItem[tr.dataset.detailFor] = exp;
-            else delete state.blueprintExpandedByItem[tr.dataset.detailFor];
+            if (exp) state.blueprintExpandedByItem[itemId] = exp;
+            else delete state.blueprintExpandedByItem[itemId];
         });
     }
 
     function loadBlueprintMissionsIntoRow(tr, item) {
+        if (!tr) return;
         var container = tr.querySelector('[data-acquire-blueprint]');
         if (!container) return;
         if (window.ShipComponentBlueprints && window.ShipComponentBlueprints.mount) {
-            var itemId = String(item.id_item);
+            var itemId = normalizeItemId(item.id_item);
             window.ShipComponentBlueprints.mount(container, item, {
                 expandedId: state.blueprintExpandedByItem[itemId] || '',
                 onExpandedChange: function (ref) {
@@ -1645,45 +1878,39 @@
     function renderDetailRow(item) {
         var tr = document.createElement('tr');
         tr.className = 'sc-detail-row';
-        tr.dataset.detailFor = String(item.id_item);
+        tr.dataset.detailFor = normalizeItemId(item.id_item);
         var td = document.createElement('td');
         td.colSpan = getColCount();
         var inner = document.createElement('div');
         inner.className = 'sc-detail-inner sc-acquire-panel';
-        var locs = item.purchase_locations || [];
-        inner.innerHTML =
-            '<div class="sc-acquire-grid">' +
-            '<section class="sc-acquire-col sc-acquire-col--shops" aria-label="购买地点">' +
-            '<h3 class="sc-acquire-heading">购买地点</h3>' +
-            '<div class="sc-acquire-body" data-acquire-shops>' +
-            renderAcquireLocationsHtml(locs) +
-            '</div></section>' +
-            '<section class="sc-acquire-col sc-acquire-col--blueprint" aria-label="蓝图任务">' +
-            '<h3 class="sc-acquire-heading">蓝图任务</h3>' +
-            '<div class="sc-acquire-body" data-acquire-blueprint data-blueprint-panel><p class="sc-acquire-loading">加载蓝图任务…</p></div>' +
-            '</section></div>';
+        inner.innerHTML = buildAcquirePanelHtml(item);
         td.appendChild(inner);
         tr.appendChild(td);
         loadBlueprintMissionsIntoRow(tr, item);
         return tr;
     }
 
-    function renderTable() {
+    function renderTable(preservedExpanded) {
         if (!els.body) return;
+        var expandedSnapshot = preservedExpanded || snapshotExpandedState();
         captureBlueprintExpandedState();
+        applyExpandedSnapshot(expandedSnapshot);
         els.body.innerHTML = '';
         var items = sortItems(state.items.filter(isBrowsableItem));
         if (!items.length) {
             els.body.innerHTML = '<tr><td colspan="' + getColCount() + '">无匹配配件</td></tr>';
+            syncExpandedShellClass();
             return;
         }
         items.forEach(function (item) {
             els.body.appendChild(renderRow(item));
-            if (state.expanded[item.id_item]) {
+            if (isItemExpanded(item.id_item)) {
                 els.body.appendChild(renderDetailRow(item));
             }
         });
         scheduleSyncTableColumns();
+        ensureExpandedDetailPresent();
+        syncExpandedShellClass();
     }
 
     function collapseAllExpanded() {
@@ -1697,14 +1924,15 @@
             btn.setAttribute('aria-expanded', 'false');
         });
         state.expanded = {};
-        if (els.tableShell) els.tableShell.classList.remove('has-detail-open');
+        syncExpandedShellClass();
     }
 
     function toggleExpand(idItem, rowEl) {
         var scrollY = window.scrollY;
-        var wasOpen = !!state.expanded[idItem];
+        var id = normalizeItemId(idItem);
+        var wasOpen = isItemExpanded(id);
         if (wasOpen) {
-            delete state.expanded[idItem];
+            delete state.expanded[id];
             var next = rowEl.nextElementSibling;
             if (next && next.classList.contains('sc-detail-row')) next.remove();
             var btn = rowEl.querySelector('.sc-expand-btn');
@@ -1715,9 +1943,9 @@
             }
         } else {
             collapseAllExpanded();
-            state.expanded[idItem] = true;
+            state.expanded[id] = true;
             var item = state.items.find(function (x) {
-                return String(x.id_item) === String(idItem);
+                return normalizeItemId(x.id_item) === id;
             });
             if (item) {
                 rowEl.insertAdjacentElement('afterend', renderDetailRow(item));
@@ -1728,14 +1956,9 @@
                 btnOpen.classList.add('is-open');
                 btnOpen.setAttribute('aria-expanded', 'true');
             }
-            if (isMobileTableLayout() && els.tableShell) {
-                els.tableShell.scrollLeft = 0;
-                els.tableShell.classList.add('has-detail-open');
-            }
         }
-        if (wasOpen && isMobileTableLayout() && els.tableShell) {
-            els.tableShell.classList.remove('has-detail-open');
-        }
+        syncExpandedShellClass();
+        fixExpandedDetailRowLayout();
         window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
     }
 
@@ -1986,6 +2209,7 @@
 
     async function loadMore() {
         if (!els.body || state.loading || state.loadingMore || !state.hasMore) return;
+        var expandedSnapshot = snapshotExpandedState();
         state.loadingMore = true;
         updateMetaBar();
         showLoadMoreRow('加载更多…');
@@ -2005,14 +2229,20 @@
             state.page = nextPage;
             if (data.meta) state.meta = data.meta;
             if (data.total != null) state.total = data.total;
-            var prevLen = state.items.length;
+            captureExpandedStateFromDom();
+            captureBlueprintExpandedState();
+            applyExpandedSnapshot(expandedSnapshot);
+            var scrollY = window.scrollY;
             state.items = mergeItems(state.items, incoming);
             state.hasMore = state.items.length < state.total;
-            if (shouldResortOnAppend()) {
-                renderTable();
-            } else {
-                var onlyNew = state.items.slice(prevLen);
-                appendTableRows(onlyNew);
+            var renderedIds = getRenderedItemIds();
+            var toAppend = incoming.filter(function (item) {
+                return !renderedIds[normalizeItemId(item.id_item)];
+            });
+            if (toAppend.length) appendTableRows(toAppend, scrollY);
+            else {
+                ensureExpandedDetailPresent();
+                window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
             }
             updateMetaBar();
         } catch (e) {
@@ -2023,6 +2253,8 @@
             state.loadingMore = false;
             state.loadMoreController = null;
             removeLoadMoreRow();
+            ensureExpandedDetailPresent();
+            fixExpandedDetailRowLayout();
             updateMetaBar();
         }
     }
@@ -2225,6 +2457,7 @@
             if (Math.abs(nextWidth - desktopTableShellWidth) < 1) return;
             desktopTableShellWidth = nextWidth;
             scheduleSyncTableColumns();
+            fixExpandedDetailRowLayout();
         }
 
         if (typeof ResizeObserver === 'function') {
@@ -2301,7 +2534,8 @@
         initInfiniteScroll();
         var pendingRestore = readPendingListRestoreMeta();
         if (pendingRestore && pendingRestore.expandedId) {
-            state.expanded[pendingRestore.expandedId] = true;
+            var restoreExpandedId = normalizeItemId(pendingRestore.expandedId);
+            if (restoreExpandedId) state.expanded[restoreExpandedId] = true;
         }
         loadList().then(function () {
             return maybeRestoreListView();

@@ -217,6 +217,51 @@
                 return renderFieldCell(chip.label, chip.value, !!chip.accent);
             })
             .join('');
+
+        var oldModifierHost = document.getElementById('scDetailModifierTags');
+        if (oldModifierHost) oldModifierHost.remove();
+    }
+
+    function renderModifierTagsHtml(item) {
+        var wiki = window.ShipComponentWiki;
+        if (!wiki || typeof wiki.buildMiningModifierTags !== 'function') return '';
+        if (item.type !== 'mining_laser' && item.type !== 'ship_module') return '';
+        var tags = wiki.buildMiningModifierTags(item, item.type);
+        if (!tags.length) return '';
+        var inner =
+            typeof wiki.renderMiningModifierTagsMarkup === 'function'
+                ? wiki.renderMiningModifierTagsMarkup(tags, escapeHtml)
+                : '';
+        if (!inner) return '';
+        return '<div class="sc-detail-modifier-tags">' + inner + '</div>';
+    }
+
+    function renderSpecSectionHtml(section, item) {
+        if (
+            section.title === '属性修正' &&
+            (item.type === 'mining_laser' || item.type === 'ship_module')
+        ) {
+            var tagsHtml = renderModifierTagsHtml(item);
+            if (tagsHtml) {
+                return (
+                    '<section class="sc-blueprint-mission-section sc-detail-spec-section sc-detail-spec-section--modifiers">' +
+                    '<h2 class="sc-blueprint-mission-section-title">' +
+                    escapeHtml(section.title) +
+                    '</h2>' +
+                    tagsHtml +
+                    '</section>'
+                );
+            }
+        }
+        return (
+            '<section class="sc-blueprint-mission-section sc-detail-spec-section">' +
+            '<h2 class="sc-blueprint-mission-section-title">' +
+            escapeHtml(section.title) +
+            '</h2>' +
+            '<div class="sc-detail-field-grid">' +
+            renderSpecRowsHtml(section.rows) +
+            '</div></section>'
+        );
     }
 
     function renderBasics(item) {
@@ -255,15 +300,7 @@
         els.specs.hidden = false;
         els.specs.innerHTML = sections
             .map(function (section) {
-                return (
-                    '<section class="sc-blueprint-mission-section sc-detail-spec-section">' +
-                    '<h2 class="sc-blueprint-mission-section-title">' +
-                    escapeHtml(section.title) +
-                    '</h2>' +
-                    '<div class="sc-detail-field-grid">' +
-                    renderSpecRowsHtml(section.rows) +
-                    '</div></section>'
-                );
+                return renderSpecSectionHtml(section, item);
             })
             .join('');
     }
