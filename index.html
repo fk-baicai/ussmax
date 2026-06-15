@@ -1589,6 +1589,8 @@
                 rsiOrgRankSlots: u.rsiOrgRankSlots !== undefined ? u.rsiOrgRankSlots : p.rsiOrgRankSlots,
                 rsiProfileSyncedAt:
                     u.rsiProfileSyncedAt !== undefined ? u.rsiProfileSyncedAt : p.rsiProfileSyncedAt,
+                rsiAssetsPending:
+                    u.rsiAssetsPending !== undefined ? !!u.rsiAssetsPending : p.rsiAssetsPending,
                 isAdmin: u.isAdmin !== undefined ? !!u.isAdmin : !!p.isAdmin,
                 isSuperAdmin: u.isSuperAdmin !== undefined ? !!u.isSuperAdmin : !!p.isSuperAdmin,
             };
@@ -1639,6 +1641,8 @@
         /** 会话中 RSI 公民资料是否明显未抓取成功 */
         function sessionProfileLooksIncomplete(sess) {
             if (!sess || !sess.token || !sess.bindingId) return false;
+            if (sess.rsiAssetsPending) return true;
+            if (!sess.avatarUrl && sess.rsiCitizenAvatarSourceUrl) return true;
             const enlisted = sess.rsiEnlisted && String(sess.rsiEnlisted).trim();
             const location = sess.rsiLocation && String(sess.rsiLocation).trim();
             const rank = sess.rsiRankLabel && String(sess.rsiRankLabel).trim();
@@ -1661,6 +1665,19 @@
                 const opts = options || {};
                 const sess0 = loadAuthSession();
                 if (!sess0 || !sess0.token) return null;
+                const authEpoch0 =
+                    window.UssAuthSessionSync &&
+                    typeof window.UssAuthSessionSync.getAuthSessionEpoch === 'function'
+                        ? window.UssAuthSessionSync.getAuthSessionEpoch()
+                        : 0;
+                const token0 = sess0.token;
+                function stillLoggedIn() {
+                    return (
+                        window.UssAuthSessionSync &&
+                        typeof window.UssAuthSessionSync.isAuthSessionOpValid === 'function' &&
+                        window.UssAuthSessionSync.isAuthSessionOpValid(authEpoch0, token0)
+                    );
+                }
                 const profileSnapshot =
                     window.UssAuthSessionSync &&
                     typeof window.UssAuthSessionSync.snapshotProfileFields === 'function'
@@ -1672,6 +1689,7 @@
                 );
 
                 function onProfileUpdated() {
+                    if (!stillLoggedIn()) return;
                     refreshNavLoginState();
                     refreshLoginDrawerView();
                 }
@@ -1686,11 +1704,15 @@
                     });
                 } else if (window.UssAuthApi) {
                     try {
-                        const me = await window.UssAuthApi.me(sess0.token);
-                        saveAuthSessionFromUser(sess0.token, me, undefined, sess0);
-                        onProfileUpdated();
+                        const me = await window.UssAuthApi.me(token0);
+                        if (stillLoggedIn()) {
+                            saveAuthSessionFromUser(token0, me, undefined, sess0);
+                            onProfileUpdated();
+                        }
                     } catch (ignore) {}
                 }
+
+                if (!stillLoggedIn()) return null;
 
                 let sess = loadAuthSession();
                 if (!sess || !sess.token) return null;
@@ -1706,13 +1728,13 @@
                         sess.bindingId,
                         { maxAttempts: 2 }
                     );
-                    if (user) {
+                    if (user && stillLoggedIn()) {
                         saveAuthSessionFromUser(sess.token, user, undefined, sess);
                         onProfileUpdated();
                     }
                 }
 
-                return loadAuthSession();
+                return stillLoggedIn() ? loadAuthSession() : null;
             })().finally(function () {
                 ensureUserProfilePromise = null;
             });
@@ -4986,14 +5008,14 @@
             }
         }
 
-        function setLoginFormHint(text) {
+        function setLoginFormHint(text, isInfo) {
             const el = document.getElementById('loginFormHint');
             if (!el) return;
             if (text) {
                 el.textContent = text;
                 el.hidden = false;
-                el.classList.remove('rsi-form-hint--info');
-                el.classList.add('rsi-form-hint--error');
+                el.classList.toggle('rsi-form-hint--info', !!isInfo);
+                el.classList.toggle('rsi-form-hint--error', !isInfo);
             } else {
                 clearLoginFormHint();
             }
@@ -5245,60 +5267,26 @@
 
             try {
                 clearRegisterFormHint();
-                setRegisterFormHint('正在提交注册，服务端 Headless Edge 将验证 RSI 资料…', true);
-                const res = await window.UssAuthApi.register(
+                await window.UssAuthApi.register(
                     {
                         bindingId,
                         email,
                         password,
                         sessionDays: 7,
-                    },
-                    {
-                        onProgress: function (p) {
-                            if (p && p.message) {
-                                setRegisterFormHint(p.message, true);
-                            }
-                        },
                     }
                 );
-                const loginAt = new Date().toISOString();
-                saveAuthSession({
-                    token: res.token,
-                    bindingId: res.user.bindingId,
-                    email: res.user.email,
-                    loginAt,
-                    sessionDays: res.sessionDays != null ? res.sessionDays : 7,
-                    expiresAt: res.expiresAt != null ? res.expiresAt : (window.UssAuthApi.getTokenExpiresAt ? window.UssAuthApi.getTokenExpiresAt(res.token) : undefined),
-                    avatarUrl: res.user.avatarUrl || null,
-                    rsiProfileHandle: res.user.rsiProfileHandle || null,
-                    rsiRankIconUrl: res.user.rsiRankIconUrl || null,
-                    rsiRankLabel: res.user.rsiRankLabel || null,
-                    rsiEnlisted: res.user.rsiEnlisted || null,
-                    rsiLocation: res.user.rsiLocation || null,
-                    rsiFluency: res.user.rsiFluency || null,
-                    rsiOrgName: res.user.rsiOrgName || null,
-                    rsiOrgSid: res.user.rsiOrgSid || null,
-                    rsiOrgHref: res.user.rsiOrgHref || null,
-                    rsiOrgPageUrl: res.user.rsiOrgPageUrl || null,
-                    rsiOrgLogoUrl: res.user.rsiOrgLogoUrl || null,
-                    rsiOrgRoleLabel: res.user.rsiOrgRoleLabel || null,
-                    rsiOrgRankSlots: res.user.rsiOrgRankSlots != null ? res.user.rsiOrgRankSlots : 0,
-                    rsiProfileSyncedAt: res.user.rsiProfileSyncedAt || null,
-                    isAdmin: !!res.user.isAdmin,
-                    isSuperAdmin: !!res.user.isSuperAdmin
-                }, true);
-                refreshNavLoginState();
-                loadCommunityChatFull();
-                loadCommunityPosts();
-                if (regBtn) {
-                    regBtn.textContent = '已注册';
-                    regBtn.disabled = true;
-                }
-                setRegisterFormHint('注册成功，已自动登录！', true);
-                setTimeout(function () {
-                    resetRegisterSubmitBtn();
-                    refreshLoginDrawerView();
-                }, AUTH_BUTTON_FEEDBACK_MS);
+                clearRegisterFormHint();
+                document.getElementById('regBindingId').value = '';
+                document.getElementById('regEmail').value = '';
+                document.getElementById('regPassword').value = '';
+                const loginEmailEl = document.getElementById('loginEmail');
+                const loginPasswordEl = document.getElementById('loginPassword');
+                if (loginEmailEl) loginEmailEl.value = email;
+                if (loginPasswordEl) loginPasswordEl.value = '';
+                switchAuthTab('login');
+                clearLoginFormHint();
+                resetRegisterSubmitBtn();
+                refreshLoginDrawerView();
             } catch (e) {
                 if (
                     e &&
@@ -5395,9 +5383,12 @@
                 lo.setAttribute('aria-label', '已退出');
                 lo.title = '已退出';
             }
+            ensureUserProfilePromise = null;
             clearAuthSession();
             refreshNavLoginState();
+            refreshLoginDrawerView();
             setTimeout(function () {
+                if (isLoggedIn()) return;
                 refreshLoginDrawerView();
                 resetLogoutSubmitBtn();
             }, AUTH_BUTTON_FEEDBACK_MS);

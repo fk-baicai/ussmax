@@ -50,6 +50,8 @@
 
     function profileLooksIncomplete(profile) {
         if (!profile || !profile.bindingId) return true;
+        if (profile.rsiAssetsPending) return true;
+        if (!profile.avatarUrl && profile.rsiCitizenAvatarSourceUrl) return true;
         var enlisted = profile.rsiEnlisted && String(profile.rsiEnlisted).trim();
         var location = profile.rsiLocation && String(profile.rsiLocation).trim();
         var rank = profile.rsiRankLabel && String(profile.rsiRankLabel).trim();

@@ -5,8 +5,33 @@
     'use strict';
 
     var AUTH_SESSION_KEY = 'ussHangzhouAuthSession';
+    var authSessionEpoch = 0;
+
+    function getAuthSessionEpoch() {
+        return authSessionEpoch;
+    }
+
+    /** 异步刷新会话前捕获 epoch+token；退出后 epoch 变化或 token 不匹配则视为失效 */
+    function isAuthSessionOpValid(epoch, token) {
+        if (epoch !== authSessionEpoch) return false;
+        var t = token != null ? String(token) : '';
+        if (!t) return false;
+        var sess = null;
+        try {
+            var raw = sessionStorage.getItem(AUTH_SESSION_KEY);
+            if (!raw) raw = localStorage.getItem(AUTH_SESSION_KEY);
+            if (!raw) return false;
+            sess = JSON.parse(raw);
+        } catch (e) {
+            return false;
+        }
+        if (!sess || !sess.token) return false;
+        if (isAuthSessionExpired(sess)) return false;
+        return String(sess.token) === t;
+    }
 
     function clearAuthSession() {
+        authSessionEpoch += 1;
         try {
             localStorage.removeItem(AUTH_SESSION_KEY);
         } catch (e) {
@@ -137,6 +162,7 @@
             rsiOrgLogoUrl: sess.rsiOrgLogoUrl,
             rsiOrgRoleLabel: sess.rsiOrgRoleLabel,
             rsiOrgRankSlots: sess.rsiOrgRankSlots,
+            rsiAssetsPending: sess.rsiAssetsPending,
         };
     }
 
@@ -196,6 +222,10 @@
                 user.rsiOrgRankSlots !== undefined && user.rsiOrgRankSlots !== null
                     ? user.rsiOrgRankSlots
                     : prev.rsiOrgRankSlots,
+            rsiAssetsPending:
+                user.rsiAssetsPending !== undefined
+                    ? !!user.rsiAssetsPending
+                    : prev.rsiAssetsPending,
             isAdmin: user.isAdmin !== undefined ? !!user.isAdmin : !!prev.isAdmin,
             isSuperAdmin: user.isSuperAdmin !== undefined ? !!user.isSuperAdmin : !!prev.isSuperAdmin,
             oopzId: user.oopzId !== undefined ? user.oopzId : prev.oopzId,
@@ -223,12 +253,14 @@
     async function refreshAuthSessionFromServer(options) {
         options = options || {};
         if (!global.UssAuthApi) return null;
+        var epoch = authSessionEpoch;
         var sess = loadAuthSession();
         if (!sess || !sess.token) return null;
+        var tokenAtStart = sess.token;
 
         var me;
         try {
-            me = await global.UssAuthApi.me(sess.token);
+            me = await global.UssAuthApi.me(tokenAtStart);
         } catch (eMe) {
             if (global.UssAuthApi && global.UssAuthApi.isAuthSessionError(eMe)) {
                 clearAuthSession();
@@ -244,7 +276,8 @@
         }
 
         var remember = sessionUsesRemember();
-        var merged = mergeUserIntoSession(sess.token, me, sess);
+        if (!isAuthSessionOpValid(epoch, tokenAtStart)) return null;
+        var merged = mergeUserIntoSession(tokenAtStart, me, sess);
         saveAuthSession(merged, remember);
         if (typeof options.onUpdated === 'function') {
             try {
@@ -277,6 +310,8 @@
         AUTH_SESSION_KEY: AUTH_SESSION_KEY,
         PROFILE_CACHE_KEY: PROFILE_CACHE_KEY,
         clearAuthSession: clearAuthSession,
+        getAuthSessionEpoch: getAuthSessionEpoch,
+        isAuthSessionOpValid: isAuthSessionOpValid,
         isAuthSessionExpired: isAuthSessionExpired,
         loadAuthSession: loadAuthSession,
         saveAuthSession: saveAuthSession,
