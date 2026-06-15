@@ -1155,6 +1155,24 @@
             return safeUserFacingMessage(err);
         }
 
+        function registerRsiScrapeErrorHint(err) {
+            var msg = err && err.message ? String(err.message).trim() : '';
+            if (msg.indexOf('未找到该绑定 ID') !== -1) {
+                return '未找到该 RSI Handle，请确认绑定 ID 拼写正确。';
+            }
+            if (msg.indexOf('跨域') !== -1 || msg.indexOf('无法从本浏览器访问') !== -1) {
+                return '浏览器无法读取 RSI 公民页，请确认能正常打开 RSI 官网后重试。';
+            }
+            if (msg.indexOf('RSI 页面解析结果不完整') !== -1) {
+                return '未能从 RSI 解析完整资料，请确认已加入指定组织且公民页可公开访问。';
+            }
+            if (msg.indexOf('绑定 ID 无效') !== -1) {
+                return '绑定 ID 格式无效，请填写 2–60 位小写英文、数字、下划线或连字符。';
+            }
+            if (msg) return msg;
+            return '读取 RSI 资料失败，请稍后重试。';
+        }
+
         function safeUserFacingMessage(msg) {
             if (typeof UssApiError !== 'undefined') {
                 return UssApiError.sanitizeUserMessage(msg);
@@ -5183,7 +5201,7 @@
         }
 
         async function submitRegister() {
-            const bindingId = document.getElementById('regBindingId').value.trim();
+            const bindingId = document.getElementById('regBindingId').value.trim().toLowerCase();
             const email = document.getElementById('regEmail').value.trim();
             const password = document.getElementById('regPassword').value;
 
@@ -5212,13 +5230,27 @@
 
             try {
                 clearRegisterFormHint();
-                setRegisterFormHint('正在提交注册，请稍候…', true);
+                if (!window.UssRsiSync || typeof window.UssRsiSync.scrapeCitizenPublicProfileWithRetry !== 'function') {
+                    setRegisterFormHint('RSI 校验模块未加载，请刷新页面后重试。');
+                    return;
+                }
+                setRegisterFormHint('正在读取 RSI 公民资料…', true);
+                var rsiProfile = await window.UssRsiSync.scrapeCitizenPublicProfileWithRetry(bindingId, {
+                    maxAttempts: 3,
+                    baseDelayMs: 1200,
+                });
+                if (!rsiProfile) {
+                    setRegisterFormHint('未能从 RSI 获取有效资料，请确认绑定 ID 正确且已加入指定组织。');
+                    return;
+                }
+                setRegisterFormHint('RSI 资料已读取，正在提交注册…', true);
                 const res = await window.UssAuthApi.register(
                     {
                         bindingId,
                         email,
                         password,
                         sessionDays: 7,
+                        rsiProfile: rsiProfile,
                     },
                     {
                         onProgress: function (p) {
@@ -5267,8 +5299,22 @@
                     refreshLoginDrawerView();
                 }, AUTH_BUTTON_FEEDBACK_MS);
             } catch (e) {
-                resetRegisterSubmitBtn();
-                setRegisterFormHint(registerFormErrorHint(e));
+                if (
+                    e &&
+                    e.message &&
+                    !e.code &&
+                    (String(e.message).indexOf('RSI') !== -1 ||
+                        String(e.message).indexOf('绑定 ID') !== -1 ||
+                        String(e.message).indexOf('跨域') !== -1)
+                ) {
+                    setRegisterFormHint(registerRsiScrapeErrorHint(e));
+                } else {
+                    setRegisterFormHint(registerFormErrorHint(e));
+                }
+            } finally {
+                if (regBtn && regBtn.textContent === '注册中…') {
+                    resetRegisterSubmitBtn();
+                }
             }
         }
 

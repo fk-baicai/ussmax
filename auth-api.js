@@ -180,6 +180,7 @@
             async function pollRegisterJob(base, jobId, pollMs, message) {
                 var deadline = Date.now() + pollMaxMs;
                 var interval = Math.max(1000, Number(pollMs) || 2000);
+                var transientFails = 0;
                 reportProgress({ stage: 'pending', message: message || '正在处理注册，请稍候…' });
                 while (Date.now() < deadline) {
                     if (controller && controller.signal && controller.signal.aborted) {
@@ -188,9 +189,17 @@
                         throw abortErr;
                     }
                     await sleep(interval);
-                    var sr = await fetch(joinUrlWithBase(base, '/api/register/status/' + encodeURIComponent(jobId)), {
-                        signal: controller ? controller.signal : undefined,
-                    });
+                    var sr;
+                    try {
+                        sr = await fetch(joinUrlWithBase(base, '/api/register/status/' + encodeURIComponent(jobId)), {
+                            signal: controller ? controller.signal : undefined,
+                        });
+                    } catch (pollNetErr) {
+                        transientFails += 1;
+                        if (transientFails >= 5) throw pollNetErr;
+                        continue;
+                    }
+                    transientFails = 0;
                     var statusData = await parseJson(sr);
                     if (sr.status === 404) {
                         var expiredErr = new Error('错误代码：REG_P002');
