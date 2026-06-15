@@ -1198,7 +1198,10 @@
                 state.sortDir = 'asc';
             }
             updateSortHeaders();
+            var scrollY = window.scrollY;
             renderTable();
+            if (els.tableShell) els.tableShell.scrollLeft = 0;
+            window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
         });
         updateSortHeaders();
     }
@@ -1295,6 +1298,16 @@
             widths[key] = 0;
         });
 
+        var detailRows = Array.prototype.slice.call(table.querySelectorAll('tbody tr.sc-detail-row'));
+        var detailPlaceholders = detailRows.map(function (row) {
+            var ph = document.createComment('sc-detail-measure');
+            row.parentNode.insertBefore(ph, row);
+            return { row: row, ph: ph };
+        });
+        detailRows.forEach(function (row) {
+            row.remove();
+        });
+
         var prevTableLayout = table.style.tableLayout;
         var prevWidth = table.style.width;
         var prevMinWidth = table.style.minWidth;
@@ -1345,6 +1358,11 @@
             col.style.maxWidth = prevCols[idx].maxWidth;
         });
 
+        detailPlaceholders.forEach(function (item) {
+            item.ph.parentNode.insertBefore(item.row, item.ph);
+            item.ph.remove();
+        });
+
         return widths;
     }
 
@@ -1353,9 +1371,12 @@
         tableColumnSyncRaf = requestAnimationFrame(function () {
             tableColumnSyncRaf = 0;
             syncTableColumns();
-            if (refreshMobileTableScrollState) refreshMobileTableScrollState();
             ensureExpandedDetailPresent();
             fixExpandedDetailRowLayout();
+            if (refreshMobileTableScrollState) refreshMobileTableScrollState();
+            requestAnimationFrame(function () {
+                fixExpandedDetailRowLayout();
+            });
         });
     }
 
@@ -1904,13 +1925,10 @@
         }
         items.forEach(function (item) {
             els.body.appendChild(renderRow(item));
-            if (isItemExpanded(item.id_item)) {
-                els.body.appendChild(renderDetailRow(item));
-            }
         });
-        scheduleSyncTableColumns();
-        ensureExpandedDetailPresent();
+        if (els.tableShell) els.tableShell.scrollLeft = 0;
         syncExpandedShellClass();
+        scheduleSyncTableColumns();
     }
 
     function collapseAllExpanded() {
