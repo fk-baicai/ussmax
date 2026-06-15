@@ -1,5 +1,8 @@
 /**
- * 登录/注册后同步 RSI 资料：用户浏览器静默 fetch（不新开 RSI 页），失败则跳过（不自动走服务端 Edge）。
+ * 登录后同步 RSI 资料：
+ * ① 本站 /api/rsi/citizen-profile 获取资料 → POST /api/me/rsi-sync
+ * ② 失败则服务端 refreshFromWeb 抓取更新
+ * ③ 仍失败则保留原会话资料（不覆盖）
  */
 (function (global) {
     'use strict';
@@ -24,20 +27,25 @@
     }
 
     /**
-     * 用户浏览器内抓取 RSI → POST /api/me/rsi-sync（不强制服务端再抓）
+     * 经本站 API 代理获取 RSI 公民资料 → POST /api/me/rsi-sync（浏览器不直连 RSI，无跨域）
      * @param {string} token
      * @param {string} handle
      */
-    async function syncUserRsiFromBrowserClient(token, handle) {
+    async function syncUserRsiViaApiProxy(token, handle) {
         if (!token || !handle || !global.UssRsiClient || !global.UssAuthApi) return null;
         try {
             const scraped = await global.UssRsiClient.scrapeCitizenPublicProfile(handle);
             if (!clientScrapedLooksUsable(scraped)) return null;
             return await global.UssAuthApi.syncRsiProfile(token, scraped);
         } catch (e) {
-            console.warn('[rsi] 浏览器抓取失败', e && e.message ? e.message : e);
+            console.warn('[rsi] API 代理同步失败', e && e.message ? e.message : e);
             return null;
         }
+    }
+
+    /** @deprecated 请使用 syncUserRsiViaApiProxy */
+    async function syncUserRsiFromBrowserClient(token, handle) {
+        return syncUserRsiViaApiProxy(token, handle);
     }
 
     function profileLooksIncomplete(profile) {
@@ -66,21 +74,33 @@
     }
 
     /**
-     * 登录后静默更新：仅用户浏览器 fetch RSI 页并 POST，不触发服务端 Edge（不弹 RSI 窗口）
+     * 登录后更新 RSI：API 代理 → 服务端抓取 → 保留原资料
+     * @returns {Promise<object|null>} 成功返回最新 user；均失败返回 null（调用方保留原会话）
      */
-    async function refreshUserRsiFromBrowserOnLogin(token, handle, options) {
+    async function refreshUserRsiOnLoginWithFallback(token, handle, options) {
         options = options || {};
         var maxAttempts = options.maxAttempts != null ? options.maxAttempts : 2;
         var baseDelayMs = options.baseDelayMs != null ? options.baseDelayMs : 1200;
         if (!token || !handle) return null;
+
         for (var attempt = 1; attempt <= maxAttempts; attempt += 1) {
-            var user = await syncUserRsiFromBrowserClient(token, handle);
-            if (user && typeof user === 'object') return user;
+            var viaApi = await syncUserRsiViaApiProxy(token, handle);
+            if (viaApi && typeof viaApi === 'object') return viaApi;
             if (attempt < maxAttempts) {
                 await sleep(Math.min(8000, baseDelayMs * attempt));
             }
         }
+
+        var viaServer = await refreshUserRsiOnAuth(token);
+        if (viaServer && typeof viaServer === 'object') return viaServer;
+
+        console.warn('[rsi] 登录 RSI 更新均未成功，保留原资料');
         return null;
+    }
+
+    /** @deprecated 请使用 refreshUserRsiOnLoginWithFallback */
+    async function refreshUserRsiFromBrowserOnLogin(token, handle, options) {
+        return refreshUserRsiOnLoginWithFallback(token, handle, options);
     }
 
     /**
@@ -107,7 +127,7 @@
         options = options || {};
         var maxAttempts = options.maxAttempts != null ? options.maxAttempts : 3;
         var baseDelayMs = options.baseDelayMs != null ? options.baseDelayMs : 1200;
-        var allowServerFallback = options.serverFallback === true;
+        var allowServerFallback = options.serverFallback !== false;
         var handle =
             options.handle ||
             (global.UssAuthSessionSync &&
@@ -127,7 +147,7 @@
                 if (!token) return null;
                 var user = null;
                 if (handle) {
-                    user = await syncUserRsiFromBrowserClient(token, handle);
+                    user = await syncUserRsiViaApiProxy(token, handle);
                 }
                 if (!user && allowServerFallback) {
                     user = await refreshUserRsiOnAuth(token);
@@ -188,7 +208,9 @@
         profileLooksIncomplete: profileLooksIncomplete,
         shouldRefreshRsiOnLogin: shouldRefreshRsiOnLogin,
         scrapeCitizenPublicProfileWithRetry: scrapeCitizenPublicProfileWithRetry,
+        syncUserRsiViaApiProxy: syncUserRsiViaApiProxy,
         syncUserRsiFromBrowserClient: syncUserRsiFromBrowserClient,
+        refreshUserRsiOnLoginWithFallback: refreshUserRsiOnLoginWithFallback,
         refreshUserRsiFromBrowserOnLogin: refreshUserRsiFromBrowserOnLogin,
         refreshUserRsiOnAuth: refreshUserRsiOnAuth,
         refreshUserRsiOnAuthWithRetry: refreshUserRsiOnAuthWithRetry,

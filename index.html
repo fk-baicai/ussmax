@@ -1638,7 +1638,7 @@
 
         let ensureUserProfilePromise = null;
 
-        /** 优先 /api/me；超过 24h 或资料不全时用浏览器静默抓 RSI（不弹窗、不走服务端 Edge） */
+        /** 优先 /api/me；需更新时：API 代理 RSI → 服务端抓取 → 保留原资料 */
         async function ensureUserProfileWithRetry(options) {
             if (!isLoggedIn()) return null;
             if (ensureUserProfilePromise) return ensureUserProfilePromise;
@@ -1684,9 +1684,9 @@
                     window.UssRsiSync &&
                     typeof window.UssRsiSync.shouldRefreshRsiOnLogin === 'function' &&
                     window.UssRsiSync.shouldRefreshRsiOnLogin(sess) &&
-                    typeof window.UssRsiSync.refreshUserRsiFromBrowserOnLogin === 'function'
+                    typeof window.UssRsiSync.refreshUserRsiOnLoginWithFallback === 'function'
                 ) {
-                    const user = await window.UssRsiSync.refreshUserRsiFromBrowserOnLogin(
+                    const user = await window.UssRsiSync.refreshUserRsiOnLoginWithFallback(
                         sess.token,
                         sess.bindingId,
                         { maxAttempts: 2 }
@@ -5230,27 +5230,13 @@
 
             try {
                 clearRegisterFormHint();
-                if (!window.UssRsiSync || typeof window.UssRsiSync.scrapeCitizenPublicProfileWithRetry !== 'function') {
-                    setRegisterFormHint('RSI 校验模块未加载，请刷新页面后重试。');
-                    return;
-                }
-                setRegisterFormHint('正在读取 RSI 公民资料…', true);
-                var rsiProfile = await window.UssRsiSync.scrapeCitizenPublicProfileWithRetry(bindingId, {
-                    maxAttempts: 3,
-                    baseDelayMs: 1200,
-                });
-                if (!rsiProfile) {
-                    setRegisterFormHint('未能从 RSI 获取有效资料，请确认绑定 ID 正确且已加入指定组织。');
-                    return;
-                }
-                setRegisterFormHint('RSI 资料已读取，正在提交注册…', true);
+                setRegisterFormHint('正在提交注册，服务端将验证 RSI 资料…', true);
                 const res = await window.UssAuthApi.register(
                     {
                         bindingId,
                         email,
                         password,
                         sessionDays: 7,
-                        rsiProfile: rsiProfile,
                     },
                     {
                         onProgress: function (p) {
