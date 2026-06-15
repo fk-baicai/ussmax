@@ -1,6 +1,6 @@
 /**
- * 在用户浏览器内请求 RSI 公民页并解析资料（走用户 IP，与登录后资料同步相同方式）。
- * 注册时组织校验由后端根据浏览器提交的 rsiProfile 执行，不再由服务端单独抓取公民页。
+ * 经本站 API 代理 RSI 公民资料（服务端 Headless Edge 抓取，浏览器不直连 RSI）。
+ * 注册/登录主路径均为服务端 Edge；本模块供 /api/rsi/citizen-profile 兜底同步。
  */
 (function (global) {
     'use strict';

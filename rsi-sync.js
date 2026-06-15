@@ -1,7 +1,7 @@
 /**
- * 登录后同步 RSI 资料：
- * ① 本站 /api/rsi/citizen-profile 获取资料 → POST /api/me/rsi-sync
- * ② 失败则服务端 refreshFromWeb 抓取更新
+ * 登录后同步 RSI 资料（全部由服务端 Headless Edge 抓取，浏览器不直连 RSI）：
+ * ① POST /api/me/rsi-sync refreshFromWeb（Edge 无头）
+ * ② 失败则 GET /api/rsi/citizen-profile 再同步
  * ③ 仍失败则保留原会话资料（不覆盖）
  */
 (function (global) {
@@ -74,7 +74,7 @@
     }
 
     /**
-     * 登录后更新 RSI：API 代理 → 服务端抓取 → 保留原资料
+     * 登录后更新 RSI：服务端 Edge 无头 → API 代理兜底 → 保留原资料
      * @returns {Promise<object|null>} 成功返回最新 user；均失败返回 null（调用方保留原会话）
      */
     async function refreshUserRsiOnLoginWithFallback(token, handle, options) {
@@ -84,15 +84,20 @@
         if (!token || !handle) return null;
 
         for (var attempt = 1; attempt <= maxAttempts; attempt += 1) {
-            var viaApi = await syncUserRsiViaApiProxy(token, handle);
-            if (viaApi && typeof viaApi === 'object') return viaApi;
+            var viaServer = await refreshUserRsiOnAuth(token);
+            if (viaServer && typeof viaServer === 'object') return viaServer;
             if (attempt < maxAttempts) {
                 await sleep(Math.min(8000, baseDelayMs * attempt));
             }
         }
 
-        var viaServer = await refreshUserRsiOnAuth(token);
-        if (viaServer && typeof viaServer === 'object') return viaServer;
+        for (var attempt2 = 1; attempt2 <= maxAttempts; attempt2 += 1) {
+            var viaApi = await syncUserRsiViaApiProxy(token, handle);
+            if (viaApi && typeof viaApi === 'object') return viaApi;
+            if (attempt2 < maxAttempts) {
+                await sleep(Math.min(8000, baseDelayMs * attempt2));
+            }
+        }
 
         console.warn('[rsi] 登录 RSI 更新均未成功，保留原资料');
         return null;
@@ -145,12 +150,9 @@
             }
             try {
                 if (!token) return null;
-                var user = null;
-                if (handle) {
+                var user = await refreshUserRsiOnAuth(token);
+                if (!user && allowServerFallback && handle) {
                     user = await syncUserRsiViaApiProxy(token, handle);
-                }
-                if (!user && allowServerFallback) {
-                    user = await refreshUserRsiOnAuth(token);
                 }
                 if (user && typeof user === 'object') return user;
             } catch (e) {

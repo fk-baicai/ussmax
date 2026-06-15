@@ -1638,7 +1638,7 @@
 
         let ensureUserProfilePromise = null;
 
-        /** 优先 /api/me；需更新时：API 代理 RSI → 服务端抓取 → 保留原资料 */
+        /** 优先 /api/me；需更新时：服务端 Edge 无头 → API 代理兜底 → 保留原资料 */
         async function ensureUserProfileWithRetry(options) {
             if (!isLoggedIn()) return null;
             if (ensureUserProfilePromise) return ensureUserProfilePromise;
@@ -5230,7 +5230,7 @@
 
             try {
                 clearRegisterFormHint();
-                setRegisterFormHint('正在提交注册，服务端将验证 RSI 资料…', true);
+                setRegisterFormHint('正在提交注册，服务端 Headless Edge 将验证 RSI 资料…', true);
                 const res = await window.UssAuthApi.register(
                     {
                         bindingId,
