@@ -44,6 +44,16 @@
         REG_P002: '注册任务已过期，请重新提交注册。',
     };
 
+    var LOGIN_HINTS = {
+        AUTH_L001: '邮箱或密码不正确。',
+        AUTH_L002: '请填写邮箱和密码。',
+        NET_E001: '网络异常，请检查网络后重试。',
+        NET_E502: '登录请求超时（网关等待过久），请稍后重试。',
+        NET_E503: '服务暂时不可用，请稍后重试。',
+        NET_E504: '登录请求超时，请稍后重试；若密码正确仍失败请联系管理员。',
+        SRV_001: '服务器繁忙，请稍后重试。',
+    };
+
     var FORGOT_PW_HINTS = {
         AUTH_P007: '邮件服务未配置，请联系管理员。',
         AUTH_P008: '验证码邮件发送失败，请稍后重试或联系管理员。',
@@ -68,6 +78,11 @@
     function registerHintForCode(code) {
         var c = String(code || '').trim();
         return REGISTER_HINTS[c] || '';
+    }
+
+    function loginHintForCode(code) {
+        var c = String(code || '').trim();
+        return LOGIN_HINTS[c] || '';
     }
 
     function createApiError(httpStatus, data, fallbackCode) {
@@ -105,6 +120,7 @@
         pickCode: pickCode,
         formatUserError: formatUserError,
         registerHintForCode: registerHintForCode,
+        loginHintForCode: loginHintForCode,
         forgotPasswordHintForCode: forgotPasswordHintForCode,
         createApiError: createApiError,
         sanitizeUserMessage: sanitizeUserMessage,

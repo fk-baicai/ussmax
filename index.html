@@ -1155,6 +1155,21 @@
             return safeUserFacingMessage(err);
         }
 
+        function loginFormErrorHint(err) {
+            var code = '';
+            if (err && typeof err === 'object' && err.code) {
+                code = String(err.code).trim();
+            } else if (err && err.message) {
+                var m = String(err.message).match(/^错误代码：([A-Z0-9_]+)$/);
+                if (m) code = m[1];
+            }
+            if (code && typeof UssApiError !== 'undefined' && UssApiError.loginHintForCode) {
+                var hint = UssApiError.loginHintForCode(code);
+                if (hint) return hint;
+            }
+            return safeUserFacingMessage(err);
+        }
+
         function registerRsiScrapeErrorHint(err) {
             var msg = err && err.message ? String(err.message).trim() : '';
             if (msg.indexOf('未找到该绑定 ID') !== -1) {
@@ -5368,7 +5383,7 @@
                 if (isLikelyNetworkError(e && e.message)) {
                     setLoginFormHint(safeUserFacingMessage('NET_E001'));
                 } else {
-                    setLoginFormHint(safeUserFacingMessage(e));
+                    setLoginFormHint(loginFormErrorHint(e));
                 }
             }
         }
