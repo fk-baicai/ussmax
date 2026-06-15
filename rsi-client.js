@@ -419,6 +419,62 @@
         };
     }
 
+    function resolveAuthApiBase() {
+        if (typeof global.USS_AUTH_API_BASE === 'string' && global.USS_AUTH_API_BASE) {
+            return String(global.USS_AUTH_API_BASE).replace(/\/$/, '');
+        }
+        if (typeof global.location !== 'undefined' && global.location.origin) {
+            return String(global.location.origin).replace(/\/$/, '');
+        }
+        return '';
+    }
+
+    function mapCitizenProxyApiError(status, data) {
+        var code = data && data.code ? String(data.code) : '';
+        if (status === 404 || code === 'AUTH_R008' || (status === 400 && code === 'RSI_E001')) {
+            return new Error('未找到该绑定 ID 对应的 RSI 公民页。');
+        }
+        if (code === 'RSI_CF001') {
+            var cfErr = new Error(
+                'RSI 页面被 Cloudflare 拦截，请稍后重试；或在本机浏览器先打开 RSI 官网完成验证后再注册。'
+            );
+            cfErr.code = 'RSI_CF001';
+            return cfErr;
+        }
+        if (status === 429 || code === 'RATE_001') {
+            return new Error('请求过于频繁，请稍后再试。');
+        }
+        if (status >= 500) {
+            return new Error('RSI 资料服务暂时不可用，请稍后重试。');
+        }
+        return new Error('无法获取 RSI 公民资料，请确认绑定 ID 正确后重试。');
+    }
+
+    async function fetchCitizenProfileViaApi(handle) {
+        var base = resolveAuthApiBase();
+        if (!base) return null;
+        var url = base + '/api/rsi/citizen-profile/' + encodeURIComponent(handle);
+        var res;
+        try {
+            res = await fetch(url, { method: 'GET', cache: 'no-store' });
+        } catch (e) {
+            return null;
+        }
+        var data = null;
+        try {
+            data = await res.json();
+        } catch (_) {
+            data = null;
+        }
+        if (!res.ok) {
+            throw mapCitizenProxyApiError(res.status, data);
+        }
+        if (!data || !data.profile || typeof data.profile !== 'object') {
+            throw new Error('RSI 页面解析结果不完整');
+        }
+        return data.profile;
+    }
+
     async function loadCitizenHtml(handle) {
         var normalized = String(handle || '')
             .trim()
@@ -458,8 +514,16 @@
         var normalized = String(handle || '')
             .trim()
             .toLowerCase();
-        var html = await loadCitizenHtml(normalized);
-        return parseCitizenHtml(html, normalized);
+        if (!/^[a-z0-9_-]{2,60}$/.test(normalized)) {
+            throw new Error('绑定 ID 无效');
+        }
+        try {
+            var viaApi = await fetchCitizenProfileViaApi(normalized);
+            if (viaApi) return viaApi;
+        } catch (apiErr) {
+            throw apiErr;
+        }
+        throw new Error('无法连接本站 RSI 资料服务，请确认网络正常后重试。');
     }
 
     global.UssRsiClient = {

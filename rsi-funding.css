@@ -54,12 +54,15 @@
     margin-bottom: clamp(18px, 2.8vw, 28px);
 }
 
-.rsi-funding-page-body .rsi-funding-title {
+.rsi-funding-page-body .rsi-funding-title.rsi-status-title {
     font-size: clamp(28px, 3.6vw, 40px);
+    -webkit-text-fill-color: #e8f4ff;
+    background: none;
+    filter: none;
 }
 
-.rsi-funding-page-body .rsi-funding-lead {
-    margin-top: 10px;
+.rsi-funding-page-body .rsi-funding-lead.rsi-status-lead {
+    margin-top: 0;
     font-size: 1.05rem;
 }
 

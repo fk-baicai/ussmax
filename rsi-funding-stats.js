@@ -1,6 +1,7 @@
 /**
  * RSI 众筹资金统计（Funds / Star Citizens + 时间线）
  * 工具页 rsi-funding.html；经本站 /api/rsi-funding-stats 读取。
+ * 前端 localStorage 1 小时缓存，与后端 RSI 抓取间隔一致（同 rsi-server-status.js 模式）。
  */
 (function () {
     'use strict';
@@ -23,7 +24,7 @@
     var updatedEl = null;
     var timer = null;
     var resizeTimer = null;
-    var currentPeriod = 'day';
+    var currentPeriod = 'month';
     var lastData = null;
     var chartPoints = [];
     var chartLayout = null;
@@ -445,6 +446,7 @@
         renderChart(getPeriodPoints(data, currentPeriod), currentPeriod);
         if (updatedEl && data && data.fetchedAt) {
             var when = formatFetchedAt(data.fetchedAt);
+            if (when && data.stale) when += ' · 缓存';
             updatedEl.textContent = when || '';
             updatedEl.hidden = !when;
         }
@@ -493,16 +495,13 @@
         var localAny = localFresh || localStale;
         var skipNetwork = localFresh && !opts.forceNetwork && !opts.revalidate;
 
-        if (skipNetwork) {
-            render(localFresh);
-            return;
-        }
-
         if (localAny && !opts.silent) {
             render(localAny);
         } else if (!localAny && !opts.silent) {
             renderLoading();
         }
+
+        if (skipNetwork) return;
 
         try {
             var data = await fetchFromBackend();
@@ -547,9 +546,20 @@
         });
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
+    function scheduleInit() {
+        var start = function () {
+            if (window.UssLazyMedia && typeof window.UssLazyMedia.runWhenIdle === 'function') {
+                window.UssLazyMedia.runWhenIdle(init, 800);
+            } else {
+                setTimeout(init, 800);
+            }
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', start);
+        } else {
+            start();
+        }
     }
+
+    scheduleInit();
 })();
