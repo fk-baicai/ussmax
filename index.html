@@ -5284,7 +5284,8 @@
                 if (loginEmailEl) loginEmailEl.value = email;
                 if (loginPasswordEl) loginPasswordEl.value = '';
                 switchAuthTab('login');
-                clearLoginFormHint();
+                syncAuthFloatFields();
+                setLoginFormHint('注册成功，请登录', true);
                 resetRegisterSubmitBtn();
                 refreshLoginDrawerView();
             } catch (e) {
