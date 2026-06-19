@@ -1,0 +1,166 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SC 数据库管理 · USSXC</title>
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="stylesheet" href="admin-sc-database.css" />
+    <script src="auth-config.js"></script>
+</head>
+<body>
+    <header>
+        <h1>SC 数据库管理</h1>
+        <div class="header-links">
+            <a href="admin.html">返回管理系统</a>
+            <a href="ship-components.html">配件前台</a>
+            <a href="index.html">返回首页</a>
+        </div>
+    </header>
+    <main>
+        <p id="gateMsg"></p>
+        <div id="app" hidden>
+            <section id="secScUpdateChecklist" class="sc-update-section">
+                <div class="sc-update-head">
+                    <h2>需要更新的数据</h2>
+                    <button type="button" id="btnReloadScUpdateChecklist" class="btn-secondary">刷新检查</button>
+                </div>
+                <p id="scUpdateSummary" class="hint">加载中…</p>
+                <div id="scUpdateList" class="sc-update-list"></div>
+                <div id="scUpdateErr" class="err" hidden></div>
+            </section>
+
+            <section id="secScSource">
+                <h2>配件数据来源</h2>
+                <p class="hint">前台展示的数据库可在 UEX 与 SC Wiki API 之间切换；建议两边都定期同步，便于互为备份。</p>
+                <div class="row sc-source-row">
+                    <label class="sc-source-label" for="scActiveSource">当前展示</label>
+                    <select id="scActiveSource" class="sc-source-select">
+                        <option value="uex">UEX 社区数据库</option>
+                        <option value="wiki">WIKI百科</option>
+                    </select>
+                    <button type="button" id="btnScApplySource" class="btn-secondary">应用切换</button>
+                    <span id="scSourceStatus" class="hint"></span>
+                </div>
+                <div id="scSourceVersions" class="sc-source-versions hint"></div>
+                <div id="scSourceErr" class="err" hidden></div>
+            </section>
+
+            <section id="secScSync">
+                <h2>舰船配件与个人装备数据同步</h2>
+                <p class="hint">分别从 UEX 与 SC Wiki API 同步到本地缓存（舰船组件/武器/矿头 + 个人武器/护甲/弹夹）。</p>
+                <div class="row">
+                    <button type="button" id="btnScSync">同步 UEX 数据</button>
+                    <button type="button" id="btnScSyncWiki" class="btn-secondary">同步 Wiki 数据</button>
+                    <span id="scSyncStatus" class="hint"></span>
+                </div>
+                <p id="scTokenHint" class="hint"></p>
+                <div id="scSyncErr" class="err" hidden></div>
+                <h3 style="margin-top: 1.25rem; font-size: 1rem">同步日志</h3>
+                <p class="hint">仅保留最近 5 条，更早记录会自动清理。</p>
+                <div class="row">
+                    <button type="button" id="btnReloadScSyncLog" class="btn-secondary">刷新日志</button>
+                </div>
+                <ul id="scSyncLogList"></ul>
+            </section>
+
+            <section id="secScImages">
+                <h2>配件图片本地化</h2>
+                <p class="hint">
+                    图片保存在配件服务器 <code>data/component-images/</code>，状态记录在
+                    <code>sync-state.json</code>。<strong>Wiki 数据同步不会改动已有本地图</strong>，仅更新配件参数。
+                    新配件请点「补齐缺失」；失败项可「重试失败」；Wiki 换图后由管理员点「强制更新全部」。
+                    下载约 1 张/秒（可在配件服务器设置 <code>SC_IMAGE_NETWORK_DELAY_MS</code>），大批量需较长时间。
+                    手动上传（<code>manual</code>）与已本地化（<code>local</code>）的图片默认都不会被自动覆盖。
+                </p>
+                <div id="scImageStatus" class="hint sc-image-status">加载中…</div>
+                <div class="row sc-image-actions">
+                    <button type="button" id="btnScImageMissing">补齐缺失</button>
+                    <button type="button" id="btnScImageRetry" class="btn-secondary">重试失败</button>
+                    <button type="button" id="btnScImageForce" class="btn-secondary">强制更新全部</button>
+                    <button type="button" id="btnScImageRefreshStatus" class="btn-secondary">刷新统计</button>
+                    <span id="scImageSyncStatus" class="hint"></span>
+                </div>
+                <div id="scImageSyncErr" class="err" hidden></div>
+                <div id="scImageFailedWrap" class="sc-image-failed-wrap" hidden>
+                    <h3 style="margin-top: 1rem; font-size: 0.95rem">最近失败 / 无图样本</h3>
+                    <ul id="scImageFailedList" class="sc-image-failed-list"></ul>
+                </div>
+            </section>
+
+            <section id="secScManualLoc">
+                <h2>手动汉化补译</h2>
+                <p class="hint">
+                    扫描配件名、制造商、地点、终端等仍为英文的字段，可在此手动补译。数据保存在
+                    <code>manual-loc-names.json</code>（配件名）与
+                    <code>manual-text-overrides.json</code>（其他字段），UEX 同步与汉化包更新<strong>不会覆盖</strong>。
+                </p>
+                <div class="row">
+                    <button type="button" id="btnReloadScManualLoc" class="btn-secondary">刷新列表</button>
+                    <span id="scManualLocMeta" class="hint"></span>
+                </div>
+                <div id="scManualLocErr" class="err" hidden></div>
+
+                <h4 style="margin: 1rem 0 0.5rem; font-size: 0.92rem">未命中（待补译）</h4>
+                <div class="sc-manual-toolbar">
+                    <div class="sc-manual-kind-chips" id="scManualUnmatchedKinds" role="tablist" aria-label="待补译分类"></div>
+                    <input
+                        type="search"
+                        id="scManualUnmatchedSearch"
+                        class="sc-manual-search"
+                        placeholder="搜索英文名、Slug、中文、备注…"
+                        autocomplete="off"
+                    />
+                    <span id="scManualUnmatchedFilterMeta" class="sc-manual-filter-meta hint"></span>
+                </div>
+                <div class="sc-manual-loc-wrap">
+                    <table class="sc-manual-loc-table">
+                        <thead>
+                            <tr>
+                                <th>字段</th>
+                                <th>英文名</th>
+                                <th>Slug</th>
+                                <th>中文名</th>
+                                <th>备注</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="scManualUnmatchedBody"></tbody>
+                    </table>
+                </div>
+
+                <h4 style="margin: 1.25rem 0 0.5rem; font-size: 0.92rem">已手动补译</h4>
+                <div class="sc-manual-toolbar">
+                    <div class="sc-manual-kind-chips" id="scManualSavedKinds" role="tablist" aria-label="已补译分类"></div>
+                    <input
+                        type="search"
+                        id="scManualSavedSearch"
+                        class="sc-manual-search"
+                        placeholder="搜索英文名、中文、备注…"
+                        autocomplete="off"
+                    />
+                    <span id="scManualSavedFilterMeta" class="sc-manual-filter-meta hint"></span>
+                </div>
+                <div class="sc-manual-loc-wrap">
+                    <table class="sc-manual-loc-table">
+                        <thead>
+                            <tr>
+                                <th>字段</th>
+                                <th>英文名</th>
+                                <th>中文名</th>
+                                <th>备注</th>
+                                <th>更新于</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="scManualSavedBody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+    <script src="api-error.js"></script>
+    <script src="auth-api.js"></script>
+    <script src="admin-sc-database.js" defer></script>
+</body>
+</html>

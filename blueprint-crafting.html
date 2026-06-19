@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蓝图制造 · USSXC</title>
+    <meta name="description" content="星际公民蓝图制造模拟：选择蓝图、配置矿石品质，预测成品属性。">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Rajdhani:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="blueprint-crafting.css?v=37">
+    <link rel="stylesheet" href="ship-components.css">
+    <link rel="icon" href="/favicon.ico" sizes="48x48">
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <script src="auth-config.js"></script>
+</head>
+<body class="bp-craft-body">
+    <header class="site-header">
+    <div class="navbar-top" role="banner" aria-label="舰队标识">
+        <span class="navbar-top-brand">UMBRELLA FLEET</span>
+    </div>
+    <nav class="navbar">
+        <div class="navbar-start">
+        <div class="logo">
+            <a href="index.html" aria-label="首页"><img src="fleet-logo.jpg" alt="舰队 LOGO" decoding="async"></a>
+        </div>
+        <div class="nav-links" role="navigation" aria-label="站点导航"><div class="nav-dropdown">
+                <button type="button" class="nav-dropdown-toggle is-current-page" aria-expanded="false" aria-haspopup="true" data-mega-target="navMegaBlueprint" aria-controls="navMegaBlueprint">
+                    蓝图
+                    <span class="nav-dropdown-caret" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="nav-dropdown">
+                <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true" data-mega-target="navMegaShip" aria-controls="navMegaShip">
+                    舰船
+                    <span class="nav-dropdown-caret" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="nav-dropdown">
+                <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true" data-mega-target="navMegaEquipment" aria-controls="navMegaEquipment">
+                    装备
+                    <span class="nav-dropdown-caret" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="nav-dropdown nav-tools-gated" id="navToolsWrap">
+                <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true" data-mega-target="navMegaTools" aria-controls="navMegaTools">
+                    工具
+                    <span class="nav-dropdown-caret" aria-hidden="true"></span>
+                </button>
+            </div>
+        </div>
+        </div>
+    </nav>
+    <div id="navMegaShip" class="nav-mega-panel" role="region" aria-label="舰船" hidden>
+        <div class="nav-mega-inner">
+            <div class="nav-mega-col">
+                <ul class="nav-mega-list">
+                    <li class="nav-mega-link-row"><a href="ship-components?group=component" class="nav-mega-link" data-nav-ship-group="component" id="navMegaLinkShipComponent"><span class="nav-mega-link-title">舰船组件</span><span class="nav-mega-link-desc">散热 · 电源 · 护盾 · 量子驱动器 · 跳跃驱动器 · 雷达</span></a><a href="ship-components?group=weapon" class="nav-mega-link" data-nav-ship-group="weapon" id="navMegaLinkShipWeapon"><span class="nav-mega-link-title">舰船武器</span><span class="nav-mega-link-desc">舰炮 · 导弹 · 导弹架 · 舰船炮台</span></a></li>
+                    <li class="nav-mega-link-row"><a href="ship-components?group=mining" class="nav-mega-link" data-nav-ship-group="mining" id="navMegaLinkShipMining"><span class="nav-mega-link-title">舰船矿头</span><span class="nav-mega-link-desc">矿头 · 模组</span></a><a href="ship-components?group=salvage" class="nav-mega-link" data-nav-ship-group="salvage" id="navMegaLinkShipSalvage"><span class="nav-mega-link-title">打捞模组</span><span class="nav-mega-link-desc">刮削模块</span></a></li>
+                    <li><a href="ship-components?group=fuel_nozzle" class="nav-mega-link" data-nav-ship-group="fuel_nozzle" id="navMegaLinkShipFuelNozzle"><span class="nav-mega-link-title">燃料喷嘴</span><span class="nav-mega-link-desc">氢燃料 · 量子燃料</span></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div id="navMegaEquipment" class="nav-mega-panel" role="region" aria-label="装备" hidden>
+        <div class="nav-mega-inner">
+            <div class="nav-mega-col">
+                <ul class="nav-mega-list">
+                    <li class="nav-mega-link-row"><a href="personal-equipment?group=fps_weapon" class="nav-mega-link" data-nav-equipment-group="fps_weapon" id="navMegaLinkEquipWeapon"><span class="nav-mega-link-title">个人武器</span><span class="nav-mega-link-desc">手枪 · 冲锋枪 · 突击步枪 · 狙击枪 · 霰弹枪 · 机枪 · ...</span></a><a href="personal-equipment?group=fps_magazine" class="nav-mega-link" data-nav-equipment-group="fps_magazine" id="navMegaLinkEquipAttachment"><span class="nav-mega-link-title">武器配件</span><span class="nav-mega-link-desc">弹匣 · 瞄具 · 枪口 · 下挂 · 实用配件 · 发射器导弹</span></a></li>
+                    <li><a href="personal-equipment?group=fps_armor" class="nav-mega-link" data-nav-equipment-group="fps_armor" id="navMegaLinkEquipArmor"><span class="nav-mega-link-title">个人护甲</span><span class="nav-mega-link-desc">头盔 · 胸甲 · 腿甲 · 臂甲 · 背包 · 基底服</span></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+            <div id="navMegaBlueprint" class="nav-mega-panel" role="region" aria-label="蓝图" hidden>
+        <div class="nav-mega-inner">
+            <div class="nav-mega-col">
+                <ul class="nav-mega-list">
+                    <li><a href="blueprint-crafting.html" class="nav-mega-link is-current" data-nav-blueprint-page><span class="nav-mega-link-title">蓝图制造</span><span class="nav-mega-link-desc">选择蓝图 · 配置材料品质 · 模拟成品属性</span></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="navMegaTools" class="nav-mega-panel" role="region" aria-label="工具" hidden>
+        <div class="nav-mega-inner">
+            <div class="nav-mega-col">
+                <ul class="nav-mega-list">
+                    <li class="nav-mega-tools-row">
+                        <a href="executive-hangar.html" class="nav-mega-link"><span class="nav-mega-link-title">行政机库</span><span class="nav-mega-link-desc">Pyro 行政机库周期与插卡窗口</span></a>
+                        <a href="server-ip.html" class="nav-mega-link"><span class="nav-mega-link-title">服务器 IP</span><span class="nav-mega-link-desc">服务器运行状态/IP地址</span></a>
+                    </li>
+                    <li><a href="rsi-funding.html" class="nav-mega-link"><span class="nav-mega-link-title">资金统计</span><span class="nav-mega-link-desc">RSI 众筹资金与玩家数量</span></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    </header>
+
+    <main class="bp-main">
+        <div id="bpGate" class="bp-gate is-hidden" role="alert"></div>
+
+        <div class="bp-shell">
+            <aside class="bp-sidebar" aria-label="蓝图列表">
+                <header class="bp-sidebar__head">
+                    <div class="bp-sidebar__title-row">
+                        <h1 class="bp-sidebar__title">制造蓝图</h1>
+                        <span class="bp-sidebar__ver" id="bpVersionBadge" hidden>—</span>
+                    </div>
+                    <p class="bp-sidebar__count" id="bpListCount">0 个蓝图</p>
+                    <div class="bp-sidebar__legend" aria-hidden="true">
+                        <span class="bp-list-item__badge bp-list-item__badge--default">默认可造</span>
+                        <span class="bp-list-item__badge bp-list-item__badge--mission">任务解锁</span>
+                    </div>
+                    <p class="bp-sidebar__meta" id="bpFootnote"></p>
+                </header>
+
+                <div class="bp-sidebar__search">
+                    <div class="bp-search-wrap">
+                        <input type="search" id="bpSearch" class="bp-search" placeholder="搜索全部蓝图，选中跳转…" autocomplete="off" aria-label="搜索蓝图" aria-expanded="false" aria-controls="bpSearchSuggest" aria-autocomplete="list" role="combobox">
+                        <div id="bpSearchSuggest" class="bp-search-suggest" role="listbox" aria-label="蓝图搜索结果" hidden></div>
+                    </div>
+                </div>
+
+                <div class="bp-filter">
+                    <label class="bp-filter__field">
+                        <span class="bp-filter__label">大类目</span>
+                        <select id="bpGroupSelect" class="bp-filter__select" aria-label="蓝图大类目"></select>
+                    </label>
+                    <label class="bp-filter__field" id="bpTypeField" hidden>
+                        <span class="bp-filter__label">小类目</span>
+                        <select id="bpTypeSelect" class="bp-filter__select" aria-label="蓝图小类目"></select>
+                    </label>
+                </div>
+
+                <div class="bp-list-wrap">
+                    <ul class="bp-list" id="bpBlueprintList" role="listbox" aria-label="蓝图列表"></ul>
+                    <p class="bp-list-empty" id="bpListEmpty" hidden>暂无匹配蓝图</p>
+                </div>
+            </aside>
+
+            <section class="bp-detail" aria-label="蓝图详情">
+                <div id="bpCraftEmpty" class="bp-detail-empty">
+                    <span class="bp-detail-empty__icon" aria-hidden="true">📦</span>
+                    <h2 class="bp-detail-empty__title">选择一个蓝图</h2>
+                    <p class="bp-detail-empty__text">从左侧列表选择蓝图，查看制造材料、属性加成与解锁任务</p>
+                </div>
+
+                <div id="bpCraftDetail" class="bp-detail-body is-hidden">
+                    <header class="bp-hero">
+                        <div class="bp-hero__visual">
+                            <div class="bp-hero__frame" id="bpOutputImageFrame" hidden>
+                                <button type="button" class="bp-hero__img-btn" id="bpOutputImageBtn" aria-label="点击放大图片">
+                                    <img id="bpOutputImage" class="bp-hero__img" alt="" decoding="async">
+                                </button>
+                            </div>
+                            <div id="bpOutputImagePh" class="bp-hero__ph">
+                                <span aria-hidden="true">◈</span>
+                                <span>暂无配图</span>
+                            </div>
+                        </div>
+                        <div class="bp-hero__info">
+                            <div class="bp-hero__top">
+                                <div class="bp-hero__titles">
+                                    <h2 class="bp-hero__name" id="bpOutputName">—</h2>
+                                    <p class="bp-hero__sub" id="bpOutputSub">—</p>
+                                </div>
+                                <div class="bp-hero__actions">
+                                    <div id="bpLoadoutMount" class="bp-loadout-mount sc-weapon-loadout-tags-mount" hidden aria-label="已装配配件"></div>
+                                    <button type="button" class="sc-loadout-btn" id="bpAttachBtn" hidden>配件</button>
+                                    <a href="#" class="bp-hero__link" id="bpComponentLink" hidden>配件详情 ↗</a>
+                                </div>
+                            </div>
+                            <div class="bp-hero__foot">
+                                <div class="bp-hero__tags" id="bpOutputTags"></div>
+                                <div class="bp-hero__quality">
+                                    <div class="bp-readout" id="bpSimSummary" aria-live="polite"></div>
+                                    <div class="bp-preset">
+                                        <button type="button" class="bp-btn" data-preset="max">最优</button>
+                                        <button type="button" class="bp-btn" data-preset="min">最差</button>
+                                        <button type="button" class="bp-btn" data-preset="reset">500</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div class="bp-detail-grid">
+                        <section class="bp-card bp-card--mat" aria-label="制造材料">
+                            <header class="bp-card__head">
+                                <h3 class="bp-card__title">制造材料</h3>
+                                <span class="bp-card__hint">拖动滑条或输入 0–1000 品质</span>
+                            </header>
+                            <div class="bp-card__body">
+                                <div class="bp-mat-grid" id="bpMaterials"></div>
+                            </div>
+                        </section>
+
+                        <section class="bp-card bp-card--stat" aria-label="产出属性">
+                            <header class="bp-card__head">
+                                <h3 class="bp-card__title">产出属性</h3>
+                                <span class="bp-card__hint" id="bpStatHint">品质加成后的数值</span>
+                            </header>
+                            <div class="bp-card__body bp-stat-wrap">
+                                <ul class="bp-stat-grid" id="bpSimStats"></ul>
+                                <div class="bp-stat-section" id="bpAttachStatSection" hidden>
+                                    <h4 class="bp-stat-section__title">配件加成</h4>
+                                    <ul class="bp-stat-grid" id="bpAttachStats"></ul>
+                                </div>
+                                <ul class="bp-warn-list" id="bpSimWarnings" hidden></ul>
+                                <p class="bp-stat-note" id="bpSimNote"></p>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </section>
+
+            <section class="bp-missions-bar is-hidden" id="bpMissionsBar" aria-label="解锁任务">
+                <header class="bp-missions-bar__head">
+                    <h3 class="bp-missions-bar__title">解锁任务</h3>
+                    <span class="bp-card__badge" id="bpMissionCount" hidden>0</span>
+                </header>
+                <div class="bp-missions-bar__body bp-mission-wrap" id="bpMissions" data-blueprint-panel>
+                    <p class="bp-mission-empty">选择蓝图后显示解锁任务</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="nav-dropdown.js" defer></script>
+    <script src="nav-auth-tools.js" defer></script>
+    <script src="api-error.js"></script>
+    <script src="community-image-lightbox.js" defer></script>
+    <script src="ship-component-wiki.js" defer></script>
+    <script src="ship-component-weapon-loadout.js?v=9" defer></script>
+    <script src="ship-component-blueprints.js?v=4" defer></script>
+    <script src="blueprint-crafting.js?v=40" defer></script>
+    <script src="site-footer.js" defer></script>
+</body>
+</html>

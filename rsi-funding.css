@@ -1,0 +1,278 @@
+/* 资金统计工具页（勿用 rsi-funding-body，该名已用于面板内双栏网格） */
+
+.rsi-funding-page-body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+        radial-gradient(ellipse 90% 55% at 50% -8%, rgba(56, 140, 210, 0.28), transparent 58%),
+        radial-gradient(ellipse 60% 40% at 100% 20%, rgba(30, 90, 140, 0.18), transparent 50%),
+        linear-gradient(180deg, #04080e 0%, #0a1520 42%, #060d14 100%);
+    color: #e8f4ff;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+.rsi-funding-page-body .site-header {
+    position: relative;
+    z-index: 2;
+}
+
+.rsi-funding-main {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: min(96vw, 1520px);
+    margin: 0 auto;
+    padding: 2.5rem clamp(1.25rem, 3vw, 2.75rem) 4rem;
+    box-sizing: border-box;
+}
+
+.rsi-funding-gate {
+    padding: 2rem 1.25rem;
+    text-align: center;
+    border-radius: 12px;
+    border: 1px solid rgba(95, 184, 255, 0.2);
+    background: rgba(8, 24, 40, 0.55);
+    color: rgba(200, 230, 255, 0.88);
+}
+
+.rsi-funding-gate a {
+    color: #7af8ff;
+}
+
+.rsi-funding-main .rsi-funding-section {
+    margin: 0;
+    padding: 0;
+}
+
+/* 工具页整体放大 */
+.rsi-funding-page-body .rsi-funding-wrap {
+    max-width: none;
+    width: 100%;
+}
+
+.rsi-funding-page-body .rsi-funding-head {
+    margin-bottom: clamp(18px, 2.8vw, 28px);
+}
+
+.rsi-funding-page-body .rsi-funding-title.rsi-status-title {
+    font-size: clamp(28px, 3.6vw, 40px);
+    -webkit-text-fill-color: #e8f4ff;
+    background: none;
+    filter: none;
+}
+
+.rsi-funding-page-body .rsi-funding-lead.rsi-status-lead {
+    margin-top: 0;
+    font-size: 1.05rem;
+}
+
+.rsi-funding-page-body .rsi-funding-panel {
+    border-radius: 16px;
+}
+
+.rsi-funding-page-body .rsi-funding-panel-bar {
+    padding: 1rem 1.35rem;
+}
+
+.rsi-funding-page-body .rsi-funding-panel-bar-icon {
+    border-top-width: 9px;
+    border-bottom-width: 9px;
+    border-left-width: 14px;
+}
+
+.rsi-funding-page-body .rsi-funding-panel-bar-title {
+    font-size: 1.05rem;
+}
+
+.rsi-funding-page-body .rsi-funding-body {
+    grid-template-columns: minmax(280px, 0.95fr) minmax(0, 1.85fr);
+    column-gap: clamp(20px, 3vw, 36px);
+    row-gap: 18px;
+    padding: clamp(20px, 2.6vw, 32px);
+}
+
+.rsi-funding-page-body .rsi-funding-subtitle {
+    font-size: 0.95rem;
+}
+
+.rsi-funding-page-body .rsi-funding-stat-cards {
+    gap: 18px;
+}
+
+.rsi-funding-page-body .rsi-funding-stat-card {
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: 16px;
+    padding: 1.15rem 1.25rem;
+    border-radius: 14px;
+}
+
+.rsi-funding-page-body .rsi-funding-stat-icon {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    min-height: 52px;
+    font-size: 1.1rem;
+}
+
+.rsi-funding-page-body .rsi-funding-stat-icon--funds {
+    font-size: 1.35rem;
+}
+
+.rsi-funding-page-body .rsi-funding-stat-svg {
+    width: 26px;
+    height: 26px;
+}
+
+.rsi-funding-page-body .rsi-funding-stat-label {
+    font-size: 0.88rem;
+}
+
+.rsi-funding-page-body .rsi-funding-stat-value {
+    margin-top: 8px;
+    font-size: clamp(1.35rem, 2.4vw, 2rem);
+}
+
+.rsi-funding-page-body .rsi-funding-period-btn {
+    min-width: 64px;
+    padding: 0.38rem 0.78rem;
+    font-size: 0.82rem;
+}
+
+.rsi-funding-page-body .rsi-funding-chart-frame {
+    min-height: 360px;
+    padding: 16px 18px 10px 14px;
+    border-radius: 12px;
+}
+
+.rsi-funding-page-body .rsi-funding-updated {
+    margin-top: 4px;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+    .rsi-funding-main {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        padding: 1.25rem 0 2.5rem;
+        box-sizing: border-box;
+    }
+
+    .rsi-funding-page-body .rsi-funding-section {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .rsi-funding-page-body .rsi-funding-wrap {
+        width: 100%;
+        max-width: none;
+    }
+
+    .rsi-funding-page-body .rsi-funding-head {
+        margin-bottom: 1rem;
+        padding-left: 0.875rem;
+        padding-right: 0.875rem;
+    }
+
+    .rsi-funding-page-body .rsi-funding-panel {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+
+    .rsi-funding-page-body .rsi-funding-body {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        column-gap: 0;
+        row-gap: 14px;
+        padding: 1rem 0.875rem 1.1rem;
+    }
+
+    .rsi-funding-page-body .rsi-funding-body-title--stats {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .rsi-funding-page-body .rsi-funding-chart-head {
+        grid-column: 1;
+        grid-row: 2;
+        align-items: flex-start;
+    }
+
+    .rsi-funding-page-body .rsi-funding-stat-cards {
+        grid-column: 1;
+        grid-row: 3;
+    }
+
+    .rsi-funding-page-body .rsi-funding-chart-frame {
+        grid-column: 1;
+        grid-row: 4;
+        min-height: 280px;
+        height: 280px;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 12px 8px 10px;
+    }
+
+    .rsi-funding-page-body .rsi-funding-chart-svg {
+        min-height: 0;
+        height: 100%;
+    }
+
+    .rsi-funding-page-body .rsi-funding-stat-card {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .rsi-funding-page-body .rsi-funding-updated {
+        padding-right: 0.875rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .rsi-funding-main {
+        padding-top: 1rem;
+        padding-bottom: 2rem;
+    }
+
+    .rsi-funding-page-body .rsi-funding-head {
+        padding-left: max(0.75rem, env(safe-area-inset-left));
+        padding-right: max(0.75rem, env(safe-area-inset-right));
+    }
+
+    .rsi-funding-page-body .rsi-funding-body {
+        padding-left: max(0.75rem, env(safe-area-inset-left));
+        padding-right: max(0.75rem, env(safe-area-inset-right));
+    }
+
+    .rsi-funding-page-body .rsi-funding-title {
+        font-size: clamp(24px, 6.5vw, 28px);
+    }
+
+    .rsi-funding-page-body .rsi-funding-lead {
+        font-size: 0.92rem;
+    }
+
+    .rsi-funding-page-body .rsi-funding-stat-value {
+        font-size: clamp(1.2rem, 5.5vw, 1.45rem);
+    }
+
+    .rsi-funding-page-body .rsi-funding-chart-frame {
+        min-height: 260px;
+        height: 260px;
+        padding: 10px 10px 8px 8px;
+    }
+
+    .rsi-funding-page-body .rsi-funding-chart-svg {
+        min-height: 0;
+        height: 100%;
+    }
+
+    .rsi-funding-page-body .rsi-funding-chart-axis {
+        font-size: 13px;
+    }
+
+    .rsi-funding-page-body .rsi-funding-updated {
+        padding-right: max(0.75rem, env(safe-area-inset-right));
+    }
+}

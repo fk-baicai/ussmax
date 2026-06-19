@@ -1,0 +1,100 @@
+# Use when Netlify Base directory = frontend (publish = this folder)
+[build]
+  publish = "."
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=300, must-revalidate"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=300, must-revalidate"
+
+[[headers]]
+  for = "/videos/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000, immutable"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/api/rsi-server-status"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    Netlify-CDN-Cache-Control = "no-store"
+
+[[headers]]
+  for = "/api/rsi-funding-stats"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    Netlify-CDN-Cache-Control = "no-store"
+
+[[headers]]
+  for = "/api/sc-festival-countdown"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    Netlify-CDN-Cache-Control = "no-store"
+
+[[headers]]
+  for = "/api/sc/*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    Netlify-CDN-Cache-Control = "no-store"
+
+[[headers]]
+  for = "/api/sc/components/*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    Netlify-CDN-Cache-Control = "no-store"
+
+[[headers]]
+  for = "/api/client-public-ip"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    Netlify-CDN-Cache-Control = "no-store"
+
+[[headers]]
+  for = "/api/client-public-ip/*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    Netlify-CDN-Cache-Control = "no-store"
+
+[[redirects]]
+  from = "/index.html"
+  to = "/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/oopz-bridge.html"
+  to = "/index.html#oopz-bridge-section"
+  status = 301
+
+[[redirects]]
+  from = "/api/*"
+  to = "http://8.138.237.183:3789/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/avatars/*"
+  to = "http://8.138.237.183:3789/avatars/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/community-uploads/*"
+  to = "http://8.138.237.183:3789/community-uploads/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/captcha/*"
+  to = "http://8.138.237.183:3789/captcha/:splat"
+  status = 200
+  force = true

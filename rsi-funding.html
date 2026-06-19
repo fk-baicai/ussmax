@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>资金统计 · USSXC</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="rsi-funding.css">
+    <link rel="icon" href="/favicon.ico" sizes="48x48">
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <script src="auth-config.js"></script>
+</head>
+<body class="rsi-funding-page-body">
+    <header class="site-header">
+    <div class="navbar-top" role="banner" aria-label="舰队标识">
+        <span class="navbar-top-brand">UMBRELLA FLEET</span>
+    </div>
+    <nav class="navbar">
+        <div class="navbar-start">
+        <div class="logo">
+            <a href="index.html" aria-label="首页"><img src="fleet-logo.jpg" alt="舰队 LOGO" decoding="async"></a>
+        </div>
+        <div class="nav-links" role="navigation" aria-label="站点导航"><div class="nav-dropdown">
+                <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true" data-mega-target="navMegaBlueprint" aria-controls="navMegaBlueprint">
+                    蓝图
+                    <span class="nav-dropdown-caret" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="nav-dropdown">
+                <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true" data-mega-target="navMegaShip" aria-controls="navMegaShip">
+                    舰船
+                    <span class="nav-dropdown-caret" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="nav-dropdown">
+                <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true" data-mega-target="navMegaEquipment" aria-controls="navMegaEquipment">
+                    装备
+                    <span class="nav-dropdown-caret" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="nav-dropdown nav-tools-gated" id="navToolsWrap">
+                <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true" data-mega-target="navMegaTools" aria-controls="navMegaTools">
+                    工具
+                    <span class="nav-dropdown-caret" aria-hidden="true"></span>
+                </button>
+            </div>
+        </div>
+        </div>
+    </nav>
+<div id="navMegaShip" class="nav-mega-panel" role="region" aria-label="舰船" hidden>
+        <div class="nav-mega-inner">
+            <div class="nav-mega-col">
+                <ul class="nav-mega-list">
+                    <li class="nav-mega-link-row"><a href="ship-components?group=component" class="nav-mega-link" data-nav-ship-group="component" id="navMegaLinkShipComponent"><span class="nav-mega-link-title">舰船组件</span><span class="nav-mega-link-desc">散热 · 电源 · 护盾 · 量子驱动器 · 跳跃驱动器 · 雷达</span></a><a href="ship-components?group=weapon" class="nav-mega-link" data-nav-ship-group="weapon" id="navMegaLinkShipWeapon"><span class="nav-mega-link-title">舰船武器</span><span class="nav-mega-link-desc">舰炮 · 导弹 · 导弹架 · 舰船炮台</span></a></li>
+                    <li class="nav-mega-link-row"><a href="ship-components?group=mining" class="nav-mega-link" data-nav-ship-group="mining" id="navMegaLinkShipMining"><span class="nav-mega-link-title">舰船矿头</span><span class="nav-mega-link-desc">矿头 · 模组</span></a><a href="ship-components?group=salvage" class="nav-mega-link" data-nav-ship-group="salvage" id="navMegaLinkShipSalvage"><span class="nav-mega-link-title">打捞模组</span><span class="nav-mega-link-desc">刮削模块</span></a></li>
+                    <li><a href="ship-components?group=fuel_nozzle" class="nav-mega-link" data-nav-ship-group="fuel_nozzle" id="navMegaLinkShipFuelNozzle"><span class="nav-mega-link-title">燃料喷嘴</span><span class="nav-mega-link-desc">氢燃料 · 量子燃料</span></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div id="navMegaEquipment" class="nav-mega-panel" role="region" aria-label="装备" hidden>
+        <div class="nav-mega-inner">
+            <div class="nav-mega-col">
+                <ul class="nav-mega-list">
+                    <li class="nav-mega-link-row"><a href="personal-equipment?group=fps_weapon" class="nav-mega-link" data-nav-equipment-group="fps_weapon" id="navMegaLinkEquipWeapon"><span class="nav-mega-link-title">个人武器</span><span class="nav-mega-link-desc">手枪 · 冲锋枪 · 突击步枪 · 狙击枪 · 霰弹枪 · 机枪 · ...</span></a><a href="personal-equipment?group=fps_magazine" class="nav-mega-link" data-nav-equipment-group="fps_magazine" id="navMegaLinkEquipAttachment"><span class="nav-mega-link-title">武器配件</span><span class="nav-mega-link-desc">弹匣 · 瞄具 · 枪口 · 下挂 · 实用配件 · 发射器导弹</span></a></li>
+                    <li><a href="personal-equipment?group=fps_armor" class="nav-mega-link" data-nav-equipment-group="fps_armor" id="navMegaLinkEquipArmor"><span class="nav-mega-link-title">个人护甲</span><span class="nav-mega-link-desc">头盔 · 胸甲 · 腿甲 · 臂甲 · 背包 · 基底服</span></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+            <div id="navMegaBlueprint" class="nav-mega-panel" role="region" aria-label="蓝图" hidden>
+        <div class="nav-mega-inner">
+            <div class="nav-mega-col">
+                <ul class="nav-mega-list">
+                    <li><a href="blueprint-crafting.html" class="nav-mega-link" data-nav-blueprint-page><span class="nav-mega-link-title">蓝图制造</span><span class="nav-mega-link-desc">选择蓝图 · 配置材料品质 · 模拟成品属性</span></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="navMegaTools" class="nav-mega-panel" role="region" aria-label="工具" hidden>
+        <div class="nav-mega-inner">
+            <div class="nav-mega-col">
+                <ul class="nav-mega-list">
+                    <li class="nav-mega-tools-row">
+                        <a href="executive-hangar.html" class="nav-mega-link"><span class="nav-mega-link-title">行政机库</span><span class="nav-mega-link-desc">Pyro 行政机库周期与插卡窗口</span></a>
+                        <a href="server-ip.html" class="nav-mega-link"><span class="nav-mega-link-title">服务器 IP</span><span class="nav-mega-link-desc">服务器运行状态/IP地址</span></a>
+                    </li>
+                    <li><a href="rsi-funding.html" class="nav-mega-link is-current"><span class="nav-mega-link-title">资金统计</span><span class="nav-mega-link-desc">RSI 众筹资金与玩家数量</span></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    </header>
+
+    <main class="rsi-funding-main">
+        <div id="rsiFundingGate" class="rsi-funding-gate">
+            <p>请先登录后再查看资金统计。</p>
+            <p><a href="index.html">去首页登录</a></p>
+        </div>
+
+        <div id="rsiFundingMain" hidden>
+            <section class="rsi-funding-section" id="rsi-funding-section" aria-label="星际公民资金统计">
+                <div class="rsi-funding-wrap">
+                    <header class="rsi-funding-head rsi-status-head">
+                        <div class="rsi-funding-head-text">
+                            <h1 class="rsi-funding-title rsi-status-title">资金统计</h1>
+                            <div class="rsi-status-lead-row">
+                                <p class="rsi-funding-lead rsi-status-lead">星际公民众筹 · 数据来自 Roberts Space Industries</p>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div class="rsi-funding-panel">
+                        <div class="rsi-funding-panel-bar">
+                            <span class="rsi-funding-panel-bar-icon" aria-hidden="true"></span>
+                            <span class="rsi-funding-panel-bar-title">众筹概况</span>
+                        </div>
+
+                        <div class="rsi-funding-body">
+                            <h2 class="rsi-funding-subtitle rsi-funding-body-title rsi-funding-body-title--stats">星际公民实时数据</h2>
+                            <div class="rsi-funding-chart-head">
+                                <h2 class="rsi-funding-subtitle rsi-funding-body-title">众筹时间线</h2>
+                                <div class="rsi-funding-period-tabs" id="rsiFundingPeriodTabs" role="tablist" aria-label="时间范围"></div>
+                            </div>
+                            <div class="rsi-funding-stat-cards">
+                                <article class="rsi-funding-stat-card">
+                                    <span class="rsi-funding-stat-icon rsi-funding-stat-icon--funds" aria-hidden="true">$</span>
+                                    <div class="rsi-funding-stat-copy">
+                                        <span class="rsi-funding-stat-label">已筹集资金（美元）</span>
+                                        <span class="rsi-funding-stat-value" id="rsiFundingFunds">—</span>
+                                    </div>
+                                </article>
+                                <article class="rsi-funding-stat-card">
+                                    <span class="rsi-funding-stat-icon rsi-funding-stat-icon--players" aria-hidden="true">
+                                        <svg class="rsi-funding-stat-svg" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" focusable="false">
+                                            <path d="M560 512.2c-1.5 80.7 296.9 108.2 297 280h0.9V902c0 14.9-12.1 27-27 27h-757c-14.9 0-27-12.1-27-27V792.2h0.9c0.7-185.2 295.6-202.4 297-280 0.4-4 0.5-46.5-14-69.8-15.4-24.7-67.6-102.7-67.6-175.7 0-112 77.3-202.8 189.3-202.8s189.3 90.8 189.3 202.8c0 73-59.8 154.7-67.6 175.7-8.6 22.8-13.8 64.4-14.2 69.8z"></path>
+                                            <path d="M974.1 704.2c-0.1-139.1-241.7-161.4-240.5-226.7 0.3-4.4 4.5-38 11.4-56.5 6.3-17 54.7-83.2 54.7-142.3 0-89.8-61.4-162.7-150.6-164.1 30.5 43.6 47 97.3 47 154.3 0 31.4-7.8 65.2-23.8 103.3-12.3 29.3-26.9 54.8-37.5 73.5-3.7 6.6-8.4 14.7-9.7 17.6-4 11.2-7.9 33.2-9.7 46.4 3 2.8 8.8 7.3 19.7 13.8 15.6 9.3 35.9 19.2 57.4 29.7 44.8 21.9 95.6 46.7 137.3 81.5 25 20.8 43.7 42.7 57.3 66.8 14.3 25.4 22.4 52.8 24.1 81.6 0.8 3.7 1.3 7.5 1.3 11.5V815h40.6c12.1 0 21.9-9.8 21.9-21.9v-88.9h-0.9z"></path>
+                                        </svg>
+                                    </span>
+                                    <div class="rsi-funding-stat-copy">
+                                        <span class="rsi-funding-stat-label">玩家数量</span>
+                                        <span class="rsi-funding-stat-value" id="rsiFundingFans">—</span>
+                                    </div>
+                                </article>
+                            </div>
+                            <div class="rsi-funding-chart-frame" id="rsiFundingChart">
+                                <p class="rsi-funding-chart-empty" role="status">正在获取 RSI 资金统计…</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="rsi-funding-updated" id="rsiFundingUpdated" hidden></p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="api-error.js"></script>
+    <script src="auth-api.js"></script>
+    <script src="nav-dropdown.js"></script>
+    <script src="nav-auth-tools.js"></script>
+    <script src="rsi-funding-page.js"></script>
+    <script src="rsi-funding-stats.js?v=20260619b"></script>
+    <script src="site-footer.js"></script>
+</body>
+</html>
