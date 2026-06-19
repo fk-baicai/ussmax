@@ -395,9 +395,12 @@
         renderChart(getPeriodPoints(data, currentPeriod), currentPeriod);
         if (updatedEl && data && data.fetchedAt) {
             var when = formatFetchedAt(data.fetchedAt);
+            if (Number(data.cacheAgeMs) > 6 * 60 * 60 * 1000) {
+                when += ' · 待后端更新';
+            }
             updatedEl.textContent = when ? '更新时间：' + when : '';
             updatedEl.hidden = !when;
-            updatedEl.classList.remove('is-stale');
+            updatedEl.classList.toggle('is-stale', Number(data.cacheAgeMs) > 6 * 60 * 60 * 1000);
         }
     }
 

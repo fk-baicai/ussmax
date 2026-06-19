@@ -63,8 +63,12 @@
             return;
         }
         var when = formatFetchedAt(data.fetchedAt);
+        if (Number(data.cacheAgeMs) > 6 * 60 * 60 * 1000) {
+            when += ' · 待后端更新';
+        }
         el.textContent = when ? '更新时间：' + when : '';
         el.hidden = !when;
+        el.classList.toggle('is-stale', Number(data.cacheAgeMs) > 6 * 60 * 60 * 1000);
     }
 
     function renderLoading() {
