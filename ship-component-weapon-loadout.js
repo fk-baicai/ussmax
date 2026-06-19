@@ -138,6 +138,32 @@
         return slotDef && slotDef.type === 'attachment_bottom';
     }
 
+    function getWeaponSizeLabel(weaponItem) {
+        if (!weaponItem) return '';
+        var label = String(weaponItem.size_label || '').trim();
+        if (label) return label;
+        var num = weaponItem.size_num != null ? weaponItem.size_num : weaponItem.size;
+        if (num != null && num !== '' && Number.isFinite(Number(num))) return 'S' + Number(num);
+        return '';
+    }
+
+    function getSlotSizeHint(weaponItem, slotDef) {
+        if (isBottomAttachmentSlot(slotDef)) return '通用';
+        return getWeaponSizeLabel(weaponItem) || '—';
+    }
+
+    function formatSlotLabelHtml(slot, weaponItem) {
+        var sizeHint = getSlotSizeHint(weaponItem, slot);
+        return (
+            escapeHtml(slot.label) +
+            ' <span class="sc-size-badge sc-loadout-slot-size" title="默认适配 ' +
+            escapeHtml(sizeHint) +
+            ' 尺寸配件">' +
+            escapeHtml(sizeHint) +
+            '</span>'
+        );
+    }
+
     async function fetchAttachmentsForSlot(slotDef, weaponItem) {
         var skipSizeFilter = isBottomAttachmentSlot(slotDef);
         var cacheKey =
@@ -736,7 +762,7 @@
                 escapeHtml(slot.id) +
                 '">' +
                 '<span class="sc-loadout-tab__label">' +
-                escapeHtml(slot.label) +
+                formatSlotLabelHtml(slot, activeWeapon) +
                 '</span>' +
                 '<span class="sc-loadout-tab__value">' +
                 escapeHtml(name) +
@@ -960,19 +986,38 @@
         }
 
         if (compact) {
+            var headHtml = '';
+            if (options.hideCompactHeader !== true) {
+                var compactSize = getWeaponSizeLabel(weaponItem);
+                var compactSlotCount = wiki().getWeaponAttachmentSlotCount(weaponItem);
+                var compactHint = compactSize ? '默认 ' + compactSize + ' 配件' : '';
+                headHtml =
+                    '<div class="sc-loadout-detail__head sc-loadout-detail__head--compact">' +
+                    '<span class="sc-loadout-detail__compact-title">配件槽</span>' +
+                    '<span class="sc-loadout-detail__compact-meta">' +
+                    escapeHtml(String(compactSlotCount) + ' 槽') +
+                    (compactHint ? ' · ' + escapeHtml(compactHint) : '') +
+                    '</span>' +
+                    '</div>';
+            }
             mountEl.innerHTML =
                 '<section class="sc-loadout-detail sc-loadout-detail--compact">' +
+                headHtml +
                 '<div class="sc-loadout-detail__slots" id="scDetailLoadoutSlots"></div>' +
                 '</section>';
         } else {
             var slotCount = wiki().getWeaponAttachmentSlotCount(weaponItem);
+            var sizeLabel = getWeaponSizeLabel(weaponItem);
+            var subParts = [String(slotCount) + ' 个配件槽'];
+            if (sizeLabel) subParts.push('默认 ' + sizeLabel + ' 配件');
+            subParts.push('本地保存配置');
             mountEl.innerHTML =
                 '<section class="sc-loadout-detail sc-panel">' +
                 '<div class="sc-loadout-detail__head">' +
                 '<div><h2 class="sc-loadout-detail__title">配件装配</h2>' +
                 '<p class="sc-loadout-detail__sub">' +
-                escapeHtml(String(slotCount)) +
-                ' 个配件槽 · 本地保存配置</p></div>' +
+                escapeHtml(subParts.join(' · ')) +
+                '</p></div>' +
                 '<button type="button" class="sc-loadout-detail__open" data-loadout-open>配件</button>' +
                 '</div>' +
                 '<div class="sc-loadout-detail__slots" id="scDetailLoadoutSlots"></div>' +
@@ -1013,25 +1058,32 @@
 
         var defs = getSlotDefsForWeapon(weaponItem);
         var loadout = getLoadout(weaponItem);
+        var slotLabelsOnly = options.slotLabelsOnly === true;
         var slotsHtml = '';
         for (var i = 0; i < defs.length; i++) {
             var slot = defs[i];
             var attId = loadout[slot.id];
-            var name = '空';
-            if (attId) {
-                var att = itemCache[attId] || (await fetchComponentById(attId));
-                name = att ? resolveDisplayName(att) : '已装备';
+            var valueHtml = '';
+            if (!slotLabelsOnly) {
+                var name = '空';
+                if (attId) {
+                    var att = itemCache[attId] || (await fetchComponentById(attId));
+                    name = att ? resolveDisplayName(att) : '已装备';
+                }
+                valueHtml =
+                    '<span class="sc-loadout-detail-chip__value">' + escapeHtml(name) + '</span>';
             }
             slotsHtml +=
                 '<button type="button" class="sc-loadout-detail-chip' +
                 (attId ? ' is-filled' : '') +
+                (slotLabelsOnly ? ' sc-loadout-detail-chip--label-only' : '') +
                 '" data-slot-id="' +
                 escapeHtml(slot.id) +
                 '"><span class="sc-loadout-detail-chip__label">' +
-                escapeHtml(slot.label) +
-                '</span><span class="sc-loadout-detail-chip__value">' +
-                escapeHtml(name) +
-                '</span></button>';
+                formatSlotLabelHtml(slot, weaponItem) +
+                '</span>' +
+                valueHtml +
+                '</button>';
         }
         slotsEl.innerHTML = slotsHtml;
 

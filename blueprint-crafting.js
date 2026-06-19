@@ -12,8 +12,11 @@
     var BP_RETURN_URL_KEY = 'scBlueprintCraftReturnUrl';
     var BP_RETURN_SCROLL_KEY = 'scBlueprintCraftReturnScrollY';
     var BP_RESTORE_FLAG_KEY = 'scBlueprintCraftRestorePending';
+    var BP_PENDING_BLUEPRINT_KEY = 'scBlueprintCraftPendingBlueprint';
+    var BP_PENDING_GROUP_KEY = 'scBlueprintCraftPendingGroup';
+    var BP_PENDING_TYPE_KEY = 'scBlueprintCraftPendingType';
     var SIM_DEBOUNCE_MS = 280;
-    var SEARCH_SUGGEST_LIMIT = 12;
+    var SEARCH_SUGGEST_LIMIT = 30;
     var SEARCH_DEBOUNCE_MS = 220;
     var SEARCH_MIN_LEN = 1;
 
@@ -117,8 +120,8 @@
         type: 'cooling',
         searchSuggestItems: [],
         searchSuggestIndex: -1,
-        searchReqId: 0,
         searchTimer: null,
+        listSearchQuery: '',
         page: 1,
         total: 0,
         items: [],
@@ -127,6 +130,8 @@
         qualities: {},
         simTimer: null,
         loadingList: false,
+        selectionNavRetry: false,
+        pendingComponentId: null,
         weaponItem: null,
         attachmentStats: null,
         lastSimData: null,
@@ -185,6 +190,7 @@
         var group = params.get('group');
         var type = params.get('type');
         var blueprint = params.get('blueprint');
+        var component = params.get('component') || params.get('id');
         if (group && GROUP_META[group]) {
             state.group = group;
             state.sector = GROUP_TO_SECTOR[group] || 'ship';
@@ -195,6 +201,46 @@
         }
         if (type) state.type = type;
         if (blueprint) state.selectedId = blueprint;
+        if (component) state.pendingComponentId = component;
+    }
+
+    function readDeepLinkBlueprintId() {
+        if (state.selectedId) return state.selectedId;
+        try {
+            var fromUrl = new URLSearchParams(window.location.search || '').get('blueprint');
+            if (fromUrl) return fromUrl;
+            var pending = sessionStorage.getItem(BP_PENDING_BLUEPRINT_KEY);
+            if (pending) return pending;
+        } catch (_) {
+            /* ignore */
+        }
+        return '';
+    }
+
+    function applyPendingCraftDeepLink() {
+        try {
+            var fromUrl = new URLSearchParams(window.location.search || '').get('blueprint');
+            if (fromUrl) {
+                state.selectedId = fromUrl;
+            } else {
+                var pendingBp = sessionStorage.getItem(BP_PENDING_BLUEPRINT_KEY);
+                if (pendingBp) state.selectedId = pendingBp;
+            }
+            if (!fromUrl) {
+                var pendingGroup = sessionStorage.getItem(BP_PENDING_GROUP_KEY);
+                var pendingType = sessionStorage.getItem(BP_PENDING_TYPE_KEY);
+                if (pendingGroup && GROUP_META[pendingGroup]) {
+                    state.group = pendingGroup;
+                    state.sector = GROUP_TO_SECTOR[pendingGroup] || state.sector;
+                }
+                if (pendingType) state.type = pendingType;
+            }
+            sessionStorage.removeItem(BP_PENDING_BLUEPRINT_KEY);
+            sessionStorage.removeItem(BP_PENDING_GROUP_KEY);
+            sessionStorage.removeItem(BP_PENDING_TYPE_KEY);
+        } catch (_) {
+            /* ignore */
+        }
     }
 
     function buildBlueprintCraftPageUrl(bp) {
@@ -233,15 +279,19 @@
 
     function applyBlueprintCraftReturnState() {
         try {
+            var current = new URL(window.location.href);
+            if (current.searchParams.get('blueprint') || state.selectedId) return;
+
             var stored = sessionStorage.getItem(BP_RETURN_URL_KEY) || '';
             if (!stored) return;
             var saved = new URL(stored, window.location.href);
             if (!/\/blueprint-crafting(?:\.html)?$/i.test(saved.pathname)) return;
 
-            var current = new URL(window.location.href);
             var pending = sessionStorage.getItem(BP_RESTORE_FLAG_KEY) === '1';
+            var ref = String(document.referrer || '');
+            if (pending && /ship-component-detail/i.test(ref)) return;
+
             var urlBlueprint = current.searchParams.get('blueprint');
-            var storedBlueprint = saved.searchParams.get('blueprint');
             if (!pending && urlBlueprint) return;
 
             saved.searchParams.forEach(function (value, key) {
@@ -279,7 +329,84 @@
     function shouldPreserveSelectedBlueprint(id) {
         if (!id) return false;
         if (sessionStorage.getItem(BP_RESTORE_FLAG_KEY) === '1') return true;
+        if (sessionStorage.getItem(BP_PENDING_BLUEPRINT_KEY)) return true;
+        if (state.selectedId === id) return true;
         return !!new URLSearchParams(window.location.search || '').get('blueprint');
+    }
+
+    function applyBlueprintNavContext(bp) {
+        if (!bp) return;
+        if (bp.nav_group && GROUP_META[bp.nav_group]) {
+            state.group = bp.nav_group;
+            state.sector = GROUP_TO_SECTOR[bp.nav_group] || state.sector;
+        }
+        if (bp.nav_type) state.type = bp.nav_type;
+    }
+
+    function resolveSelectedBlueprintNav() {
+        if (!state.selectedId && state.pendingComponentId) {
+            return fetchJson(
+                '/api/sc/components/' + encodeURIComponent(state.pendingComponentId) + '/craft-blueprint'
+            )
+                .then(function (data) {
+                    var bp = data && data.blueprint;
+                    if (bp && bp.uuid) state.selectedId = bp.uuid;
+                    applyBlueprintNavContext(bp);
+                    return bp;
+                })
+                .catch(function () {
+                    return null;
+                });
+        }
+        if (!state.selectedId) return Promise.resolve(null);
+        return fetchJson('/api/sc/blueprints/' + encodeURIComponent(state.selectedId))
+            .then(function (data) {
+                var bp = data && data.blueprint;
+                applyBlueprintNavContext(bp);
+                return bp;
+            })
+            .catch(function () {
+                return null;
+            });
+    }
+
+    function syncNavControlsFromState() {
+        renderGroupSelect();
+        renderTypeSelect();
+        if (el.groupSelect) el.groupSelect.value = state.group;
+        if (el.typeSelect && el.typeField && !el.typeField.hidden) {
+            el.typeSelect.value = state.type;
+        }
+    }
+
+    function normalizeNavForMeta() {
+        if (state.selectedId) {
+            if (!GROUP_META[state.group] || groupCount(state.group) === 0) {
+                var selectedGroup = GROUP_ORDER.find(function (g) {
+                    return groupCount(g) > 0;
+                });
+                if (selectedGroup) {
+                    state.group = selectedGroup;
+                    state.sector = GROUP_TO_SECTOR[selectedGroup];
+                }
+            }
+            return;
+        }
+        if (!visibleTypesForGroup(state.group).includes(state.type)) {
+            var vis = visibleTypesForGroup(state.group);
+            state.type = vis.length ? vis[0] : DEFAULT_TYPE_BY_GROUP[state.group];
+        }
+        if (!GROUP_ORDER.includes(state.group) || groupCount(state.group) === 0) {
+            var firstGroup = GROUP_ORDER.find(function (g) {
+                return groupCount(g) > 0;
+            });
+            if (firstGroup) {
+                state.group = firstGroup;
+                state.sector = GROUP_TO_SECTOR[firstGroup];
+                var vis2 = visibleTypesForGroup(firstGroup);
+                state.type = vis2.length ? vis2[0] : DEFAULT_TYPE_BY_GROUP[firstGroup];
+            }
+        }
     }
 
     function buildComponentDetailHref(bp) {
@@ -312,6 +439,12 @@
     function updateListCount() {
         if (!el.listCount) return;
         var n = state.items.length;
+        if (state.listSearchQuery) {
+            var total = state.total || n;
+            el.listCount.textContent =
+                total > n ? n + ' / ' + total + ' 个匹配' : total + ' 个匹配';
+            return;
+        }
         el.listCount.textContent = n + ' 个蓝图';
     }
 
@@ -377,16 +510,32 @@
         });
         if (el.typeSelect.querySelector('option[value="' + state.type + '"]')) {
             el.typeSelect.value = state.type;
-        } else {
+        } else if (!state.selectedId) {
             state.type = visible[0];
             el.typeSelect.value = state.type;
         }
     }
 
+    function formatUsageGrade(item) {
+        if (!item) return '';
+        var usage = String(item.class_zh || item.class_short_zh || '').trim();
+        var grade = String(item.grade_letter || '').trim();
+        if (usage && grade) return usage + ' ' + grade;
+        return usage || grade || '';
+    }
+
     function blueprintListMeta(item) {
         var parts = [];
-        if (item.type_label_zh) parts.push(item.type_label_zh);
-        if (item.grade) parts.push('T' + item.grade);
+        if (state.listSearchQuery) {
+            var group = item.group_label_zh || groupLabel(item.nav_group);
+            var type = item.type_label_zh || typeLabel(item.nav_type);
+            if (group) parts.push(group);
+            if (type && type !== group) parts.push(type);
+        } else if (item.type_label_zh) {
+            parts.push(item.type_label_zh);
+        }
+        var usageGrade = formatUsageGrade(item);
+        if (usageGrade) parts.push(usageGrade);
         if (item.size != null && item.size !== '') parts.push('S' + item.size);
         return parts.join(' · ');
     }
@@ -436,6 +585,13 @@
             }
             if (badges.childNodes.length) btn.appendChild(badges);
             btn.addEventListener('click', function () {
+                if (
+                    state.listSearchQuery &&
+                    (item.nav_group !== state.group || item.nav_type !== state.type)
+                ) {
+                    jumpToBlueprint(item);
+                    return;
+                }
                 selectBlueprint(item.uuid);
             });
             li.appendChild(btn);
@@ -453,8 +609,15 @@
         }
     }
 
+    function clearListSearch() {
+        state.listSearchQuery = '';
+        if (el.search) el.search.value = '';
+        hideSearchSuggestions();
+    }
+
     function setGroup(groupKey) {
         if (!groupKey || groupKey === state.group) return;
+        clearListSearch();
         state.group = groupKey;
         state.sector = GROUP_TO_SECTOR[groupKey] || 'ship';
         var visible = visibleTypesForGroup(groupKey);
@@ -471,6 +634,7 @@
 
     function setType(typeKey) {
         if (!typeKey || typeKey === state.type) return;
+        clearListSearch();
         state.type = typeKey;
         state.selectedId = null;
         pushUrlState();
@@ -532,19 +696,15 @@
 
     function blueprintLabel(item) {
         var parts = [blueprintDisplayName(item)];
-        if (item.grade) parts.push('T' + item.grade);
+        var usageGrade = formatUsageGrade(item);
+        if (usageGrade) parts.push(usageGrade);
         if (item.size != null && item.size !== '') parts.push('S' + item.size);
         return parts.join(' · ');
     }
 
     function pickInitialBlueprint() {
-        var urlBlueprint = '';
-        try {
-            urlBlueprint = new URLSearchParams(window.location.search || '').get('blueprint') || '';
-        } catch (_) {
-            urlBlueprint = '';
-        }
-        if (!state.selectedId && urlBlueprint) state.selectedId = urlBlueprint;
+        var id = readDeepLinkBlueprintId();
+        if (id) state.selectedId = id;
 
         if (!state.items.length) {
             if (state.selectedId) {
@@ -553,15 +713,28 @@
             } else {
                 selectBlueprint(null);
             }
-            return;
+            return Promise.resolve();
         }
 
-        var id = state.selectedId;
+        id = state.selectedId;
         if (id && !state.items.some(function (x) { return x.uuid === id; })) {
+            if (shouldPreserveSelectedBlueprint(id) && !state.selectionNavRetry) {
+                state.selectionNavRetry = true;
+                return resolveSelectedBlueprintNav().then(function (bp) {
+                    if (!bp) {
+                        state.consumeListRestore = sessionStorage.getItem(BP_RESTORE_FLAG_KEY) === '1';
+                        selectBlueprint(id);
+                        return;
+                    }
+                    pushUrlState();
+                    syncNavControlsFromState();
+                    return loadAllBlueprints({ force: true });
+                });
+            }
             if (shouldPreserveSelectedBlueprint(id)) {
                 state.consumeListRestore = true;
                 selectBlueprint(id);
-                return;
+                return Promise.resolve();
             }
             id = null;
         }
@@ -573,6 +746,7 @@
         } else {
             selectBlueprint(null);
         }
+        return Promise.resolve();
     }
 
     function showGate(msg) {
@@ -610,7 +784,9 @@
         var type = item.type_label_zh || typeLabel(item.nav_type);
         if (group) parts.push(group);
         if (type && type !== group) parts.push(type);
-        if (item.grade) parts.push('T' + item.grade);
+        var usageGrade = formatUsageGrade(item);
+        if (usageGrade) parts.push(usageGrade);
+        if (item.size != null && item.size !== '') parts.push('S' + item.size);
         return parts.join(' · ');
     }
 
@@ -697,41 +873,24 @@
         }
     }
 
-    function fetchGlobalBlueprintSearch(query) {
-        var q = String(query || '').trim();
-        if (q.length < SEARCH_MIN_LEN) {
-            hideSearchSuggestions();
-            return Promise.resolve([]);
-        }
-        var reqId = ++state.searchReqId;
-        return fetchJson(
-            '/api/sc/blueprints?q=' +
-                encodeURIComponent(q) +
-                '&page=1&limit=' +
-                SEARCH_SUGGEST_LIMIT
-        )
-            .then(function (data) {
-                if (reqId !== state.searchReqId) return [];
-                return data.items || [];
-            })
-            .catch(function () {
-                if (reqId !== state.searchReqId) return [];
-                return [];
-            });
-    }
-
     function scheduleGlobalBlueprintSearch(query) {
         if (state.searchTimer) clearTimeout(state.searchTimer);
         var q = String(query || '').trim();
         if (q.length < SEARCH_MIN_LEN) {
+            if (state.listSearchQuery) {
+                state.listSearchQuery = '';
+                loadAllBlueprints();
+            }
             hideSearchSuggestions();
             return;
         }
+        state.listSearchQuery = q;
         state.searchTimer = setTimeout(function () {
             state.searchTimer = null;
-            fetchGlobalBlueprintSearch(q).then(function (items) {
+            if (String(el.search && el.search.value.trim()) !== q) return;
+            loadAllBlueprints().then(function () {
                 if (String(el.search && el.search.value.trim()) !== q) return;
-                renderSearchSuggestions(items, q);
+                renderSearchSuggestions(state.items.slice(0, SEARCH_SUGGEST_LIMIT), q);
             });
         }, SEARCH_DEBOUNCE_MS);
     }
@@ -739,6 +898,7 @@
     function jumpToBlueprint(item) {
         if (!item || !item.uuid) return;
         hideSearchSuggestions();
+        state.listSearchQuery = '';
         if (el.search) el.search.value = '';
 
         state.sector = GROUP_TO_SECTOR[item.nav_group] || state.sector;
@@ -864,7 +1024,18 @@
     }
 
     function buildListQuery(page) {
-        var query =
+        var q = String(state.listSearchQuery || '').trim();
+        if (q) {
+            return (
+                '/api/sc/blueprints?q=' +
+                encodeURIComponent(q) +
+                '&page=' +
+                page +
+                '&limit=' +
+                PAGE_SIZE
+            );
+        }
+        return (
             '/api/sc/blueprints?group=' +
             encodeURIComponent(state.group) +
             '&type=' +
@@ -872,12 +1043,13 @@
             '&page=' +
             page +
             '&limit=' +
-            PAGE_SIZE;
-        return query;
+            PAGE_SIZE
+        );
     }
 
-    function loadAllBlueprints() {
-        if (state.loadingList) return Promise.resolve();
+    function loadAllBlueprints(options) {
+        options = options || {};
+        if (state.loadingList && !options.force) return Promise.resolve();
         state.loadingList = true;
         state.page = 1;
         state.items = [];
@@ -892,7 +1064,7 @@
                     return fetchNext();
                 }
                 renderBlueprintList();
-                pickInitialBlueprint();
+                return pickInitialBlueprint();
             });
         }
 
@@ -1043,6 +1215,13 @@
         }
     }
 
+    function formatScuQty(value) {
+        var n = Number(value);
+        if (!Number.isFinite(n)) return '';
+        if (Math.abs(n - Math.round(n)) < 1e-6) return Math.round(n) + ' SCU';
+        return (Math.round(n * 100) / 100) + ' SCU';
+    }
+
     function defaultQuality() {
         return (state.meta && state.meta.quality && state.meta.quality.default) || 500;
     }
@@ -1070,6 +1249,24 @@
             var zh = resolveRoleLabelZh(ing);
             if (zh) ing.role_label_zh = zh;
         });
+    }
+
+    function syncBlueprintUsageToListItem(bp) {
+        if (!bp || !bp.uuid) return;
+        var idx = -1;
+        for (var i = 0; i < state.items.length; i++) {
+            if (state.items[i].uuid === bp.uuid) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx < 0) return;
+        state.items[idx] = Object.assign({}, state.items[idx], {
+            class_zh: bp.class_zh || state.items[idx].class_zh,
+            class_short_zh: bp.class_short_zh || state.items[idx].class_short_zh,
+            grade_letter: bp.grade_letter || state.items[idx].grade_letter,
+        });
+        renderBlueprintList();
     }
 
     function selectBlueprint(id) {
@@ -1104,6 +1301,7 @@
             .then(function (data) {
                 state.blueprint = data.blueprint;
                 normalizeBlueprintIngredients(state.blueprint);
+                syncBlueprintUsageToListItem(state.blueprint);
                 state.weaponItem = null;
                 state.attachmentStats = null;
                 state.lastSimData = null;
@@ -1227,7 +1425,8 @@
         el.outputTags.innerHTML = '';
         if (!bp) return;
         var tags = [];
-        if (bp.grade) tags.push({ text: 'T' + bp.grade, title: '阶位（Grade）' });
+        var usageGrade = formatUsageGrade(bp);
+        if (usageGrade) tags.push({ text: usageGrade, title: '用途与等级', kind: 'usage' });
         if (bp.size != null && bp.size !== '') tags.push({ text: 'S' + bp.size, title: '尺寸（Size）' });
         if (bp.craft_time_seconds) tags.push({ text: formatCraftTime(bp.craft_time_seconds), title: '制造耗时' });
         if (bp.is_available_by_default) tags.push({ text: '默认可造', kind: 'default', title: '无需任务即可制造' });
@@ -1239,7 +1438,8 @@
             span.className =
                 'bp-tag' +
                 (tag.warn ? ' bp-tag--warn' : '') +
-                (tag.kind === 'default' ? ' bp-tag--default' : '');
+                (tag.kind === 'default' ? ' bp-tag--default' : '') +
+                (tag.kind === 'usage' ? ' bp-tag--usage' : '');
             span.textContent = tag.text;
             if (tag.title) span.title = tag.title;
             el.outputTags.appendChild(span);
@@ -1267,53 +1467,35 @@
             });
     }
 
-    function refreshLoadoutNames(weaponItem) {
-        if (!el.loadoutMount) return Promise.resolve();
-        var wl = window.ShipComponentWeaponLoadout;
-        if (!wl || !weaponItem || !wl.isWeaponLoadoutEligible(weaponItem)) {
-            el.loadoutMount.hidden = true;
-            el.loadoutMount.innerHTML = '';
-            return Promise.resolve();
-        }
-        var loadout = wl.getLoadout(weaponItem);
-        if (!loadout || !Object.keys(loadout).length) {
-            el.loadoutMount.hidden = true;
-            el.loadoutMount.innerHTML = '';
-            return Promise.resolve();
-        }
-        el.loadoutMount.hidden = false;
-        if (typeof wl.hydrateListTags === 'function') {
-            return Promise.resolve(wl.hydrateListTags(weaponItem, el.loadoutMount));
-        }
-        el.loadoutMount.innerHTML = wl.renderListTagsHtml(weaponItem) || '';
-        el.loadoutMount.hidden = !el.loadoutMount.innerHTML;
-        return Promise.resolve();
-    }
-
     function renderWeaponLoadout(weaponItem) {
         var wl = window.ShipComponentWeaponLoadout;
-        if (!el.attachBtn) return;
         if (!wl || !weaponItem || !wl.isWeaponLoadoutEligible(weaponItem)) {
-            el.attachBtn.hidden = true;
-            if (el.loadoutMount) {
-                el.loadoutMount.hidden = true;
-                el.loadoutMount.innerHTML = '';
+            if (el.loadoutSlots) {
+                el.loadoutSlots.hidden = true;
+                el.loadoutSlots.innerHTML = '';
             }
             state.attachmentStats = null;
             return;
         }
-        el.attachBtn.hidden = false;
         wl.setOnChange(function () {
-            refreshLoadoutNames(state.weaponItem).then(function () {
-                return refreshAttachmentStats();
-            }).then(function () {
+            if (wl.refreshDetailPanel && el.loadoutSlots && !el.loadoutSlots.hidden) {
+                wl.refreshDetailPanel(state.weaponItem, el.loadoutSlots);
+            }
+            refreshAttachmentStats().then(function () {
                 if (state.lastSimData) renderSimResult(state.lastSimData);
             });
         });
-        el.attachBtn.onclick = function () {
-            wl.openModal(weaponItem, el.attachBtn);
-        };
-        refreshLoadoutNames(weaponItem);
+        if (el.loadoutSlots && typeof wl.renderDetailPanel === 'function') {
+            wl.renderDetailPanel(weaponItem, el.loadoutSlots, {
+                compact: true,
+                hideCompactHeader: true,
+                slotLabelsOnly: true,
+                openAnchor: el.loadoutSlots,
+            });
+        } else if (el.loadoutSlots) {
+            el.loadoutSlots.hidden = true;
+            el.loadoutSlots.innerHTML = '';
+        }
         refreshAttachmentStats();
     }
 
@@ -1387,10 +1569,9 @@
         renderOutputImage(bp);
         renderMissions();
         renderMaterials();
-        if (el.attachBtn) el.attachBtn.hidden = true;
-        if (el.loadoutMount) {
-            el.loadoutMount.hidden = true;
-            el.loadoutMount.innerHTML = '';
+        if (el.loadoutSlots) {
+            el.loadoutSlots.hidden = true;
+            el.loadoutSlots.innerHTML = '';
         }
         if (el.attachStatSection) el.attachStatSection.hidden = true;
         if (el.attachStats) el.attachStats.innerHTML = '';
@@ -1416,9 +1597,39 @@
         return 'var(--bp-red)';
     }
 
-    function modifierAtQuality(mod, quality) {
+    function modifierAtQuality(mod, quality, baselineQuality) {
+        var type = String((mod && mod.value_range_type) || 'linear').trim();
+        if (type === 'linear_integer_additive') {
+            var segments = (mod && mod.value_segments) || [];
+            var q = Math.max(0, Math.min(1000, Number(quality) || 0));
+            var baseline =
+                baselineQuality != null
+                    ? Math.max(0, Math.min(1000, Number(baselineQuality) || 0))
+                    : defaultQuality();
+            var idx = -1;
+            var baseIdx = -1;
+            for (var s = 0; s < segments.length; s++) {
+                var seg = segments[s];
+                var min = Number(seg.quality_min) || 0;
+                var max = Number(seg.quality_max) || 1000;
+                if (q >= min && q <= max) idx = s;
+                if (baseline >= min && baseline <= max) baseIdx = s;
+            }
+            if (idx < 0) idx = segments.length ? segments.length - 1 : -1;
+            if (baseIdx < 0) baseIdx = segments.length ? segments.length - 1 : -1;
+            if (idx <= baseIdx) return { kind: 'additive', value: 0 };
+            var bonus = 0;
+            for (var i = baseIdx + 1; i <= idx; i++) {
+                var endVal = Number(segments[i].modifier_at_end);
+                var startVal = Number(segments[i].modifier_at_start);
+                bonus += Math.round(
+                    Number.isFinite(endVal) ? endVal : Number.isFinite(startVal) ? startVal : 1
+                );
+            }
+            return { kind: 'additive', value: bonus };
+        }
         var segments = (mod && mod.value_segments) || [];
-        var q = Math.max(0, Math.min(1000, Number(quality) || 0));
+        var q2 = Math.max(0, Math.min(1000, Number(quality) || 0));
         if (!segments.length && mod && mod.modifier_range) {
             var mr = mod.modifier_range;
             var qr = mod.quality_range || { min: 0, max: 1000 };
@@ -1433,22 +1644,28 @@
                 ];
             }
         }
-        for (var i = 0; i < segments.length; i++) {
-            var seg = segments[i];
-            var min = Number(seg.quality_min) || 0;
-            var max = Number(seg.quality_max) || 1000;
-            if (q < min || q > max) continue;
-            var span = max - min || 1;
-            var t = (q - min) / span;
-            var start = Number(seg.modifier_at_start) || 1;
-            var end = Number(seg.modifier_at_end) || 1;
-            return start + (end - start) * t;
+        for (var j = 0; j < segments.length; j++) {
+            var seg2 = segments[j];
+            var min2 = Number(seg2.quality_min) || 0;
+            var max2 = Number(seg2.quality_max) || 1000;
+            if (q2 < min2 || q2 > max2) continue;
+            var span = max2 - min2 || 1;
+            var t = (q2 - min2) / span;
+            var start = Number(seg2.modifier_at_start) || 1;
+            var end = Number(seg2.modifier_at_end) || 1;
+            return { kind: 'multiplier', value: start + (end - start) * t };
         }
-        return 1;
+        return { kind: 'multiplier', value: 1 };
     }
 
-    function formatModifierDelta(mult) {
-        var pct = Math.round((Number(mult) - 1) * 1000) / 10;
+    function formatModifierDelta(effect) {
+        if (!effect || effect.kind === 'additive') {
+            var add = effect && effect.value ? Number(effect.value) : 0;
+            if (!add) return '';
+            return (add > 0 ? '+' : '') + add;
+        }
+        var mult = Number(effect.value) || 1;
+        var pct = Math.round((mult - 1) * 1000) / 10;
         if (Math.abs(pct) < 0.05) return '';
         return (pct > 0 ? '+' : '') + pct + '%';
     }
@@ -1464,18 +1681,72 @@
         );
     }
 
-    function formatCraftStatValueHtml(st) {
-        var delta = st.delta_pct != null ? st.delta_pct : 0;
-        if (st.modifier_only) {
-            if (Math.abs(delta) < 0.05) {
-                return '<strong>×' + escapeHtml(String(st.multiplier)) + '</strong>';
+    function formatSimStatNumber(value) {
+        var n = Number(value);
+        if (!Number.isFinite(n)) return '—';
+        var abs = Math.abs(n);
+        if (abs >= 1e9) return (Math.round((n / 1e9) * 100) / 100) + 'G';
+        if (abs >= 1e6) return (Math.round((n / 1e6) * 100) / 100) + 'M';
+        if (abs >= 1e4) return Math.round(n).toLocaleString('zh-CN');
+        if (abs >= 100) return String(Math.round(n * 10) / 10);
+        if (abs >= 1) return String(Math.round(n * 100) / 100);
+        if (abs >= 0.001) return String(Math.round(n * 10000) / 10000);
+        return String(Math.round(n * 1e6) / 1e6);
+    }
+
+    function resolveCraftStatGainValue(st) {
+        if (st.gain_value != null && Number.isFinite(Number(st.gain_value))) {
+            return Number(st.gain_value);
+        }
+        if (st.base != null && st.final != null && Number.isFinite(st.base) && Number.isFinite(st.final)) {
+            return st.final - st.base;
+        }
+        if (st.gain_additive != null && st.gain_additive !== 0) return st.gain_additive;
+        if (st.additive != null && st.additive !== 0) return st.additive;
+        return null;
+    }
+
+    function formatCraftStatGainHtml(st) {
+        var parts = [];
+        var gainPct =
+            st.gain_pct != null
+                ? st.gain_pct
+                : st.multiplier != null
+                  ? Math.round((Number(st.multiplier) - 1) * 1000) / 10
+                  : st.delta_pct;
+        var gainVal = resolveCraftStatGainValue(st);
+        var up =
+            (gainPct != null && gainPct > 0) || (gainVal != null && gainVal > 0);
+        var down =
+            (gainPct != null && gainPct < 0) || (gainVal != null && gainVal < 0);
+        var cls =
+            'bp-sim-stat-gain' +
+            (up ? ' is-up' : down ? ' is-down' : '');
+
+        if (gainPct != null && Math.abs(gainPct) >= 0.05) {
+            var pctText = '增益 ' + (gainPct > 0 ? '+' : '') + gainPct + '%';
+            if (gainVal != null && Math.abs(gainVal) >= 0.001) {
+                pctText +=
+                    ' <span class="bp-sim-stat-gain-val">(' +
+                    escapeHtml((gainVal > 0 ? '+' : '') + formatSimStatNumber(gainVal)) +
+                    ')</span>';
             }
-            return (
-                '<strong>×' +
-                escapeHtml(String(st.multiplier)) +
-                '</strong>' +
-                formatCraftStatDelta(delta)
+            parts.push('<span class="' + cls + '">' + pctText + '</span>');
+        } else if (gainVal != null && Math.abs(gainVal) >= 0.001) {
+            parts.push(
+                '<span class="' +
+                    cls +
+                    '">增益 ' +
+                    escapeHtml((gainVal > 0 ? '+' : '') + formatSimStatNumber(gainVal)) +
+                    '</span>'
             );
+        }
+        return parts.join('');
+    }
+
+    function formatCraftStatValueHtml(st) {
+        if (st.modifier_only && st.final == null) {
+            return formatCraftStatGainHtml(st) || '<strong class="bp-sim-stat-modonly">—</strong>';
         }
         var finalVal = st.final != null ? st.final : st.base;
         var unitHtml = st.unit
@@ -1484,12 +1755,13 @@
         var attachTag = st.with_attachments
             ? ' <span class="bp-sim-stat-tag">含配件</span>'
             : '';
+        var gainHtml = st.modifiable ? formatCraftStatGainHtml(st) : '';
         return (
             '<strong>' +
-            escapeHtml(String(finalVal != null ? finalVal : '—')) +
+            escapeHtml(formatSimStatNumber(finalVal)) +
             '</strong>' +
             unitHtml +
-            formatCraftStatDelta(delta) +
+            gainHtml +
             attachTag
         );
     }
@@ -1500,15 +1772,24 @@
         var mods = ing.stat_modifiers || [];
         if (!mods.length) return;
         mods.forEach(function (mod) {
-            var mult = modifierAtQuality(mod, quality);
-            var pct = Math.round((mult - 1) * 1000) / 10;
+            var baseline = ing.initial_quality != null ? ing.initial_quality : defaultQuality();
+            var effect = modifierAtQuality(mod, quality, baseline);
+            var deltaText = formatModifierDelta(effect);
+            var isUp =
+                effect.kind === 'additive'
+                    ? effect.value > 0
+                    : Number(effect.value) > 1;
+            var isDown =
+                effect.kind === 'additive'
+                    ? effect.value < 0
+                    : Number(effect.value) < 1;
             var span = document.createElement('span');
             span.className =
                 'bp-mat__mod' +
-                (Math.abs(pct) < 0.05 ? '' : pct > 0 ? ' bp-mat__mod--up' : ' bp-mat__mod--down');
+                (!deltaText ? '' : isUp ? ' bp-mat__mod--up' : isDown ? ' bp-mat__mod--down' : '');
             span.textContent =
                 normalizeBlueprintStatLabelZh(mod.label_zh || mod.label || '属性') +
-                (formatModifierDelta(mult) ? ' ' + formatModifierDelta(mult) : '');
+                (deltaText ? ' ' + deltaText : '');
             container.appendChild(span);
         });
     }
@@ -1522,22 +1803,12 @@
         var qty =
             ing.kind === 'resource'
                 ? ing.quantity_scu != null
-                    ? ing.quantity_scu + ' SCU'
+                    ? formatScuQty(ing.quantity_scu)
                     : ''
                 : ing.quantity != null
                   ? '×' + ing.quantity
                   : '';
         var roleName = resolveRoleLabelZh(ing);
-        var roleStripHtml = hasRole
-            ? '<div class="bp-mat__role-strip" aria-label="用于部件：' +
-              escapeHtml(roleName) +
-              '">' +
-              '<span class="bp-mat__role-tag">部件</span>' +
-              '<span class="bp-mat__role-name">' +
-              escapeHtml(roleName) +
-              '</span>' +
-              '</div>'
-            : '';
         var hasMods = (ing.stat_modifiers || []).length > 0;
         var modsBlockHtml = hasMods
             ? '<div class="bp-mat__mods-wrap">' +
@@ -1545,36 +1816,76 @@
               '<div class="bp-mat__mods" data-mat-mods></div>' +
               '</div>'
             : '<div class="bp-mat__mods" data-mat-mods hidden></div>';
-        row.innerHTML =
-            '<div class="bp-mat__top">' +
-            '<span class="bp-mat__name">' +
-            escapeHtml(ing.name_zh || ing.name) +
-            '</span>' +
-            '<span class="bp-mat__qty">' +
-            escapeHtml(qty) +
-            '</span>' +
-            '<div class="bp-mat__quality">' +
-            '<input type="number" class="bp-mat__input" min="0" max="1000" step="1" value="' +
-            val +
-            '" aria-label="' +
-            escapeHtml(ing.name_zh || ing.name) +
-            ' 品质数值">' +
-            '</div>' +
-            '</div>' +
-            roleStripHtml +
-            modsBlockHtml +
-            '<div class="bp-mat__track">' +
-            '<div class="bp-mat__fill" style="width:' +
-            pct +
-            '%;background:linear-gradient(90deg, rgba(0,240,255,0.3), ' +
-            qualityColor(val) +
-            ')"></div>' +
-            '<input type="range" class="bp-mat__range" min="0" max="1000" step="1" value="' +
-            val +
-            '" aria-label="' +
-            escapeHtml(ing.name_zh || ing.name) +
-            ' 品质">' +
-            '</div>';
+
+        if (hasRole) {
+            row.innerHTML =
+                '<header class="bp-mat__part-head">' +
+                '<span class="bp-mat__role-tag">部件</span>' +
+                '<span class="bp-mat__role-name">' +
+                escapeHtml(roleName) +
+                '</span>' +
+                '</header>' +
+                '<div class="bp-mat__material">' +
+                '<span class="bp-mat__mat-label">材料</span>' +
+                '<span class="bp-mat__name">' +
+                escapeHtml(ing.name_zh || ing.name) +
+                '</span>' +
+                '<span class="bp-mat__qty">' +
+                escapeHtml(qty) +
+                '</span>' +
+                '</div>' +
+                modsBlockHtml +
+                '<div class="bp-mat__quality-row">' +
+                '<span class="bp-mat__quality-label">品质</span>' +
+                '<input type="number" class="bp-mat__input" min="0" max="1000" step="1" value="' +
+                val +
+                '" aria-label="' +
+                escapeHtml(roleName + ' ' + (ing.name_zh || ing.name)) +
+                ' 品质数值">' +
+                '</div>' +
+                '<div class="bp-mat__track">' +
+                '<div class="bp-mat__fill" style="width:' +
+                pct +
+                '%;background:linear-gradient(90deg, rgba(0,240,255,0.3), ' +
+                qualityColor(val) +
+                ')"></div>' +
+                '<input type="range" class="bp-mat__range" min="0" max="1000" step="1" value="' +
+                val +
+                '" aria-label="' +
+                escapeHtml(roleName + ' ' + (ing.name_zh || ing.name)) +
+                ' 品质">' +
+                '</div>';
+        } else {
+            row.innerHTML =
+                '<div class="bp-mat__top">' +
+                '<span class="bp-mat__name">' +
+                escapeHtml(ing.name_zh || ing.name) +
+                '</span>' +
+                '<span class="bp-mat__qty">' +
+                escapeHtml(qty) +
+                '</span>' +
+                '<div class="bp-mat__quality">' +
+                '<input type="number" class="bp-mat__input" min="0" max="1000" step="1" value="' +
+                val +
+                '" aria-label="' +
+                escapeHtml(ing.name_zh || ing.name) +
+                ' 品质数值">' +
+                '</div>' +
+                '</div>' +
+                modsBlockHtml +
+                '<div class="bp-mat__track">' +
+                '<div class="bp-mat__fill" style="width:' +
+                pct +
+                '%;background:linear-gradient(90deg, rgba(0,240,255,0.3), ' +
+                qualityColor(val) +
+                ')"></div>' +
+                '<input type="range" class="bp-mat__range" min="0" max="1000" step="1" value="' +
+                val +
+                '" aria-label="' +
+                escapeHtml(ing.name_zh || ing.name) +
+                ' 品质">' +
+                '</div>';
+        }
         var slider = row.querySelector('.bp-mat__range');
         var input = row.querySelector('.bp-mat__input');
         var fill = row.querySelector('.bp-mat__fill');
@@ -1599,27 +1910,7 @@
         if (!el.materials || !state.blueprint) return;
         el.materials.innerHTML = '';
         var ingredients = state.blueprint.ingredients || [];
-        var roleMats = ingredients.filter(function (ing) {
-            return !!resolveRoleLabelZh(ing);
-        });
-        var baseMats = ingredients.filter(function (ing) {
-            return !resolveRoleLabelZh(ing);
-        });
-
-        roleMats.forEach(function (ing) {
-            el.materials.appendChild(buildMaterialRow(ing));
-        });
-
-        if (roleMats.length && baseMats.length) {
-            var divider = document.createElement('div');
-            divider.className = 'bp-mat-divider';
-            divider.setAttribute('role', 'separator');
-            divider.setAttribute('aria-label', '基础材料');
-            divider.innerHTML = '<span class="bp-mat-divider__label">基础材料</span>';
-            el.materials.appendChild(divider);
-        }
-
-        baseMats.forEach(function (ing) {
+        ingredients.forEach(function (ing) {
             el.materials.appendChild(buildMaterialRow(ing));
         });
     }
@@ -1681,6 +1972,10 @@
             return Object.assign({}, st, {
                 final: combined,
                 delta_pct: deltaPct,
+                gain_value:
+                    st.base != null && Number.isFinite(st.base)
+                        ? Math.round((combined - st.base) * 100) / 100
+                        : st.gain_value,
                 with_attachments: true,
             });
         });
@@ -1769,7 +2064,10 @@
             var stats = mergeWeaponCraftWithAttachments(data.stats || []);
             stats.forEach(function (st) {
                 var li = document.createElement('li');
-                li.className = 'bp-sim-stat' + (st.modifiable ? ' bp-sim-stat--mod' : '');
+                li.className =
+                    'bp-sim-stat' +
+                    (st.modifiable ? ' bp-sim-stat--mod' : '') +
+                    (st.modifiable ? ' bp-sim-stat--bonus' : '');
                 li.innerHTML =
                     '<span class="bp-sim-stat-label">' +
                     escapeHtml(normalizeBlueprintStatLabelZh(st.label_zh)) +
@@ -1889,8 +2187,7 @@
         el.missionsBar = $('bpMissionsBar');
         el.missionCount = $('bpMissionCount');
         el.outputTags = $('bpOutputTags');
-        el.attachBtn = $('bpAttachBtn');
-        el.loadoutMount = $('bpLoadoutMount');
+        el.loadoutSlots = $('bpLoadoutSlots');
         el.attachStats = $('bpAttachStats');
         el.attachStatSection = $('bpAttachStatSection');
         el.statHint = $('bpStatHint');
@@ -1898,8 +2195,13 @@
         el.versionBadge = $('bpVersionBadge');
 
         parseUrlState();
+        applyPendingCraftDeepLink();
         sanitizeBlueprintRestoreFlag();
         applyBlueprintCraftReturnState();
+        if (!state.selectedId) {
+            var deepLinkId = readDeepLinkBlueprintId();
+            if (deepLinkId) state.selectedId = deepLinkId;
+        }
         bindEvents();
 
         fetchJson('/api/sc/blueprints/meta')
@@ -1910,23 +2212,11 @@
                 } else {
                     hideGate();
                 }
-                if (!visibleTypesForGroup(state.group).includes(state.type)) {
-                    var vis = visibleTypesForGroup(state.group);
-                    state.type = vis.length ? vis[0] : DEFAULT_TYPE_BY_GROUP[state.group];
-                }
-                if (!GROUP_ORDER.includes(state.group) || groupCount(state.group) === 0) {
-                    var firstGroup = GROUP_ORDER.find(function (g) {
-                        return groupCount(g) > 0;
-                    });
-                    if (firstGroup) {
-                        state.group = firstGroup;
-                        state.sector = GROUP_TO_SECTOR[firstGroup];
-                        var vis2 = visibleTypesForGroup(firstGroup);
-                        state.type = vis2.length ? vis2[0] : DEFAULT_TYPE_BY_GROUP[firstGroup];
-                    }
-                }
-                renderGroupSelect();
-                renderTypeSelect();
+                return resolveSelectedBlueprintNav();
+            })
+            .then(function () {
+                normalizeNavForMeta();
+                syncNavControlsFromState();
                 updateFootnote();
                 return loadAllBlueprints();
             })

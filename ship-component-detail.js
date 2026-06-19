@@ -701,9 +701,37 @@
         if (!els.blueprint) return;
         if (window.ShipComponentBlueprints && window.ShipComponentBlueprints.mount) {
             window.ShipComponentBlueprints.mount(els.blueprint, item);
+            updateNavBlueprintCraftLink(item);
             return;
         }
         els.blueprint.innerHTML = '<p class="sc-acquire-empty">蓝图模块未加载</p>';
+    }
+
+    function bindNavBlueprintCraftLink(link) {
+        if (!link || link.dataset.bpNavBound === '1') return;
+        link.dataset.bpNavBound = '1';
+        link.addEventListener('click', function () {
+            if (window.ShipComponentBlueprints && window.ShipComponentBlueprints.stashDetailReturnForCraft) {
+                window.ShipComponentBlueprints.stashDetailReturnForCraft(link);
+            }
+        });
+    }
+
+    async function updateNavBlueprintCraftLink(item) {
+        var link = document.querySelector('[data-nav-blueprint-page]');
+        if (!link || !item || !window.ShipComponentBlueprints) return;
+        bindNavBlueprintCraftLink(link);
+        try {
+            var bp = await window.ShipComponentBlueprints.fetchCraftBlueprint(item);
+            if (!bp || !bp.uuid) {
+                link.href = 'blueprint-crafting.html';
+                return;
+            }
+            var href = window.ShipComponentBlueprints.buildBlueprintCraftHref(bp);
+            if (href) link.href = href;
+        } catch (e) {
+            link.href = 'blueprint-crafting.html';
+        }
     }
 
     function renderLocations(item) {

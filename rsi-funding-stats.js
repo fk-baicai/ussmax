@@ -36,6 +36,24 @@
         return 'http://127.0.0.1:3789';
     }
 
+    function apiBaseCandidates() {
+        var seen = {};
+        var list = [];
+        function add(url) {
+            var u = String(url || '').replace(/\/$/, '');
+            if (!u || seen[u]) return;
+            seen[u] = true;
+            list.push(u);
+        }
+        add(apiBase());
+        var origin = window.location && window.location.origin;
+        var host = window.location && window.location.hostname;
+        if (origin && /^https?:\/\//i.test(origin)) add(origin);
+        if (host === 'localhost' || host === '[::1]' || host === '::1') add('http://localhost:3789');
+        add('http://127.0.0.1:3789');
+        return list;
+    }
+
     function formatInt(n) {
         var v = Math.round(Number(n));
         if (!isFinite(v)) return '—';
@@ -413,6 +431,14 @@
         if (updatedEl) updatedEl.hidden = true;
     }
 
+    function formatFetchError(err) {
+        var msg = (err && err.message) || '';
+        if (!msg || msg === 'Failed to fetch' || (err && err.name === 'TypeError')) {
+            return '无法连接后端 API，请确认：① backend 已启动（端口 3789）；② 使用 node frontend/dev-server.js 或 本地测试启动.bat 打开前端（不要用 npx serve）';
+        }
+        return msg;
+    }
+
     function renderError(msg) {
         if (chartEl) {
             chartEl.innerHTML =
@@ -423,24 +449,36 @@
     }
 
     async function fetchFromBackend() {
-        var url = apiBase() + '/api/rsi-funding-stats?_=' + Date.now();
-        var r = await fetch(url, {
-            cache: 'no-store',
-            headers: { Pragma: 'no-cache', 'Cache-Control': 'no-cache' },
-        });
-        var data = {};
-        try {
-            data = await r.json();
-        } catch (e) {
-            data = {};
+        var lastErr = null;
+        var bases = apiBaseCandidates();
+        for (var i = 0; i < bases.length; i++) {
+            var base = bases[i];
+            try {
+                var url = base + '/api/rsi-funding-stats?_=' + Date.now();
+                var r = await fetch(url, {
+                    cache: 'no-store',
+                    headers: { Pragma: 'no-cache', 'Cache-Control': 'no-cache' },
+                });
+                var data = {};
+                try {
+                    data = await r.json();
+                } catch (e) {
+                    data = {};
+                }
+                if (!r.ok || !data.ok) {
+                    var code = (data && data.code) || 'RSI_002';
+                    throw new Error(
+                        typeof UssApiError !== 'undefined'
+                            ? UssApiError.formatUserError(code)
+                            : '错误代码：' + code
+                    );
+                }
+                return data;
+            } catch (err) {
+                lastErr = err;
+            }
         }
-        if (!r.ok || !data.ok) {
-            var code = (data && data.code) || 'RSI_002';
-            throw new Error(
-                typeof UssApiError !== 'undefined' ? UssApiError.formatUserError(code) : '错误代码：' + code
-            );
-        }
-        return data;
+        throw lastErr || new Error('Failed to fetch');
     }
 
     async function loadStats(options) {
@@ -452,7 +490,7 @@
             render(data);
         } catch (err) {
             if (opts.silent && lastData) return;
-            renderError((err && err.message) || '获取资金统计失败');
+            renderError(formatFetchError(err));
         }
     }
 

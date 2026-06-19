@@ -28,7 +28,7 @@ html:has(body.bp-craft-body) {
     --bp-radius: 6px;
     --bp-radius-lg: 10px;
     --bp-header-offset: var(--navbar-height, calc(37px + 4rem));
-    --bp-page-pad-y: 4rem;
+    --bp-page-pad-y: 3rem;
     --bp-page-pad-bottom: 4rem;
     --bp-work-h: calc(100dvh - var(--bp-header-offset) - var(--bp-page-pad-y) - var(--bp-page-pad-bottom) - 0.5rem);
     --bp-missions-gap: 1.35rem;
@@ -102,8 +102,7 @@ html:has(body.bp-craft-body) {
 .bp-detail-body.is-hidden,
 #bpCraftEmpty.is-hidden,
 #bpMissionsBar.is-hidden,
-#bpAttachBtn[hidden],
-#bpLoadoutMount[hidden],
+#bpLoadoutSlots[hidden],
 #bpAttachStatSection[hidden],
 #bpComponentLink[hidden],
 #bpVersionBadge[hidden],
@@ -570,13 +569,48 @@ html:has(body.bp-craft-body) {
 }
 
 .bp-detail-empty__icon {
-    font-size: 2.5rem;
-    opacity: 0.55;
-    line-height: 1;
-    color: var(--bp-neon);
-    text-shadow:
-        0 0 16px rgba(95, 184, 255, 0.35);
-    animation: bp-empty-pulse 2.8s ease-in-out infinite;
+    position: relative;
+    width: 5.25rem;
+    height: 5.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.15rem;
+    animation: bp-empty-icon-float 3.6s ease-in-out infinite;
+}
+
+.bp-detail-empty__icon::before {
+    content: '';
+    position: absolute;
+    inset: -0.45rem;
+    border-radius: 50%;
+    border: 1px dashed rgba(0, 240, 255, 0.22);
+    animation: bp-empty-icon-orbit 14s linear infinite;
+}
+
+.bp-detail-empty__icon::after {
+    content: '';
+    position: absolute;
+    inset: -1.1rem;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 240, 255, 0.14) 0%, transparent 68%);
+    animation: bp-empty-icon-halo 2.8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.bp-detail-empty__icon-svg {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    animation: bp-empty-icon-glow 3.2s ease-in-out infinite;
+}
+
+.bp-detail-empty__icon-path {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: bp-empty-icon-breathe 3.6s ease-in-out infinite;
 }
 
 .bp-detail-empty__title {
@@ -754,6 +788,20 @@ html:has(body.bp-craft-body) {
 }
 
 .bp-hero__titles {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.bp-hero__title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.55rem;
+    min-width: 0;
+}
+
+.bp-hero__title-row .bp-hero__name {
+    flex: 0 1 auto;
     min-width: 0;
 }
 
@@ -798,7 +846,7 @@ html:has(body.bp-craft-body) {
 .bp-hero__name {
     margin: 0;
     font-family: var(--bp-font-digit);
-    font-size: clamp(1rem, 2vw, 1.22rem);
+    font-size: clamp(1.22rem, 2.6vw, 1.55rem);
     font-weight: 700;
     letter-spacing: 0.04em;
     color: #f8fdff;
@@ -824,31 +872,57 @@ html:has(body.bp-craft-body) {
     flex-wrap: wrap;
     align-items: center;
     justify-content: flex-end;
-    gap: 0.45rem;
+    gap: 0.4rem 0.5rem;
     flex-shrink: 0;
     padding-top: 0.05rem;
     max-width: 100%;
 }
 
-.bp-loadout-mount {
-    flex: 1 1 auto;
+.bp-loadout-slots {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0;
+    border: none;
     min-width: 0;
-    margin-right: auto;
 }
 
-.bp-loadout-mount .sc-loc-path--loadout {
+.bp-loadout-slots .sc-loadout-detail--compact {
+    display: block;
+}
+
+.bp-loadout-slots .sc-loadout-detail__slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.34rem;
+    margin-bottom: 0;
     justify-content: flex-start;
 }
 
-.bp-loadout-mount .sc-loc-path-row {
-    max-width: 100%;
+.bp-loadout-slots .sc-loadout-detail-chip {
+    min-width: 0;
+    max-width: none;
+    padding: 0.3rem 0.52rem;
 }
 
-.bp-loadout-mount .sc-loc-level--1 {
-    overflow: hidden;
-    text-overflow: ellipsis;
+.bp-loadout-slots .sc-loadout-detail-chip--label-only {
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+}
+
+.bp-loadout-slots .sc-loadout-detail-chip__label {
+    font-size: 0.76rem;
+    line-height: 1.3;
     white-space: nowrap;
-    max-width: min(14rem, 42vw);
+}
+
+.bp-loadout-slots .sc-loadout-slot-size {
+    font-size: 0.66rem;
+    padding: 0.06rem 0.3rem;
+}
+
+.bp-hero__actions .bp-hero__link {
+    align-self: center;
 }
 
 .bp-tag--default {
@@ -858,9 +932,9 @@ html:has(body.bp-craft-body) {
 }
 
 .bp-hero__sub {
-    margin: 0.3rem 0 0;
-    font-size: 0.78rem;
-    color: rgba(184, 220, 240, 0.7);
+    margin: 0.32rem 0 0;
+    font-size: clamp(0.88rem, 1.6vw, 0.98rem);
+    color: rgba(184, 220, 240, 0.78);
     line-height: 1.4;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -878,6 +952,12 @@ html:has(body.bp-craft-body) {
     color: #b8f4ff;
     background: rgba(0, 240, 255, 0.08);
     box-shadow: inset 0 0 8px rgba(0, 240, 255, 0.06);
+}
+
+.bp-tag--usage {
+    border-color: rgba(0, 240, 255, 0.42);
+    color: #d4f8ff;
+    background: rgba(0, 240, 255, 0.12);
 }
 
 .bp-tag--warn {
@@ -1215,6 +1295,46 @@ html:has(body.bp-craft-body) {
     border-color: rgba(0, 240, 255, 0.28);
     background: linear-gradient(135deg, rgba(95, 184, 255, 0.06), rgba(8, 18, 32, 0.65));
     box-shadow: inset 0 0 16px rgba(0, 240, 255, 0.03);
+    padding: 0.45rem 0.5rem 0.4rem;
+}
+
+.bp-mat__part-head {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.35rem;
+    padding-bottom: 0.28rem;
+    border-bottom: 1px solid rgba(0, 240, 255, 0.14);
+}
+
+.bp-mat__material {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 0.35rem 0.5rem;
+    align-items: center;
+    margin-bottom: 0.28rem;
+}
+
+.bp-mat__mat-label,
+.bp-mat__quality-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(184, 220, 240, 0.52);
+}
+
+.bp-mat__quality-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.4rem;
+    align-items: center;
+    margin-bottom: 0.22rem;
+}
+
+.bp-mat__quality-row .bp-mat__input {
+    justify-self: end;
+    width: 3.4rem;
 }
 
 .bp-mat--base {
@@ -1528,6 +1648,48 @@ html:has(body.bp-craft-body) {
     color: var(--bp-red);
 }
 
+.bp-sim-stat-gain {
+    display: inline-block;
+    margin-left: 0.45rem;
+    padding: 0.06rem 0.35rem;
+    border-radius: 3px;
+    font-family: var(--bp-font-digit);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    border: 1px solid rgba(0, 240, 255, 0.18);
+    background: rgba(0, 240, 255, 0.06);
+    vertical-align: middle;
+}
+
+.bp-sim-stat-gain.is-up {
+    color: #8dffb8;
+    border-color: rgba(57, 255, 154, 0.28);
+    background: rgba(57, 255, 154, 0.08);
+}
+
+.bp-sim-stat-gain.is-down {
+    color: #ffb8ae;
+    border-color: rgba(255, 120, 100, 0.28);
+    background: rgba(255, 120, 100, 0.08);
+}
+
+.bp-sim-stat-gain-val {
+    font-family: var(--bp-font-digit);
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.bp-sim-stat-gain.is-up .bp-sim-stat-gain-val {
+    color: #7ee8ff;
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.45);
+}
+
+.bp-sim-stat-gain.is-down .bp-sim-stat-gain-val {
+    color: #ffd4a8;
+    text-shadow: 0 0 8px rgba(255, 180, 100, 0.35);
+}
+
 .bp-stat-note {
     margin: 0.45rem 0 0;
     font-size: 0.72rem;
@@ -1569,73 +1731,130 @@ html:has(body.bp-craft-body) {
     min-height: 0;
 }
 
+.bp-mission-wrap .sc-blueprint-mission-table-wrap {
+    --sc-bp-mission-cols: minmax(0, 1fr) 3.1rem 4.15rem 0.85rem;
+    margin-top: 0;
+}
+
+.bp-mission-wrap .sc-blueprint-mission-table-head {
+    display: none;
+}
+
 .bp-mission-wrap .sc-blueprint-mission-list {
     margin: 0;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.5rem 0.75rem;
+    column-gap: 1.45rem;
+    row-gap: 0;
     align-items: start;
 }
 
 .bp-mission-wrap .sc-blueprint-mission-item {
-    border: 1px solid rgba(0, 240, 255, 0.18);
-    border-radius: var(--bp-radius);
-    background: rgba(2, 8, 18, 0.65);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    border-bottom: 1px solid rgba(0, 240, 255, 0.12);
     min-width: 0;
     overflow: hidden;
-    transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+    transition: none;
 }
 
-.bp-mission-wrap .sc-blueprint-mission-item:last-child {
-    border-bottom: 1px solid rgba(0, 240, 255, 0.18);
+/* 双列时禁用列表页 nth-child(even)（只染右列）；改为按行同步隔行底色 */
+.bp-mission-wrap .sc-blueprint-mission-item:nth-child(even) .sc-blueprint-mission-toggle {
+    background: transparent;
+}
+
+.bp-mission-wrap .sc-blueprint-mission-item:nth-child(4n + 3) .sc-blueprint-mission-toggle,
+.bp-mission-wrap .sc-blueprint-mission-item:nth-child(4n + 4) .sc-blueprint-mission-toggle {
+    background: rgba(95, 184, 255, 0.04);
 }
 
 .bp-mission-wrap .sc-blueprint-mission-item.is-open {
-    border-color: rgba(95, 184, 255, 0.4);
-    background: linear-gradient(155deg, rgba(95, 184, 255, 0.08), rgba(8, 18, 32, 0.88));
-    box-shadow:
-        0 0 20px rgba(95, 184, 255, 0.08),
-        0 8px 24px rgba(0, 0, 0, 0.32),
-        inset 0 1px 0 rgba(95, 184, 255, 0.1);
+    background: transparent;
+    box-shadow: none;
     z-index: 1;
 }
 
-.bp-mission-wrap[data-blueprint-panel] .sc-blueprint-mission-list {
-    margin-left: 0;
+.bp-mission-wrap .sc-blueprint-mission-item.is-open .sc-blueprint-mission-toggle {
+    background: rgba(95, 184, 255, 0.1);
+    color: var(--bp-accent-hi);
+}
+
+.bp-mission-wrap[data-blueprint-panel] .sc-blueprint-mission-toggle,
+.bp-mission-wrap .sc-blueprint-mission-toggle {
+    display: grid;
+    grid-template-columns: var(--sc-bp-mission-cols);
+    align-items: center;
+    column-gap: 0.62rem;
+    width: 100%;
+    color: var(--bp-text);
+    padding: 0.48rem 0.55rem;
+    font-family: var(--bp-font-ui);
+    transition: color 0.15s, background 0.15s;
+}
+
+.bp-mission-wrap .sc-blueprint-mission-title {
+    min-width: 0;
+    padding-left: 0;
+    font-size: 0.9rem;
+    line-height: 1.38;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    word-break: normal;
+}
+
+.bp-mission-wrap .sc-blueprint-mission-scope,
+.bp-mission-wrap .sc-blueprint-mission-variants {
+    margin-left: 0.28rem;
+    font-size: 0.62rem;
+}
+
+.bp-mission-wrap .sc-blueprint-mission-type {
+    justify-self: start;
+    max-width: 100%;
+    font-size: 0.64rem;
+    padding: 0.08rem 0.28rem;
+    margin-right: 0.15rem;
+}
+
+.bp-mission-wrap .sc-blueprint-mission-reward {
+    justify-self: end;
+    padding-right: 0.05rem;
+    font-size: 0.76rem;
+}
+
+.bp-mission-wrap .sc-blueprint-mission-chevron {
+    justify-self: end;
+    margin-top: 0;
+    margin-right: 0.05rem;
 }
 
 .bp-mission-wrap .sc-blueprint-mission-detail {
-    padding: 0 0.65rem 0.65rem;
-    max-height: min(68vh, 520px);
+    padding: 0 0.58rem 0.58rem;
+    max-height: min(75vh, 720px);
     overflow-x: hidden;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: rgba(0, 240, 255, 0.42) rgba(4, 12, 22, 0.55);
 }
 
+.bp-mission-wrap .sc-blueprint-mission-item.is-open .sc-blueprint-mission-detail {
+    min-height: 18rem;
+}
+
 .bp-mission-wrap .sc-blueprint-mission-detail-inner {
-    padding: 0.5rem 0.4rem 0.65rem;
+    padding: 0.45rem 0.15rem 0.55rem;
+    min-width: 0;
 }
 
 .bp-mission-wrap[data-blueprint-panel] .sc-blueprint-mission-detail-inner {
-    padding: 0.5rem 0.4rem 0.65rem;
-}
-
-.bp-mission-wrap[data-blueprint-panel] .sc-blueprint-mission-toggle,
-.bp-mission-wrap .sc-blueprint-mission-toggle {
-    color: var(--bp-text);
-    padding: 0.58rem 0.85rem 0.58rem 0.65rem;
-    font-family: var(--bp-font-ui);
-    transition: color 0.15s, background 0.15s;
-}
-
-.bp-mission-wrap .sc-blueprint-mission-item.is-open .sc-blueprint-mission-toggle {
-    color: var(--bp-accent-hi);
-    text-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+    padding: 0.45rem 0.1rem 0.55rem;
+    min-width: 0;
 }
 
 .bp-mission-wrap[data-blueprint-panel] .sc-blueprint-mission-section {
-    padding: 0.65rem 0.35rem 0.7rem;
+    padding: 0.55rem 0.1rem 0.6rem;
 }
 
 .bp-mission-wrap[data-blueprint-panel] .sc-blueprint-mission-section:first-child {
@@ -1954,12 +2173,7 @@ html:has(body.bp-craft-body)::-webkit-scrollbar-thumb {
     .bp-hero__actions {
         justify-content: flex-start;
         width: 100%;
-        gap: 0.45rem 0.55rem;
-    }
-
-    .bp-loadout-mount {
-        flex: 1 1 100%;
-        margin-right: 0;
+        gap: 0.4rem 0.5rem;
     }
 
     .bp-hero__quality {
@@ -2079,25 +2293,13 @@ html:has(body.bp-craft-body)::-webkit-scrollbar-thumb {
         justify-content: flex-start;
         flex-wrap: wrap;
         width: 100%;
-        gap: 0.45rem 0.55rem;
+        gap: 0.4rem 0.5rem;
         padding: 0.35rem 0 0.45rem;
         border-bottom: 1px solid rgba(0, 240, 255, 0.12);
     }
 
-    .bp-loadout-mount {
-        flex: 1 1 100%;
-        margin-right: 0;
-        order: 3;
-    }
-
-    .bp-craft-body .sc-loadout-btn {
-        order: 1;
-        min-height: 40px;
-        padding: 0.35rem 0.85rem;
-    }
-
     .bp-hero__link {
-        order: 2;
+        order: 1;
         display: inline-flex;
         align-items: center;
         min-height: 40px;
@@ -2109,11 +2311,12 @@ html:has(body.bp-craft-body)::-webkit-scrollbar-thumb {
     }
 
     .bp-hero__name {
-        font-size: 1.05rem;
+        font-size: 1.22rem;
         line-height: 1.3;
     }
 
     .bp-hero__sub {
+        font-size: 0.9rem;
         white-space: normal;
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -2218,6 +2421,40 @@ html:has(body.bp-craft-body)::-webkit-scrollbar-thumb {
 @media (max-width: 720px) {
     .bp-mission-wrap .sc-blueprint-mission-list {
         grid-template-columns: 1fr;
+    }
+
+    .bp-mission-wrap .sc-blueprint-mission-table-wrap {
+        --sc-bp-mission-cols: minmax(0, 1fr) 3.2rem 4.75rem 1rem;
+    }
+
+    .bp-mission-wrap .sc-blueprint-mission-item:nth-child(4n + 3) .sc-blueprint-mission-toggle,
+    .bp-mission-wrap .sc-blueprint-mission-item:nth-child(4n + 4) .sc-blueprint-mission-toggle {
+        background: transparent;
+    }
+
+    .bp-mission-wrap .sc-blueprint-mission-item:nth-child(even) .sc-blueprint-mission-toggle {
+        background: rgba(95, 184, 255, 0.04);
+    }
+
+    .bp-mission-wrap[data-blueprint-panel] .sc-blueprint-mission-toggle,
+    .bp-mission-wrap .sc-blueprint-mission-toggle {
+        padding: 0.5rem 0.75rem;
+        column-gap: 0.55rem;
+    }
+
+    .bp-mission-wrap .sc-blueprint-mission-title {
+        font-size: 0.9rem;
+    }
+
+    .bp-mission-wrap .sc-blueprint-mission-type {
+        justify-self: start;
+        font-size: 0.64rem;
+        padding: 0.1rem 0.34rem;
+    }
+
+    .bp-mission-wrap .sc-blueprint-mission-reward {
+        font-size: 0.82rem;
+        padding-right: 0.15rem;
     }
 }
 
@@ -2367,6 +2604,31 @@ html:has(body.bp-craft-body)::-webkit-scrollbar-thumb {
 @keyframes bp-empty-pulse {
     0%, 100% { opacity: 0.5; transform: scale(1); }
     50% { opacity: 0.75; transform: scale(1.04); }
+}
+
+@keyframes bp-empty-icon-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-7px); }
+}
+
+@keyframes bp-empty-icon-orbit {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes bp-empty-icon-halo {
+    0%, 100% { opacity: 0.45; transform: scale(0.96); }
+    50% { opacity: 0.85; transform: scale(1.06); }
+}
+
+@keyframes bp-empty-icon-glow {
+    0%, 100% { filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.28)); }
+    50% { filter: drop-shadow(0 0 18px rgba(57, 255, 154, 0.42)) drop-shadow(0 0 28px rgba(0, 240, 255, 0.22)); }
+}
+
+@keyframes bp-empty-icon-breathe {
+    0%, 100% { transform: scale(1); opacity: 0.88; }
+    50% { transform: scale(1.05); opacity: 1; }
 }
 
 /* —— HUD 角标 —— */

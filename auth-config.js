@@ -11,10 +11,22 @@
     var h = (window.location && window.location.hostname) || '';
     var PRODUCTION_SITE_HOSTS = ['ussxc.org', 'www.ussxc.org'];
 
+    function isPrivateLanHost(host) {
+        if (!host) return false;
+        host = String(host).toLowerCase();
+        if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(host)) return true;
+        if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) return true;
+        if (/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(host)) return true;
+        return false;
+    }
+
     var isLocal =
         h === 'localhost' ||
         h === '127.0.0.1' ||
+        h === '[::1]' ||
+        h === '::1' ||
         /^127\.\d+\.\d+\.\d+$/.test(h) ||
+        isPrivateLanHost(h) ||
         (window.location && window.location.protocol === 'file:');
 
     var isProductionSite =
@@ -24,7 +36,19 @@
         window.USS_AUTH_SAME_ORIGIN === 1;
 
     if (isLocal) {
-        window.USS_AUTH_API_BASE = 'http://127.0.0.1:3789';
+        var origin = window.location && window.location.origin;
+        var port = window.location && window.location.port;
+        // 本地 dev-server(8080) 或 backend 静态(3789)：走同源 /api，避免 localhost↔127.0.0.1 跨主机被浏览器拦截
+        if (origin && /^https?:\/\//i.test(origin) && (port === '8080' || port === '3789')) {
+            window.USS_AUTH_API_BASE = String(origin).replace(/\/$/, '');
+            return;
+        }
+        var pageHost = (window.location && window.location.hostname) || '127.0.0.1';
+        if (pageHost === 'localhost' || pageHost === '[::1]' || pageHost === '::1') {
+            window.USS_AUTH_API_BASE = 'http://localhost:3789';
+        } else {
+            window.USS_AUTH_API_BASE = 'http://127.0.0.1:3789';
+        }
         return;
     }
 

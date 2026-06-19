@@ -8,7 +8,7 @@
     var listCache = Object.create(null);
     var detailCache = Object.create(null);
     var craftBlueprintCache = Object.create(null);
-    var DETAIL_SCHEMA_VERSION = 14;
+    var DETAIL_SCHEMA_VERSION = 15;
 
     var GROUP_TO_SECTOR = {
         component: 'ship',
@@ -509,7 +509,7 @@
                     {
                         component_id: data.item.id_item || data.item.uuid,
                         component_type: data.item.type,
-                        component_group: null,
+                        component_group: inferNavGroupFromItemType(data.item.type),
                     },
                     navContext
                 );
@@ -543,7 +543,7 @@
                     {
                         component_id: exact.id_item,
                         component_type: exact.type,
-                        component_group: null,
+                        component_group: inferNavGroupFromItemType(exact.type),
                     },
                     navContext
                 );
@@ -910,24 +910,61 @@
         );
     }
 
-    function renderMissionSummaryMeta(m) {
-        var html = '';
-        var dropLabel = formatBlueprintDropLabel(m.chance);
-        if (dropLabel) {
-            html += '<span class="sc-blueprint-mission-scope">' + escapeHtml(dropLabel) + '</span>';
+    function missionTypeLabel(m) {
+        return (m && (m.mission_type_zh || m.mission_type)) || '';
+    }
+
+    function missionAuecLabel(m) {
+        var label = m && (m.reward_auec_label || '');
+        if (!label && m && m.reward_min != null && Number(m.reward_min) > 0) {
+            label = Number(m.reward_min).toLocaleString('zh-CN') + ' aUEC';
         }
-        if (m.variant_count != null && Number(m.variant_count) > 1) {
-            html +=
-                '<span class="sc-blueprint-mission-variants">' +
-                escapeHtml(String(m.variant_count) + ' 个变体') +
-                '</span>';
+        return label || '';
+    }
+
+    function renderMissionTypeCell(m) {
+        var typeLabel = missionTypeLabel(m);
+        if (!typeLabel) {
+            return '<span class="sc-blueprint-mission-type sc-blueprint-mission-type--empty">—</span>';
         }
-        return html;
+        return '<span class="sc-blueprint-mission-type">' + escapeHtml(typeLabel) + '</span>';
+    }
+
+    function renderMissionRewardCell(m) {
+        var auecLabel = missionAuecLabel(m);
+        if (!auecLabel) {
+            return '<span class="sc-blueprint-mission-reward sc-blueprint-mission-reward--empty">—</span>';
+        }
+        return (
+            '<span class="sc-blueprint-mission-reward sc-price">' + escapeHtml(auecLabel) + '</span>'
+        );
+    }
+
+    function renderMissionTableHeadHtml() {
+        return (
+            '<div class="sc-blueprint-mission-table-head" aria-hidden="true">' +
+            '<span class="sc-bp-mission-th sc-bp-mission-th--name">任务</span>' +
+            '<span class="sc-bp-mission-th sc-bp-mission-th--type">类型</span>' +
+            '<span class="sc-bp-mission-th sc-bp-mission-th--reward">aUEC</span>' +
+            '<span class="sc-bp-mission-th sc-bp-mission-th--exp"></span>' +
+            '</div>'
+        );
     }
 
     function renderMissionItem(m, expandedId) {
         var ref = missionRef(m);
         var isOpen = ref && expandedId === ref;
+        var titleSuffix = '';
+        var dropLabel = formatBlueprintDropLabel(m.chance);
+        if (dropLabel) {
+            titleSuffix = ' <span class="sc-blueprint-mission-scope">' + escapeHtml(dropLabel) + '</span>';
+        }
+        if (m.variant_count != null && Number(m.variant_count) > 1) {
+            titleSuffix +=
+                ' <span class="sc-blueprint-mission-variants">' +
+                escapeHtml(String(m.variant_count) + ' 变体') +
+                '</span>';
+        }
 
         var html =
             '<li class="sc-blueprint-mission-item' +
@@ -938,12 +975,12 @@
             '" aria-expanded="' +
             (isOpen ? 'true' : 'false') +
             '">' +
-            '<span class="sc-blueprint-mission-toggle-main">' +
             '<span class="sc-blueprint-mission-title">' +
             escapeHtml(missionDisplayTitle(m)) +
+            titleSuffix +
             '</span>' +
-            renderMissionSummaryMeta(m) +
-            '</span>' +
+            renderMissionTypeCell(m) +
+            renderMissionRewardCell(m) +
             '<span class="sc-blueprint-mission-chevron" aria-hidden="true"></span>' +
             '</button>';
 
@@ -1022,11 +1059,13 @@
         if (!missions || !missions.length) {
             return '<p class="sc-acquire-empty">暂无蓝图解锁任务</p>';
         }
-        var html = '<ul class="sc-blueprint-mission-list">';
+        var html = '<div class="sc-blueprint-mission-table-wrap">';
+        html += renderMissionTableHeadHtml();
+        html += '<ul class="sc-blueprint-mission-list">';
         missions.forEach(function (m) {
             html += renderMissionItem(m, expandedId);
         });
-        html += '</ul>';
+        html += '</ul></div>';
         return html;
     }
 
@@ -1037,19 +1076,34 @@
             url.searchParams.set('blueprint', blueprint.uuid);
             if (blueprint.nav_group) url.searchParams.set('group', blueprint.nav_group);
             if (blueprint.nav_type) url.searchParams.set('type', blueprint.nav_type);
+            if (blueprint.component_id) {
+                url.searchParams.set('component', blueprint.component_id);
+            }
             url.searchParams.set('sector', GROUP_TO_SECTOR[blueprint.nav_group] || 'ship');
             return url.pathname + url.search;
         } catch (e) {
-            return (
-                'blueprint-crafting.html?blueprint=' + encodeURIComponent(String(blueprint.uuid))
-            );
+            var fallback =
+                'blueprint-crafting.html?blueprint=' + encodeURIComponent(String(blueprint.uuid));
+            if (blueprint.component_id) {
+                fallback += '&component=' + encodeURIComponent(String(blueprint.component_id));
+            }
+            return fallback;
         }
     }
 
-    function stashDetailReturnForCraft() {
+    function stashDetailReturnForCraft(linkEl) {
         try {
             sessionStorage.setItem('scBlueprintCraftReturnUrl', window.location.pathname + window.location.search);
             sessionStorage.setItem('scBlueprintCraftRestorePending', '1');
+            var href = linkEl && (linkEl.getAttribute('href') || linkEl.href);
+            if (!href) return;
+            var url = new URL(href, window.location.href);
+            var bp = url.searchParams.get('blueprint');
+            var group = url.searchParams.get('group');
+            var type = url.searchParams.get('type');
+            if (bp) sessionStorage.setItem('scBlueprintCraftPendingBlueprint', bp);
+            if (group) sessionStorage.setItem('scBlueprintCraftPendingGroup', group);
+            if (type) sessionStorage.setItem('scBlueprintCraftPendingType', type);
         } catch (e) {
             /* ignore */
         }
@@ -1092,6 +1146,12 @@
     }
 
     function wrapBlueprintPanelHtml(craftBanner, missionsHtml) {
+        if (craftBanner && missionsHtml && missionsHtml.indexOf('sc-blueprint-mission-table-wrap') >= 0) {
+            return missionsHtml.replace(
+                '<div class="sc-blueprint-mission-table-wrap">',
+                '<div class="sc-blueprint-mission-table-wrap">' + craftBanner
+            );
+        }
         return (craftBanner || '') + (missionsHtml || '');
     }
 
@@ -1272,7 +1332,7 @@
         container.dataset.blueprintWired = '1';
         container.addEventListener('mousedown', function (ev) {
             var craftLink = ev.target.closest('[data-craft-blueprint-link]');
-            if (craftLink && container.contains(craftLink)) stashDetailReturnForCraft();
+            if (craftLink && container.contains(craftLink)) stashDetailReturnForCraft(craftLink);
             var chipLink = ev.target.closest('.sc-mission-chip--link[href]');
             if (chipLink && container.contains(chipLink)) stashListReturnForDetailNav();
         });
@@ -1302,8 +1362,13 @@
     function inferNavGroupFromItemType(typeKey) {
         var key = String(typeKey || '').trim();
         if (!key) return 'component';
-        if (key === 'ship_weapon' || key === 'ship_turret' || key === 'ship_missile' || key === 'missile_rack') return 'weapon';
+        if (key === 'ship_weapon' || key === 'ship_turret' || key === 'ship_missile' || key === 'missile_rack') {
+            return 'weapon';
+        }
         if (key === 'mining_laser' || key === 'ship_module') return 'mining';
+        if (key === 'personal_weapon' || key.indexOf('weapon_') === 0) return 'fps_weapon';
+        if (key === 'personal_armor' || key.indexOf('armor_') === 0) return 'fps_armor';
+        if (key === 'magazine' || key.indexOf('attachment_') === 0) return 'fps_magazine';
         return 'component';
     }
 
@@ -1385,6 +1450,7 @@
         fetchBlueprintMissions: fetchBlueprintMissions,
         fetchCraftBlueprint: fetchCraftBlueprint,
         buildBlueprintCraftHref: buildBlueprintCraftHref,
+        stashDetailReturnForCraft: stashDetailReturnForCraft,
         fetchMissionDetail: fetchMissionDetail,
         renderMissionListHtml: renderMissionListHtml,
         clearCache: function () {

@@ -255,11 +255,19 @@ body.home-page-body .nav-mega-panel {
  color: #8ee0ff;
 }
 
-/* 舰船 / 装备 mega：左列竖排 2 项，右侧 1 项 */
-#navMegaShip .nav-mega-list,
+/* 舰船 mega：首行 3 列（组件 / 武器 / 燃料喷嘴），次行 2 列 */
+#navMegaShip .nav-mega-list {
+ display: grid;
+ grid-template-columns: repeat(3, minmax(200px, max-content));
+ column-gap: 5rem;
+ row-gap: 1.15rem;
+ align-items: start;
+}
+
+/* 装备 mega：每行横排 2 项，满行换行 */
 #navMegaEquipment .nav-mega-list {
  display: grid;
- grid-template-columns: minmax(220px, max-content) minmax(180px, max-content);
+ grid-template-columns: repeat(2, minmax(220px, max-content));
  column-gap: 5rem;
  row-gap: 1.15rem;
  align-items: start;
@@ -267,20 +275,16 @@ body.home-page-body .nav-mega-panel {
 
 #navMegaShip .nav-mega-link-row,
 #navMegaEquipment .nav-mega-link-row {
- display: flex;
- flex-direction: column;
- gap: 1.15rem;
+ display: contents;
+}
+
+#navMegaShip .nav-mega-list > li,
+#navMegaEquipment .nav-mega-list > li {
  margin: 0;
 }
 
-#navMegaShip .nav-mega-list > li:not(.nav-mega-link-row),
-#navMegaEquipment .nav-mega-list > li:not(.nav-mega-link-row) {
- align-self: start;
- margin: 0;
-}
-
-#navMegaShip .nav-mega-link-row > .nav-mega-link,
-#navMegaEquipment .nav-mega-link-row > .nav-mega-link {
+#navMegaShip .nav-mega-link,
+#navMegaEquipment .nav-mega-link {
  flex: 0 0 auto;
  max-width: 28rem;
 }

@@ -7,7 +7,7 @@
     <meta name="description" content="星际公民蓝图制造模拟：选择蓝图、配置矿石品质，预测成品属性。">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Rajdhani:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap">
-    <link rel="stylesheet" href="blueprint-crafting.css?v=37">
+    <link rel="stylesheet" href="blueprint-crafting.css?v=68">
     <link rel="stylesheet" href="ship-components.css">
     <link rel="icon" href="/favicon.ico" sizes="48x48">
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
@@ -57,10 +57,9 @@
         <div class="nav-mega-inner">
             <div class="nav-mega-col">
                 <ul class="nav-mega-list">
-                    <li class="nav-mega-link-row"><a href="ship-components?group=component" class="nav-mega-link" data-nav-ship-group="component" id="navMegaLinkShipComponent"><span class="nav-mega-link-title">舰船组件</span><span class="nav-mega-link-desc">散热 · 电源 · 护盾 · 量子驱动器 · 跳跃驱动器 · 雷达</span></a><a href="ship-components?group=weapon" class="nav-mega-link" data-nav-ship-group="weapon" id="navMegaLinkShipWeapon"><span class="nav-mega-link-title">舰船武器</span><span class="nav-mega-link-desc">舰炮 · 导弹 · 导弹架 · 舰船炮台</span></a></li>
+                    <li class="nav-mega-link-row"><a href="ship-components?group=component" class="nav-mega-link" data-nav-ship-group="component" id="navMegaLinkShipComponent"><span class="nav-mega-link-title">舰船组件</span><span class="nav-mega-link-desc">散热 · 电源 · 护盾 · 量子驱动器 · 跳跃驱动器 · 雷达</span></a><a href="ship-components?group=weapon" class="nav-mega-link" data-nav-ship-group="weapon" id="navMegaLinkShipWeapon"><span class="nav-mega-link-title">舰船武器</span><span class="nav-mega-link-desc">舰炮 · 导弹 · 导弹架 · 舰船炮台</span></a><a href="ship-components?group=fuel_nozzle" class="nav-mega-link" data-nav-ship-group="fuel_nozzle" id="navMegaLinkShipFuelNozzle"><span class="nav-mega-link-title">燃料喷嘴</span><span class="nav-mega-link-desc">氢燃料 · 量子燃料</span></a></li>
                     <li class="nav-mega-link-row"><a href="ship-components?group=mining" class="nav-mega-link" data-nav-ship-group="mining" id="navMegaLinkShipMining"><span class="nav-mega-link-title">舰船矿头</span><span class="nav-mega-link-desc">矿头 · 模组</span></a><a href="ship-components?group=salvage" class="nav-mega-link" data-nav-ship-group="salvage" id="navMegaLinkShipSalvage"><span class="nav-mega-link-title">打捞模组</span><span class="nav-mega-link-desc">刮削模块</span></a></li>
-                    <li><a href="ship-components?group=fuel_nozzle" class="nav-mega-link" data-nav-ship-group="fuel_nozzle" id="navMegaLinkShipFuelNozzle"><span class="nav-mega-link-title">燃料喷嘴</span><span class="nav-mega-link-desc">氢燃料 · 量子燃料</span></a></li>
-                </ul>
+</ul>
             </div>
         </div>
     </div>
@@ -143,7 +142,31 @@
 
             <section class="bp-detail" aria-label="蓝图详情">
                 <div id="bpCraftEmpty" class="bp-detail-empty">
-                    <span class="bp-detail-empty__icon" aria-hidden="true">📦</span>
+                    <div class="bp-detail-empty__icon" aria-hidden="true">
+                        <svg class="bp-detail-empty__icon-svg" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" focusable="false">
+                            <defs>
+                                <linearGradient id="bpEmptyIconGrad" x1="12%" y1="18%" x2="88%" y2="82%" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#5fb8ff">
+                                        <animate attributeName="stop-color" values="#5fb8ff;#00f0ff;#8ee0ff;#5fb8ff" dur="4.8s" repeatCount="indefinite"/>
+                                    </stop>
+                                    <stop offset="50%" stop-color="#00f0ff">
+                                        <animate attributeName="stop-color" values="#00f0ff;#39ff9a;#00f0ff;#b8f4ff" dur="4.8s" repeatCount="indefinite"/>
+                                    </stop>
+                                    <stop offset="100%" stop-color="#8ee0ff">
+                                        <animate attributeName="stop-color" values="#8ee0ff;#5fb8ff;#00f0ff;#8ee0ff" dur="4.8s" repeatCount="indefinite"/>
+                                    </stop>
+                                </linearGradient>
+                                <filter id="bpEmptyIconGlow" x="-25%" y="-25%" width="150%" height="150%">
+                                    <feGaussianBlur stdDeviation="6" result="blur"/>
+                                    <feMerge>
+                                        <feMergeNode in="blur"/>
+                                        <feMergeNode in="SourceGraphic"/>
+                                    </feMerge>
+                                </filter>
+                            </defs>
+                            <path class="bp-detail-empty__icon-path" fill="url(#bpEmptyIconGrad)" filter="url(#bpEmptyIconGlow)" d="M907.6224 755.1488a227.8912 227.8912 0 0 1-136.96 58.9312 450.56 450.56 0 0 1-74.0352 3.6864h-403.456a319.232 319.232 0 0 1-59.2384-3.6864 196.096 196.096 0 0 1-118.4256-55.3472 214.3744 214.3744 0 0 1-3.6864-302.4896A206.3872 206.3872 0 0 1 230.4 393.4208a286.3104 286.3104 0 0 1 551.424-51.2 616.6528 616.6528 0 0 0-81.408 11.0592c0 3.6864 29.9008 71.68-3.6864 0a204.8 204.8 0 0 0-185.1904-118.272 198.5024 198.5024 0 0 0-196.1472 158.72c-14.7968 0-33.3312-3.6864-48.128-3.6864h-1.6896a211.9168 211.9168 0 0 1 127.5392 44.1344c22.2208 18.432 62.9248 51.6608 88.832 77.4656v3.6864l-55.5008 55.3472h-3.7376c-14.7968-14.7456-55.5008-44.288-70.3488-59.0336a118.3232 118.3232 0 0 0-88.832-36.9152 122.88 122.88 0 0 0-92.5184 36.9152 132.2496 132.2496 0 0 0 3.6864 184.32 146.1248 146.1248 0 0 0 96.256 36.864H317.44c95.232-92.8256 239.7184-233.472 249.6-243.3024a656.9984 656.9984 0 0 1 55.552-51.6096 228.5056 228.5056 0 0 1 136.96-47.9744 207.0528 207.0528 0 0 1 151.7568 66.56 209.92 209.92 0 0 1-3.6864 298.6496z m-59.2384-239.7696a138.6496 138.6496 0 0 0-92.5184-36.864 125.4912 125.4912 0 0 0-92.5184 36.864 576.3584 576.3584 0 0 0-44.3904 40.6016c-7.424 7.3728-88.832 84.8384-185.088 177.0496h318.2592a130.56 130.56 0 0 0 96.256-36.864 124.5184 124.5184 0 0 0 0-180.7872z"/>
+                        </svg>
+                    </div>
                     <h2 class="bp-detail-empty__title">选择一个蓝图</h2>
                     <p class="bp-detail-empty__text">从左侧列表选择蓝图，查看制造材料、属性加成与解锁任务</p>
                 </div>
@@ -164,12 +187,13 @@
                         <div class="bp-hero__info">
                             <div class="bp-hero__top">
                                 <div class="bp-hero__titles">
-                                    <h2 class="bp-hero__name" id="bpOutputName">—</h2>
+                                    <div class="bp-hero__title-row">
+                                        <h2 class="bp-hero__name" id="bpOutputName">—</h2>
+                                        <div id="bpLoadoutSlots" class="bp-loadout-slots" hidden aria-label="配件槽位"></div>
+                                    </div>
                                     <p class="bp-hero__sub" id="bpOutputSub">—</p>
                                 </div>
                                 <div class="bp-hero__actions">
-                                    <div id="bpLoadoutMount" class="bp-loadout-mount sc-weapon-loadout-tags-mount" hidden aria-label="已装配配件"></div>
-                                    <button type="button" class="sc-loadout-btn" id="bpAttachBtn" hidden>配件</button>
                                     <a href="#" class="bp-hero__link" id="bpComponentLink" hidden>配件详情 ↗</a>
                                 </div>
                             </div>
@@ -234,9 +258,9 @@
     <script src="api-error.js"></script>
     <script src="community-image-lightbox.js" defer></script>
     <script src="ship-component-wiki.js" defer></script>
-    <script src="ship-component-weapon-loadout.js?v=9" defer></script>
-    <script src="ship-component-blueprints.js?v=4" defer></script>
-    <script src="blueprint-crafting.js?v=42" defer></script>
+    <script src="ship-component-weapon-loadout.js?v=12" defer></script>
+    <script src="ship-component-blueprints.js?v=7" defer></script>
+    <script src="blueprint-crafting.js?v=54" defer></script>
     <script src="site-footer.js" defer></script>
 </body>
 </html>
