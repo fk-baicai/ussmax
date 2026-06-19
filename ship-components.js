@@ -1,58 +1,225 @@
 (function () {
     if (typeof document === 'undefined') return;
 
+    var IS_EQUIPMENT_PAGE =
+        (typeof window !== 'undefined' && window.USS_EQUIPMENT_PAGE === true) ||
+        /\/personal-equipment(?:\.html)?$/i.test(
+            (typeof window !== 'undefined' && window.location && window.location.pathname) || ''
+        );
     var API_BASE = (
         (typeof window !== 'undefined' &&
             (window.USS_SC_COMPONENTS_API_BASE || window.USS_AUTH_API_BASE || window.USS_REGISTER_API_BASE)) ||
         ''
     ).replace(/\/$/, '');
     var PAGE_SIZE = 20;
-    var GROUP_META = {
-        component: {
-            label_zh: '舰船组件',
-            kicker: 'COMPONENTS',
-            lead: ['散热', '电源', '护盾', '量子驱动器', '跳跃驱动器', '雷达'],
-        },
-        weapon: {
-            label_zh: '舰船武器',
-            kicker: 'WEAPONS',
-            lead: ['舰炮', '导弹', '导弹架', '舰船炮台'],
-        },
-        mining: {
-            label_zh: '舰船矿头',
-            kicker: 'MINING',
-            lead: ['矿头', '模组'],
-        },
-    };
-    var DEFAULT_TYPE_BY_GROUP = {
-        component: 'cooling',
-        weapon: 'ship_weapon',
-        mining: 'mining_laser',
-    };
-    var GROUP_ORDER = ['component', 'weapon', 'mining'];
-    var TYPE_ORDER_BY_GROUP = {
-        component: ['cooling', 'power', 'shield', 'quantum', 'jump', 'radar'],
-        weapon: ['ship_weapon', 'ship_missile', 'missile_rack', 'ship_turret'],
-        mining: ['mining_laser', 'ship_module'],
-    };
+    var ARMOR_PAGE_SIZE = 100;
+    var LOAD_MORE_ROOT_MARGIN = 240;
+    var GROUP_META = IS_EQUIPMENT_PAGE
+        ? {
+              fps_weapon: {
+                  label_zh: '武器',
+                  kicker: 'WEAPONS',
+                  lead: ['手枪', '冲锋枪', '突击步枪', '狙击枪', '霰弹枪', '机枪', '发射器', '十字弩', '投掷物', '近战', '工具/杂项'],
+              },
+              fps_armor: {
+                  label_zh: '护甲',
+                  kicker: 'ARMOR',
+                  lead: ['头盔', '胸甲', '腿甲', '臂甲', '背包', '基底服'],
+              },
+              fps_magazine: {
+                  label_zh: '武器配件',
+                  kicker: 'ATTACHMENTS',
+                  lead: ['弹匣', '瞄具', '枪口', '下挂', '实用配件', '发射器导弹'],
+              },
+          }
+        : {
+              component: {
+                  label_zh: '舰船组件',
+                  kicker: 'COMPONENTS',
+                  lead: ['散热', '电源', '护盾', '量子驱动器', '跳跃驱动器', '雷达'],
+              },
+              weapon: {
+                  label_zh: '舰船武器',
+                  kicker: 'WEAPONS',
+                  lead: ['舰炮', '导弹', '导弹架', '舰船炮台'],
+              },
+              mining: {
+                  label_zh: '舰船矿头',
+                  kicker: 'MINING',
+                  lead: ['矿头', '模组'],
+              },
+              salvage: {
+                  label_zh: '打捞模组',
+                  kicker: 'SALVAGE',
+                  lead: ['刮削模块'],
+              },
+              fuel_nozzle: {
+                  label_zh: '燃料喷嘴',
+                  kicker: 'FUEL NOZZLES',
+                  lead: ['燃料喷嘴'],
+              },
+          };
+    var DEFAULT_TYPE_BY_GROUP = IS_EQUIPMENT_PAGE
+        ? {
+              fps_weapon: 'weapon_pistol',
+              fps_armor: 'armor_helmet',
+              fps_magazine: 'magazine',
+          }
+        : {
+              component: 'cooling',
+              weapon: 'ship_weapon',
+              mining: 'mining_laser',
+              salvage: 'salvage_scraper',
+              fuel_nozzle: 'fuel_nozzle',
+          };
+    var GROUP_ORDER = IS_EQUIPMENT_PAGE
+        ? ['fps_weapon', 'fps_magazine', 'fps_armor']
+        : ['component', 'weapon', 'mining', 'salvage', 'fuel_nozzle'];
+    var TYPE_ORDER_BY_GROUP = IS_EQUIPMENT_PAGE
+        ? {
+              fps_weapon: [
+                  'weapon_pistol',
+                  'weapon_smg',
+                  'weapon_rifle',
+                  'weapon_sniper',
+                  'weapon_shotgun',
+                  'weapon_lmg',
+                  'weapon_launcher',
+                  'weapon_crossbow',
+                  'weapon_throwable',
+                  'weapon_melee',
+                  'weapon_misc',
+              ],
+              fps_armor: [
+                  'armor_helmet',
+                  'armor_torso',
+                  'armor_legs',
+                  'armor_arms',
+                  'armor_backpack',
+                  'armor_undersuit',
+              ],
+              fps_magazine: [
+                  'magazine',
+                  'attachment_ironsight',
+                  'attachment_barrel',
+                  'attachment_bottom',
+                  'attachment_utility',
+                  'attachment_missile',
+              ],
+          }
+        : {
+              component: ['cooling', 'power', 'shield', 'quantum', 'jump', 'radar'],
+              weapon: ['ship_weapon', 'ship_missile', 'missile_rack', 'ship_turret'],
+              mining: ['mining_laser', 'ship_module'],
+              salvage: ['salvage_scraper'],
+              fuel_nozzle: ['fuel_nozzle'],
+          };
     var TYPE_FALLBACK_LABELS = {
+        cooling: '散热',
+        power: '电源',
+        shield: '护盾',
+        quantum: '量子驱动器',
+        jump: '跳跃驱动器',
+        radar: '雷达',
+        ship_weapon: '舰炮',
+        ship_missile: '导弹',
+        missile_rack: '导弹架',
         mining_laser: '矿头',
         ship_module: '模组',
         ship_turret: '舰船炮台',
+        salvage_scraper: '刮削模块',
+        fuel_nozzle: '燃料喷嘴',
+        personal_weapon: '武器',
+        personal_armor: '护甲',
+        magazine: '弹匣',
+        attachment_ironsight: '瞄具',
+        attachment_barrel: '枪口',
+        attachment_bottom: '下挂',
+        attachment_utility: '实用配件',
+        attachment_missile: '发射器导弹',
+        weapon_pistol: '手枪',
+        weapon_smg: '冲锋枪',
+        weapon_rifle: '突击步枪',
+        weapon_sniper: '狙击枪',
+        weapon_shotgun: '霰弹枪',
+        weapon_lmg: '机枪',
+        weapon_launcher: '发射器',
+        weapon_crossbow: '十字弩',
+        weapon_throwable: '投掷物',
+        weapon_melee: '近战',
+        weapon_misc: '工具/杂项',
+        armor_helmet: '头盔',
+        armor_torso: '胸甲',
+        armor_legs: '腿甲',
+        armor_arms: '臂甲',
+        armor_backpack: '背包',
+        armor_undersuit: '基底服',
     };
+
+    /** Wiki 同步前的聚合类目，已拆分为 weapon_* / armor_*，不应出现在子 Tab */
+    var LEGACY_AGGREGATE_TYPES = {
+        personal_weapon: true,
+        personal_armor: true,
+    };
+
+    function isBrowsableTypeKey(typeKey) {
+        return !LEGACY_AGGREGATE_TYPES[typeKey];
+    }
+
+    function resolveTypeLabel(typeKey, typeObj) {
+        if (typeObj && typeof typeObj === 'object' && typeObj.label_zh) return typeObj.label_zh;
+        if (TYPE_FALLBACK_LABELS[typeKey]) return TYPE_FALLBACK_LABELS[typeKey];
+        return typeKey || '—';
+    }
+
+    function hasTypesCatalog() {
+        return Object.keys(state.types || {}).length > 0;
+    }
+
+    function applyMetaTypeCounts(meta) {
+        if (!meta || !meta.types || typeof meta.types !== 'object') return;
+        Object.keys(meta.types).forEach(function (key) {
+            if (!isBrowsableTypeKey(key)) return;
+            var count = Number(meta.types[key]) || 0;
+            var existing = state.types[key];
+            if (existing && typeof existing === 'object') {
+                existing.count = count;
+                if (!existing.label_zh) existing.label_zh = resolveTypeLabel(key, existing);
+                if (!existing.group) existing.group = inferGroupFromTypeKey(key) || existing.group;
+                return;
+            }
+            state.types[key] = {
+                key: key,
+                label_zh: resolveTypeLabel(key, null),
+                group: inferGroupFromTypeKey(key) || 'component',
+                count: count,
+            };
+        });
+    }
     function normalizeGroupState() {
         if (state.group === 'module') {
             state.group = 'mining';
             if (state.type !== 'mining_laser') state.type = 'ship_module';
         }
+        if (state.group === 'equipment') {
+            state.group = 'fps_weapon';
+            if (state.type === 'personal_armor') state.group = 'fps_armor';
+            else if (state.type === 'magazine' || String(state.type || '').indexOf('attachment_') === 0)
+                state.group = 'fps_magazine';
+            else if (state.type === 'personal_weapon') state.type = 'weapon_pistol';
+        }
         if (GROUP_ORDER.indexOf(state.group) < 0) {
-            state.group = 'component';
+            state.group = IS_EQUIPMENT_PAGE ? 'fps_weapon' : 'component';
         }
     }
 
     function normalizeCategoriesPayload(types, groups) {
         var nextTypes = types || {};
         Object.keys(nextTypes).forEach(function (key) {
+            if (!isBrowsableTypeKey(key)) {
+                delete nextTypes[key];
+                return;
+            }
             var t = nextTypes[key];
             if (t && t.group === 'module') {
                 nextTypes[key] = Object.assign({}, t, { group: 'mining' });
@@ -87,9 +254,9 @@
         });
     }
     var state = {
-        group: 'component',
+        group: IS_EQUIPMENT_PAGE ? 'fps_weapon' : 'component',
         groups: {},
-        type: 'cooling',
+        type: IS_EQUIPMENT_PAGE ? 'weapon_pistol' : 'cooling',
         types: {},
         meta: null,
         items: [],
@@ -108,6 +275,8 @@
         sortKey: 'size',
         sortDir: 'asc',
         blueprintExpandedByItem: {},
+        armorVariantExpanded: {},
+        armorVariantGrouping: null,
     };
 
     var ACQUIRE_BTN_LABEL = '获取';
@@ -119,7 +288,6 @@
         heroKicker: document.getElementById('scHeroKicker'),
         heroTitle: document.getElementById('scHeroTitle'),
         leadNav: document.getElementById('scLeadNav'),
-        navLinkShip: document.getElementById('navMegaLinkShip'),
         body: document.getElementById('scTableBody'),
         tableHead: document.getElementById('scTableHead'),
         tableShell: document.getElementById('scTableShell'),
@@ -154,7 +322,7 @@
             return item.size_num != null ? Number(item.size_num) : -1;
         },
         mfg: function (item) {
-            return item.manufacturer_zh || item.manufacturer || '';
+            return itemManufacturerLabel(item);
         },
         mass: function (item) {
             return item.mass != null && Number.isFinite(Number(item.mass)) ? Number(item.mass) : null;
@@ -176,8 +344,88 @@
         },
     };
 
+    var LIST_FETCH_TIMEOUT_MS = 90000;
+    var LIST_FETCH_RETRY_DELAYS = [0, 2000, 3000, 5000, 8000, 12000];
+
     function apiUrl(path) {
         return API_BASE + path;
+    }
+
+    function shouldRetryListFetch(res, data, err) {
+        if (err) {
+            if (err.name === 'AbortError') return true;
+            return true;
+        }
+        if (!res) return true;
+        if (res.status === 503 || res.status === 502 || res.status === 504) return true;
+        if (data && data.code === 'SC_001') return true;
+        return false;
+    }
+
+    function renderListLoadingHint(attempt, maxAttempts, message) {
+        if (!els.body) return;
+        var hint = message || '配件数据加载中';
+        if (attempt > 0) hint += '（' + attempt + '/' + maxAttempts + '）';
+        els.body.innerHTML =
+            '<tr><td colspan="' + getColCount() + '">' + escapeHtml(hint) + '…</td></tr>';
+    }
+
+    async function fetchJsonWithRetry(url, options, retryOpts) {
+        var opts = retryOpts || {};
+        var maxAttempts = opts.maxAttempts || 6;
+        var externalSignal = options && options.signal;
+        var lastErr = null;
+        for (var attempt = 0; attempt < maxAttempts; attempt++) {
+            if (externalSignal && externalSignal.aborted) {
+                var abortErr = new Error('Aborted');
+                abortErr.name = 'AbortError';
+                throw abortErr;
+            }
+            if (attempt > 0) {
+                renderListLoadingHint(attempt + 1, maxAttempts, opts.loadingMessage);
+                var delay = LIST_FETCH_RETRY_DELAYS[Math.min(attempt, LIST_FETCH_RETRY_DELAYS.length - 1)];
+                await new Promise(function (resolve) {
+                    setTimeout(resolve, delay);
+                });
+            }
+            var ctrl = new AbortController();
+            var onExternalAbort = function () {
+                ctrl.abort();
+            };
+            if (externalSignal) externalSignal.addEventListener('abort', onExternalAbort);
+            var timer = setTimeout(function () {
+                ctrl.abort();
+            }, opts.timeoutMs || LIST_FETCH_TIMEOUT_MS);
+            try {
+                var fetchOpts = Object.assign({}, options || {}, { signal: ctrl.signal });
+                var res = await fetch(url, fetchOpts);
+                var data = {};
+                try {
+                    data = await res.json();
+                } catch (parseErr) {
+                    data = { ok: false, message: '响应解析失败' };
+                }
+                if (!res.ok || !data.ok) {
+                    if (attempt < maxAttempts - 1 && shouldRetryListFetch(res, data, null)) {
+                        lastErr = new Error((data && data.message) || '加载失败');
+                        continue;
+                    }
+                    throw new Error((data && data.message) || '加载失败');
+                }
+                return { res: res, data: data };
+            } catch (e) {
+                lastErr = e;
+                if (e && e.name === 'AbortError' && attempt >= maxAttempts - 1) {
+                    lastErr = new Error('加载超时，请确认后端与配件服务已启动后刷新页面');
+                }
+                if (attempt < maxAttempts - 1 && shouldRetryListFetch(null, null, e)) continue;
+                throw lastErr;
+            } finally {
+                clearTimeout(timer);
+                if (externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
+            }
+        }
+        throw lastErr || new Error('加载失败');
     }
 
     function formatVolume(n) {
@@ -208,7 +456,18 @@
 
     function getWikiTableColumns() {
         if (!isWikiMode() || !window.ShipComponentWiki) return [];
-        return window.ShipComponentWiki.getWikiTableColumns(state.type);
+        var cols = window.ShipComponentWiki.getWikiTableColumns(state.type);
+        if (cols && cols.length) return cols;
+        if (state.type && state.type.indexOf('weapon_') === 0) {
+            return window.ShipComponentWiki.getWikiTableColumns('weapon_pistol');
+        }
+        if (state.type && state.type.indexOf('armor_') === 0) {
+            if (state.type === 'armor_backpack') {
+                return window.ShipComponentWiki.getWikiTableColumns('armor_backpack');
+            }
+            return window.ShipComponentWiki.getWikiTableColumns('armor_helmet');
+        }
+        return [];
     }
 
     function resolveComponentId(item) {
@@ -221,20 +480,33 @@
         return /\/ship-components(?:\.html)?$/i.test(String(pathname || ''));
     }
 
+    function isEquipmentListPath(pathname) {
+        return /\/personal-equipment(?:\.html)?$/i.test(String(pathname || ''));
+    }
+
+    function isCatalogListPath(pathname) {
+        return isShipComponentsListPath(pathname) || isEquipmentListPath(pathname);
+    }
+
     function listPagePathname() {
         var p = window.location.pathname || '';
-        if (isShipComponentsListPath(p)) return p;
+        if (isCatalogListPath(p)) return p;
         try {
             var stored = sessionStorage.getItem(LIST_RETURN_PATHNAME_KEY) || '';
-            if (isShipComponentsListPath(stored)) return stored;
+            if (isCatalogListPath(stored)) return stored;
         } catch (e) {
             /* ignore */
         }
-        return '/ship-components';
+        return IS_EQUIPMENT_PAGE ? '/personal-equipment' : '/ship-components';
     }
 
     function detailPagePathname() {
         var list = listPagePathname();
+        if (isEquipmentListPath(list)) {
+            return list.replace(/personal-equipment(\.html)?$/i, function (_m, ext) {
+                return 'ship-component-detail' + (ext || '');
+            });
+        }
         return list.replace(/ship-components(\.html)?$/i, function (_m, ext) {
             return 'ship-component-detail' + (ext || '');
         });
@@ -283,6 +555,8 @@
     var LIST_RETURN_SCROLL_KEY = 'scComponentListReturnScrollY';
     var LIST_RETURN_PAGE_KEY = 'scComponentListReturnPage';
     var LIST_RETURN_EXPANDED_KEY = 'scComponentListReturnExpandedId';
+    var LIST_RETURN_FOCUS_ITEM_KEY = 'scComponentListReturnFocusItemId';
+    var LIST_RETURN_ARMOR_VARIANTS_KEY = 'scComponentListReturnArmorVariants';
     var LIST_RESTORE_FLAG_KEY = 'scComponentListRestorePending';
 
     function normalizeItemId(id) {
@@ -335,6 +609,14 @@
 
     function appendTableRows(items, scrollY) {
         if (!els.body || !items || !items.length) return 0;
+        if (isArmorVariantGroupingEnabled()) {
+            var snap = snapshotExpandedState();
+            renderTable(snap);
+            if (scrollY != null && scrollY >= 0) {
+                window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
+            }
+            return items.length;
+        }
         var anchor = els.body.querySelector('.sc-load-more-row');
         var appended = 0;
         sortItems(items.filter(isBrowsableItem)).forEach(function (item) {
@@ -472,6 +754,11 @@
         if (!key) return '';
         if (key === 'ship_weapon' || key === 'ship_turret' || key === 'ship_missile' || key === 'missile_rack') return 'weapon';
         if (key === 'mining_laser' || key === 'ship_module') return 'mining';
+        if (key === 'salvage_scraper') return 'salvage';
+        if (key === 'fuel_nozzle') return 'fuel_nozzle';
+        if (key === 'personal_weapon' || key.indexOf('weapon_') === 0) return 'fps_weapon';
+        if (key === 'personal_armor' || key.indexOf('armor_') === 0) return 'fps_armor';
+        if (key === 'magazine' || key.indexOf('attachment_') === 0) return 'fps_magazine';
         if (
             key === 'cooling' ||
             key === 'power' ||
@@ -504,7 +791,59 @@
         }
     }
 
-    function rememberListReturnState() {
+    function isListRestorePending() {
+        try {
+            return sessionStorage.getItem(LIST_RESTORE_FLAG_KEY) === '1';
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function readPendingArmorVariantRestoreKeys() {
+        try {
+            var raw = sessionStorage.getItem(LIST_RETURN_ARMOR_VARIANTS_KEY);
+            if (!raw) return [];
+            var parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) return [];
+            return parsed
+                .map(function (key) {
+                    return String(key || '').trim();
+                })
+                .filter(Boolean);
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function getVariantGroupKeyForItemId(itemId) {
+        var grouping = state.armorVariantGrouping;
+        if (!grouping || !itemId) return '';
+        var id = normalizeItemId(itemId);
+        if (grouping.leaderOf[id]) return grouping.leaderOf[id].groupKey;
+        return grouping.variantOf[id] || '';
+    }
+
+    function applyArmorVariantRestore(keys) {
+        if (!isArmorVariantGroupingEnabled() || !keys || !keys.length) return;
+        keys.forEach(function (key) {
+            if (key) state.armorVariantExpanded[key] = true;
+        });
+    }
+
+    function scrollToListItem(itemId) {
+        if (!itemId || !els.body) return false;
+        var id = normalizeItemId(itemId);
+        if (!id) return false;
+        var row = null;
+        els.body.querySelectorAll('tr[data-id]').forEach(function (tr) {
+            if (!row && normalizeItemId(tr.dataset.id) === id) row = tr;
+        });
+        if (!row) return false;
+        row.scrollIntoView({ block: 'center', behavior: 'auto' });
+        return true;
+    }
+
+    function rememberListReturnState(focusItemId) {
         try {
             sessionStorage.setItem(LIST_RETURN_PATHNAME_KEY, window.location.pathname || listPagePathname());
             sessionStorage.setItem(LIST_RETURN_URL_KEY, buildListPageUrl());
@@ -513,6 +852,26 @@
             sessionStorage.setItem(LIST_RETURN_SCROLL_KEY, String(window.scrollY || 0));
             sessionStorage.setItem(LIST_RETURN_PAGE_KEY, String(state.page || 1));
             sessionStorage.setItem(LIST_RETURN_EXPANDED_KEY, getExpandedItemId());
+            var focusId = normalizeItemId(focusItemId);
+            if (focusId) sessionStorage.setItem(LIST_RETURN_FOCUS_ITEM_KEY, focusId);
+            else sessionStorage.removeItem(LIST_RETURN_FOCUS_ITEM_KEY);
+            if (isArmorVariantGroupingEnabled()) {
+                computeArmorVariantGrouping(sortItems(state.items.filter(isBrowsableItem)));
+                var variantKeys = Object.keys(state.armorVariantExpanded || {}).filter(function (key) {
+                    return state.armorVariantExpanded[key];
+                });
+                var itemGroupKey = getVariantGroupKeyForItemId(focusId);
+                if (itemGroupKey && isArmorVariantChildRow(focusId) && variantKeys.indexOf(itemGroupKey) < 0) {
+                    variantKeys.push(itemGroupKey);
+                }
+                if (variantKeys.length) {
+                    sessionStorage.setItem(LIST_RETURN_ARMOR_VARIANTS_KEY, JSON.stringify(variantKeys));
+                } else {
+                    sessionStorage.removeItem(LIST_RETURN_ARMOR_VARIANTS_KEY);
+                }
+            } else {
+                sessionStorage.removeItem(LIST_RETURN_ARMOR_VARIANTS_KEY);
+            }
             sessionStorage.setItem(LIST_RESTORE_FLAG_KEY, '1');
         } catch (e) {
             /* ignore */
@@ -526,6 +885,8 @@
                 scrollY: Number(sessionStorage.getItem(LIST_RETURN_SCROLL_KEY) || 0),
                 page: Math.max(1, Number(sessionStorage.getItem(LIST_RETURN_PAGE_KEY) || 1)),
                 expandedId: String(sessionStorage.getItem(LIST_RETURN_EXPANDED_KEY) || '').trim(),
+                focusItemId: String(sessionStorage.getItem(LIST_RETURN_FOCUS_ITEM_KEY) || '').trim(),
+                armorVariantKeys: readPendingArmorVariantRestoreKeys(),
             };
         } catch (e) {
             return null;
@@ -549,6 +910,10 @@
         while (state.page < pending.page && state.hasMore && !state.loading && !state.loadingMore) {
             await loadMore();
         }
+        applyArmorVariantRestore(pending.armorVariantKeys);
+        if (isArmorVariantGroupingEnabled()) {
+            renderTable(snapshotExpandedState());
+        }
         if (pending.expandedId) {
             var expandedId = normalizeItemId(pending.expandedId);
             if (expandedId) {
@@ -556,6 +921,7 @@
                 ensureExpandedDetailPresent();
             }
         }
+        if (pending.focusItemId && scrollToListItem(pending.focusItemId)) return;
         applyListScrollRestore(pending.scrollY);
     }
 
@@ -608,8 +974,8 @@
         quantum: [
             'name',
             'type',
-            'grade',
             'class',
+            'grade',
             'size',
             'speed',
             'wiki_q_speed',
@@ -624,8 +990,8 @@
         jump: [
             'name',
             'type',
-            'grade',
             'class',
+            'grade',
             'size',
             'speed',
             'wiki_j_align',
@@ -640,8 +1006,8 @@
         radar: [
             'name',
             'type',
-            'grade',
             'class',
+            'grade',
             'size',
             'wiki_r_cd',
             'wiki_r_ir',
@@ -738,16 +1104,241 @@
             'loc',
             'expand',
         ],
+        salvage_scraper: [
+            'name',
+            'type',
+            'grade',
+            'size',
+            'wiki_ss_eff',
+            'wiki_ss_radius',
+            'wiki_ss_speed',
+            'mfg',
+            'mass',
+            'volume',
+            'price',
+            'loc',
+            'expand',
+        ],
+        fuel_nozzle: [
+            'name',
+            'type',
+            'grade',
+            'size',
+            'wiki_fn_h2',
+            'wiki_fn_qf',
+            'wiki_fn_hp',
+            'mfg',
+            'mass',
+            'volume',
+            'price',
+            'loc',
+            'expand',
+        ],
+        weapon_pistol: [
+            'name',
+            'type',
+            'size',
+            'wiki_pw_class',
+            'wiki_pw_dmg',
+            'wiki_pw_rpm',
+            'wiki_pw_range',
+            'wiki_pw_sound',
+            'wiki_pw_recoil',
+            'wiki_pw_cap',
+            'wiki_pw_slots',
+            'mfg',
+            'price',
+            'loc',
+            'expand',
+        ],
+        weapon_melee: [
+            'name',
+            'type',
+            'size',
+            'wiki_mw_subtype',
+            'wiki_mw_slash',
+            'wiki_mw_stab',
+            'mass',
+            'mfg',
+            'price',
+            'loc',
+            'expand',
+        ],
+        weapon_throwable: [
+            'name',
+            'type',
+            'size',
+            'wiki_wt_dmg_type',
+            'wiki_wt_damage',
+            'wiki_wt_aoe',
+            'mass',
+            'mfg',
+            'price',
+            'loc',
+            'expand',
+        ],
+        armor_helmet: [
+            'name',
+            'type',
+            'wiki_pa_subtype',
+            'wiki_pa_dr',
+            'wiki_pa_gforce',
+            'wiki_pa_temp',
+            'wiki_pa_rad',
+            'wiki_pa_rad_rate',
+            'mass',
+            'mfg',
+            'price',
+            'loc',
+            'expand',
+        ],
+        armor_backpack: [
+            'name',
+            'type',
+            'mass',
+            'wiki_bp_cargo',
+            'mfg',
+            'price',
+            'loc',
+            'expand',
+        ],
+        magazine: [
+            'name',
+            'type',
+            'wiki_mag_cap',
+            'wiki_mag_ammo_dmg',
+            'wiki_mag_speed',
+            'wiki_mag_range',
+            'mass',
+            'mfg',
+            'price',
+            'loc',
+            'expand',
+        ],
+        attachment_ironsight: [
+            'name',
+            'type',
+            'wiki_att_zoom',
+            'wiki_att_sight_range',
+            'mass',
+            'mfg',
+            'price',
+            'loc',
+            'expand',
+        ],
+        attachment_barrel: [
+            'name',
+            'type',
+            'wiki_att_damage',
+            'wiki_att_fire_rate',
+            'wiki_att_sound',
+            'wiki_att_recoil',
+            'wiki_att_spread',
+            'wiki_att_proj_speed',
+            'wiki_att_muzzle',
+            'mfg',
+            'price',
+            'loc',
+            'expand',
+        ],
+        attachment_bottom: [
+            'name',
+            'type',
+            'wiki_att_laser_range',
+            'mass',
+            'mfg',
+            'price',
+            'loc',
+            'expand',
+        ],
+        attachment_utility: [
+            'name',
+            'type',
+            'wiki_att_damage_mult',
+            'wiki_att_fire_rate',
+            'wiki_att_proj_speed',
+            'mass',
+            'mfg',
+            'price',
+            'loc',
+            'expand',
+        ],
+        attachment_missile: [
+            'name',
+            'type',
+            'size',
+            'mass',
+            'mfg',
+            'price',
+            'loc',
+            'expand',
+        ],
     };
 
-    function getColumnOrder() {
-        var typeOrder = COLUMN_ORDER_BY_TYPE[state.type];
-        if (typeOrder) return typeOrder.slice();
-        var order = ['name', 'type', 'grade', 'class', 'size', 'mfg', 'mass', 'volume', 'speed'];
-        getWikiTableColumns().forEach(function (col) {
-            order.push(col.key);
+    function ensureWeaponRecoilAfterSound(order) {
+        if (!order) return order;
+        var soundIdx = order.indexOf('wiki_pw_sound');
+        if (soundIdx < 0) return order;
+        var recoilIdx = order.indexOf('wiki_pw_recoil');
+        if (recoilIdx < 0) {
+            var inserted = order.slice();
+            inserted.splice(soundIdx + 1, 0, 'wiki_pw_recoil');
+            return inserted;
+        }
+        if (recoilIdx === soundIdx + 1) return order;
+        var next = order.filter(function (key) {
+            return key !== 'wiki_pw_recoil';
         });
-        order.push('price', 'loc', 'expand');
+        soundIdx = next.indexOf('wiki_pw_sound');
+        next.splice(soundIdx + 1, 0, 'wiki_pw_recoil');
+        return next;
+    }
+
+    function ensureWeaponSlotColumn(order) {
+        if (!order || order.indexOf('wiki_pw_slots') >= 0) return order;
+        var next = order.slice();
+        var anchors = ['mfg', 'price', 'loc', 'expand'];
+        for (var i = 0; i < anchors.length; i++) {
+            var idx = next.indexOf(anchors[i]);
+            if (idx >= 0) {
+                next.splice(idx, 0, 'wiki_pw_slots');
+                return next;
+            }
+        }
+        next.push('wiki_pw_slots');
+        return next;
+    }
+
+    function getColumnOrder() {
+        var order;
+        var typeOrder = COLUMN_ORDER_BY_TYPE[state.type];
+        if (typeOrder) {
+            order = typeOrder.slice();
+        } else if (state.type && state.type.indexOf('weapon_') === 0 && COLUMN_ORDER_BY_TYPE.weapon_pistol) {
+            if (state.type === 'weapon_melee' && COLUMN_ORDER_BY_TYPE.weapon_melee) {
+                order = COLUMN_ORDER_BY_TYPE.weapon_melee.slice();
+            } else if (state.type === 'weapon_throwable' && COLUMN_ORDER_BY_TYPE.weapon_throwable) {
+                order = COLUMN_ORDER_BY_TYPE.weapon_throwable.slice();
+            } else {
+                order = COLUMN_ORDER_BY_TYPE.weapon_pistol.slice();
+            }
+        } else if (state.type && state.type.indexOf('armor_') === 0 && COLUMN_ORDER_BY_TYPE.armor_helmet) {
+            if (state.type === 'armor_backpack' && COLUMN_ORDER_BY_TYPE.armor_backpack) {
+                order = COLUMN_ORDER_BY_TYPE.armor_backpack.slice();
+            } else {
+                order = COLUMN_ORDER_BY_TYPE.armor_helmet.slice();
+            }
+        } else {
+            order = ['name', 'type', 'class', 'grade', 'size', 'mfg', 'mass', 'volume', 'speed'];
+            getWikiTableColumns().forEach(function (col) {
+                order.push(col.key);
+            });
+            order.push('price', 'loc', 'expand');
+        }
+        if (state.type && state.type.indexOf('weapon_') === 0) {
+            order = ensureWeaponRecoilAfterSound(order);
+            order = ensureWeaponSlotColumn(order);
+        }
         return order;
     }
 
@@ -797,13 +1388,28 @@
         }
     }
 
+    function getPageSize() {
+        if (IS_EQUIPMENT_PAGE && state.group === 'fps_armor') return ARMOR_PAGE_SIZE;
+        return PAGE_SIZE;
+    }
+
+    function apiDataVersionParam() {
+        var synced = state.meta && state.meta.synced_at ? String(state.meta.synced_at).trim() : '';
+        return synced ? '_sync=' + encodeURIComponent(synced) : '';
+    }
+
     function buildQuery(page) {
         var q = els.search ? String(els.search.value || '').trim() : '';
         var params = new URLSearchParams();
         if (state.type) params.set('type', state.type);
         if (q) params.set('q', q);
-        params.set('limit', String(PAGE_SIZE));
+        params.set('limit', String(getPageSize()));
         params.set('page', String(page || 1));
+        var syncParam = apiDataVersionParam();
+        if (syncParam) {
+            var syncParts = syncParam.split('=');
+            params.set(syncParts[0], decodeURIComponent(syncParts.slice(1).join('=')));
+        }
         return params.toString();
     }
 
@@ -864,8 +1470,18 @@
             if (group === 'module') {
                 state.group = 'mining';
                 if (!type || type === 'ship_module') state.type = 'ship_module';
-            } else if (group === 'weapon' || group === 'component' || group === 'mining') {
-                state.group = group;
+            } else if (
+                group === 'weapon' ||
+                group === 'component' ||
+                group === 'mining' ||
+                group === 'salvage' ||
+                group === 'fuel_nozzle' ||
+                group === 'equipment' ||
+                group === 'fps_weapon' ||
+                group === 'fps_armor' ||
+                group === 'fps_magazine'
+            ) {
+                state.group = group === 'equipment' ? 'fps_weapon' : group;
             }
             if (type && group !== 'module') state.type = type;
             if (!group && type) {
@@ -886,6 +1502,7 @@
     function typesForGroup(groupKey) {
         var out = {};
         Object.keys(state.types || {}).forEach(function (key) {
+            if (!isBrowsableTypeKey(key)) return;
             var t = state.types[key];
             var g = (t && t.group) || 'component';
             if (g === groupKey) out[key] = t;
@@ -896,7 +1513,7 @@
                 if (out[key]) return;
                 out[key] = {
                     key: key,
-                    label_zh: TYPE_FALLBACK_LABELS[key] || key,
+                    label_zh: resolveTypeLabel(key, null),
                     group: groupKey,
                     count: 0,
                 };
@@ -929,22 +1546,113 @@
         }
     }
 
+    function leadEntriesForGroup(groupKey) {
+        var filtered = typesForGroup(groupKey);
+        var typesLoaded = hasTypesCatalog();
+        return typeKeysForGroup(groupKey, filtered)
+            .filter(function (key) {
+                if (!typesLoaded) return true;
+                var t = filtered[key];
+                return !t || t.count !== 0;
+            })
+            .map(function (key) {
+                var t = filtered[key];
+                return {
+                    typeKey: key,
+                    label: resolveTypeLabel(key, t),
+                };
+            });
+    }
+
+    function navigateToType(typeKey) {
+        if (!typeKey) return;
+        ensureTypeInGroup();
+        if (state.type === typeKey) return;
+        var filtered = typesForGroup(state.group);
+        if (!filtered[typeKey]) return;
+        var typesLoaded = hasTypesCatalog();
+        if (typesLoaded && filtered[typeKey].count === 0) return;
+        state.type = typeKey;
+        state.expanded = {};
+        clearArmorVariantExpanded();
+        if (els.search) els.search.value = '';
+        hideSuggest();
+        resetSortIfHiddenGradeClassColumns();
+        updateUrlState();
+        updateHero();
+        syncBodyMode();
+        renderTabs();
+        loadList();
+    }
+
+    function bindLeadNavOnce() {
+        if (!els.leadNav || els.leadNav.dataset.bound) return;
+        els.leadNav.dataset.bound = '1';
+        els.leadNav.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-lead-type]');
+            if (!btn) return;
+            navigateToType(btn.getAttribute('data-lead-type'));
+        });
+    }
+
     function updateHero() {
         var meta = GROUP_META[state.group] || GROUP_META.component;
         if (els.heroKicker) els.heroKicker.textContent = meta.kicker;
         if (els.heroTitle) els.heroTitle.textContent = meta.label_zh;
         document.title = meta.label_zh + ' · USSXC';
-        if (els.leadNav && meta.lead && meta.lead.length) {
-            els.leadNav.innerHTML = meta.lead
-                .map(function (item, idx) {
-                    var sep = idx ? '<span class="sc-lead-sep" aria-hidden="true"></span>' : '';
-                    return sep + '<span class="sc-lead-item">' + escapeHtml(item) + '</span>';
-                })
-                .join('');
+        if (els.leadNav) {
+            var entries = leadEntriesForGroup(state.group);
+            if (entries.length) {
+                els.leadNav.innerHTML = entries
+                    .map(function (entry, idx) {
+                        var sep = idx ? '<span class="sc-lead-sep" aria-hidden="true"></span>' : '';
+                        var active = entry.typeKey === state.type ? ' is-active' : '';
+                        return (
+                            sep +
+                            '<button type="button" class="sc-lead-item' +
+                            active +
+                            '" data-lead-type="' +
+                            escapeHtml(entry.typeKey) +
+                            '">' +
+                            escapeHtml(entry.label) +
+                            '</button>'
+                        );
+                    })
+                    .join('');
+            } else if (meta.lead && meta.lead.length) {
+                els.leadNav.innerHTML = meta.lead
+                    .map(function (item, idx) {
+                        var sep = idx ? '<span class="sc-lead-sep" aria-hidden="true"></span>' : '';
+                        return sep + '<span class="sc-lead-item">' + escapeHtml(item) + '</span>';
+                    })
+                    .join('');
+            } else {
+                els.leadNav.innerHTML = '';
+            }
         }
-        if (els.navLinkShip) {
-            els.navLinkShip.classList.add('is-current');
-        }
+        if (IS_EQUIPMENT_PAGE) updateEquipmentNavHighlight(state.group);
+        else updateShipNavHighlight(state.group);
+    }
+
+    function updateEquipmentNavHighlight(groupKey) {
+        var panel = document.getElementById('navMegaEquipment');
+        if (!panel) return;
+        panel.querySelectorAll('[data-nav-equipment-group]').forEach(function (node) {
+            node.classList.remove('is-current');
+        });
+        var link = panel.querySelector('[data-nav-equipment-group="' + String(groupKey || '') + '"]');
+        if (link) link.classList.add('is-current');
+    }
+
+    function updateShipNavHighlight(groupKey) {
+        if (IS_EQUIPMENT_PAGE) return;
+        var panel = document.getElementById('navMegaShip');
+        if (!panel) return;
+        panel.querySelectorAll('[data-nav-ship-group]').forEach(function (node) {
+            node.classList.remove('is-current');
+        });
+        var link = panel.querySelector('[data-nav-ship-group="' + String(groupKey || '') + '"]');
+        if (link) link.classList.add('is-current');
     }
 
     function renderGroupTabs() {
@@ -967,6 +1675,7 @@
                 ensureTypeInGroup();
                 resetSortIfHiddenGradeClassColumns();
                 state.expanded = {};
+                clearArmorVariantExpanded();
                 if (els.search) els.search.value = '';
                 hideSuggest();
                 updateHero();
@@ -985,33 +1694,27 @@
         ensureTypeInGroup();
         els.tabs.innerHTML = '';
         var filtered = typesForGroup(state.group);
+        var typesLoaded = hasTypesCatalog();
         typeKeysForGroup(state.group, filtered).forEach(function (key) {
             var t = filtered[key];
+            if (typesLoaded && t && t.count === 0) return;
             var btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'sc-tab' + (key === state.type ? ' is-active' : '');
             btn.setAttribute('role', 'tab');
             btn.setAttribute('aria-selected', key === state.type ? 'true' : 'false');
-            btn.textContent = (t.label_zh || key) + (t.count != null ? ' (' + t.count + ')' : '');
+            var label = resolveTypeLabel(key, t);
+            btn.textContent = label + (typesLoaded && t && t.count != null ? ' (' + t.count + ')' : '');
             btn.dataset.type = key;
             btn.addEventListener('click', function () {
-                state.type = key;
-                state.expanded = {};
-                if (els.search) els.search.value = '';
-                hideSuggest();
-                updateUrlState();
-                updateHero();
-                syncBodyMode();
-                renderTabs();
-                loadList();
+                navigateToType(key);
             });
             els.tabs.appendChild(btn);
         });
     }
 
     function typeLabel(typeKey) {
-        var t = state.types[typeKey];
-        return (t && t.label_zh) || typeKey || '—';
+        return resolveTypeLabel(typeKey, state.types && state.types[typeKey]);
     }
 
     function resolveShipModuleActivationType(item) {
@@ -1031,7 +1734,7 @@
     }
 
     function syncBodyMode() {
-        var cls = 'ship-components-body sc-group-' + state.group + ' sc-type-' + state.type;
+        var cls = (IS_EQUIPMENT_PAGE ? 'personal-equipment-body' : 'ship-components-body') + ' sc-group-' + state.group + ' sc-type-' + state.type;
         if (isWikiMode()) cls += ' sc-source-wiki';
         document.body.className = cls;
         rebuildTableStructure();
@@ -1265,19 +1968,72 @@
 
     function getExpandColumnWidth() {
         if (expandColumnWidthCache > 0) return expandColumnWidthCache;
+        var probeWrap = document.createElement('div');
+        probeWrap.className = 'sc-row-actions';
+        probeWrap.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;pointer-events:none;';
+        document.body.appendChild(probeWrap);
+        if (IS_EQUIPMENT_PAGE) {
+            var loadoutProbe = document.createElement('button');
+            loadoutProbe.type = 'button';
+            loadoutProbe.className = 'sc-loadout-btn';
+            loadoutProbe.textContent = '配件';
+            probeWrap.appendChild(loadoutProbe);
+        }
         var probe = document.createElement('button');
         probe.type = 'button';
         probe.className = 'sc-expand-btn';
-        probe.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;pointer-events:none;';
-        document.body.appendChild(probe);
+        probeWrap.appendChild(probe);
         probe.textContent = ACQUIRE_BTN_LABEL;
-        var acquireW = probe.getBoundingClientRect().width;
+        var acquireW = probeWrap.getBoundingClientRect().width;
         probe.textContent = '收起';
         probe.classList.add('is-open');
-        var collapseW = probe.getBoundingClientRect().width;
-        document.body.removeChild(probe);
+        var collapseW = probeWrap.getBoundingClientRect().width;
+        document.body.removeChild(probeWrap);
         expandColumnWidthCache = Math.ceil(Math.max(acquireW, collapseW)) + 24;
         return expandColumnWidthCache;
+    }
+
+    function resetWeaponLoadoutStatCells(tr, item) {
+        if (!tr || !item) return;
+        ['wiki_pw_dmg', 'wiki_pw_rpm', 'wiki_pw_range', 'wiki_pw_sound', 'wiki_pw_recoil'].forEach(function (key) {
+            var td = tr.querySelector('td.sc-col-' + key);
+            if (!td) return;
+            var wcol = getWikiTableColumns().find(function (c) {
+                return c.key === key;
+            });
+            td.textContent = wcol ? wcol.get(item) || '—' : '—';
+            td.classList.remove('sc-stat-loadout-mod');
+            td.removeAttribute('title');
+        });
+    }
+
+    function refreshWeaponLoadoutRow(weaponId) {
+        if (!els.body || !weaponId) return;
+        var tr = els.body.querySelector('tr[data-id="' + weaponId + '"]');
+        if (!tr || !window.ShipComponentWeaponLoadout) return;
+        var item = null;
+        for (var i = 0; i < state.items.length; i++) {
+            if (normalizeItemId(state.items[i].id_item) === normalizeItemId(weaponId)) {
+                item = state.items[i];
+                break;
+            }
+        }
+        if (!item) return;
+        var td = tr.querySelector('td.sc-col-name');
+        if (!td) return;
+        var mount = td.querySelector('.sc-weapon-loadout-tags-mount');
+        var loadout = window.ShipComponentWeaponLoadout.getLoadout(item);
+        if (!loadout || !Object.keys(loadout).length) {
+            if (mount) mount.remove();
+            resetWeaponLoadoutStatCells(tr, item);
+            return;
+        }
+        if (!mount) {
+            mount = document.createElement('div');
+            mount.className = 'sc-weapon-loadout-tags-mount';
+            td.appendChild(mount);
+        }
+        window.ShipComponentWeaponLoadout.hydrateWeaponLoadoutRow(item, tr);
     }
 
     function getColKeyFromElement(el) {
@@ -1347,6 +2103,7 @@
             widths.expand = getExpandColumnWidth();
         }
         protectLocColumnWidth(widths);
+        protectMfgColumnWidth(widths);
 
         table.style.tableLayout = prevTableLayout;
         table.style.width = prevWidth;
@@ -1497,6 +2254,7 @@
                 }
 
                 protectLocColumnWidth(widths);
+                protectMfgColumnWidth(widths);
 
                 var finalSum = 0;
                 visible.forEach(function (key) {
@@ -1518,10 +2276,62 @@
             .replace(/"/g, '&quot;');
     }
 
-    var MFG_LINE_MAX_CHARS = 6;
+    var MFG_LINE_MAX_CHARS = 7;
+    var mfgColumnMinWidthCache = 0;
+
+    function getMfgColumnMinWidth() {
+        if (mfgColumnMinWidthCache > 0) return mfgColumnMinWidthCache;
+        var table = document.getElementById('scTable');
+        var probe = document.createElement('span');
+        probe.className = 'sc-mfg-width-probe';
+        probe.textContent = '字'.repeat(MFG_LINE_MAX_CHARS);
+        probe.style.cssText =
+            'position:absolute;left:-9999px;top:0;visibility:hidden;white-space:nowrap;pointer-events:none;';
+        if (table) {
+            var sample = table.querySelector('tbody td.sc-col-mfg') || table.querySelector('thead th.sc-col-mfg');
+            if (sample) {
+                var cs = window.getComputedStyle(sample);
+                probe.style.font = cs.font;
+                probe.style.letterSpacing = cs.letterSpacing;
+            }
+        }
+        document.body.appendChild(probe);
+        mfgColumnMinWidthCache = Math.ceil(probe.getBoundingClientRect().width) + 12;
+        document.body.removeChild(probe);
+        return mfgColumnMinWidthCache;
+    }
+
+    function protectMfgColumnWidth(widths) {
+        if (!widths || !Object.prototype.hasOwnProperty.call(widths, 'mfg')) return;
+        widths.mfg = Math.max(widths.mfg || 0, getMfgColumnMinWidth());
+    }
+
+    function isPlaceholderManufacturerText(text) {
+        var s = String(text || '').trim();
+        if (!s) return true;
+        if (/^<=\s*PLACEHOLDER\s*=>$/i.test(s)) return true;
+        if (/placeholder/i.test(s)) return true;
+        return false;
+    }
+
+    function stripBilingualManufacturerLabel(text) {
+        var s = String(text || '').trim();
+        if (!s) return s;
+        var m = s.match(/^(.+?)\s*[（(][^)）]*[A-Za-z][^)）]*[)）]\s*$/);
+        return m ? m[1].trim() : s;
+    }
+
+    function itemManufacturerLabel(item) {
+        var m = (item && (item.manufacturer_zh || item.manufacturer)) || '';
+        if (isPlaceholderManufacturerText(m)) return '—';
+        m = stripBilingualManufacturerLabel(m);
+        if (item && item.manufacturer === 'Virgil') return '维吉尔';
+        return m || '—';
+    }
 
     function splitMfgDisplayLines(text) {
         var s = String(text || '').trim();
+        if (isPlaceholderManufacturerText(s)) return ['—'];
         if (!s || s === '—') return [s || '—'];
         var chars = Array.from(s);
         if (chars.length <= MFG_LINE_MAX_CHARS) return [s];
@@ -1555,14 +2365,26 @@
     function isPlaceholderItemName(s) {
         var v = String(s || '').trim();
         if (!v) return false;
+        if (/^@[A-Za-z_][A-Za-z0-9_.]*$/i.test(v)) return true;
         if (/\[(?:PH|WIP|TMP|TBD|TODO)\]/i.test(v)) return true;
         if (/WCPR-Made|XIAN Nox Cooler Name/i.test(v)) return true;
         return false;
     }
 
+    var DISPLAY_NAME_OVERRIDES_BY_SLUG = {
+        'pink-quikflare': '粉色 快燃荧光棒',
+        'red-quikflarepro': '红色 快燃荧光棒 Pro',
+        'cyan-quikflarepro': '青色 快燃荧光棒 Pro',
+        'green-quikflarepro': '绿色 快燃荧光棒 Pro',
+        'orange-quikflarepro': '橙色 快燃荧光棒 Pro',
+        'yellow-quikflarepro': '黄色 快燃荧光棒 Pro',
+    };
+
     function resolveItemDisplayNames(item) {
         var zh = String((item && item.name_zh) || '').trim();
         var en = String((item && item.name_en) || '').trim();
+        var slugOverride = DISPLAY_NAME_OVERRIDES_BY_SLUG[String((item && item.slug) || '').toLowerCase()];
+        if (slugOverride) zh = slugOverride;
         if (isPlaceholderItemName(zh)) {
             zh = '';
         }
@@ -1581,6 +2403,401 @@
 
     function isBrowsableItem(item) {
         return resolveItemDisplayNames(item).primary !== '—';
+    }
+
+    function isArmorVariantGroupingEnabled() {
+        return IS_EQUIPMENT_PAGE && (state.group === 'fps_armor' || state.group === 'fps_weapon');
+    }
+
+    var ARMOR_SLUG_BASE_ANCHORS = [
+        'helmet',
+        'armor',
+        'vest',
+        'torso',
+        'legs',
+        'arms',
+        'undersuit',
+        'backpack',
+        'gloves',
+        'boots',
+        'pants',
+        'jacket',
+        'suit',
+        'core',
+        'snare',
+        'mkv',
+    ];
+
+    var WEAPON_SLUG_BASE_ANCHORS = [
+        'pistol',
+        'smg',
+        'rifle',
+        'shotgun',
+        'sniper',
+        'launcher',
+        'crossbow',
+        'lmg',
+        'scattergun',
+        'knife',
+        'sword',
+        'grenade',
+        'bow',
+        'tool',
+        'multitool',
+        'tractor',
+        'hammer',
+        'axe',
+        'spear',
+        'blade',
+        'baton',
+    ];
+
+    function getVariantSlugBaseAnchors() {
+        return state.group === 'fps_weapon' ? WEAPON_SLUG_BASE_ANCHORS : ARMOR_SLUG_BASE_ANCHORS;
+    }
+
+    function getArmorSlugBaseKey(slug) {
+        var anchors = getVariantSlugBaseAnchors();
+        var parts = String(slug || '')
+            .trim()
+            .toLowerCase()
+            .split('-')
+            .filter(Boolean);
+        if (parts.length < 2) return '';
+        var anchorIdx = -1;
+        for (var i = 0; i < anchors.length; i++) {
+            var idx = parts.lastIndexOf(anchors[i]);
+            if (idx > anchorIdx) anchorIdx = idx;
+        }
+        if (anchorIdx >= 0) return parts.slice(0, anchorIdx + 1).join('-');
+        if (parts.length >= 3) return parts.slice(0, -1).join('-');
+        return '';
+    }
+
+    function buildArmorSlugCatalog(items) {
+        var catalog = Object.create(null);
+        (items || []).forEach(function (item) {
+            var slug = String(item.slug || '').trim().toLowerCase();
+            if (slug) catalog[slug] = true;
+        });
+        return catalog;
+    }
+
+    function isArmorSlugCatalogMatch(slugCatalog, slugKey) {
+        return !!(slugCatalog && slugKey && slugCatalog[slugKey]);
+    }
+
+    function getArmorSlugFamilyKey(slug, slugCatalog) {
+        var slugText = String(slug || '').trim().toLowerCase();
+        if (!slugText || /^placeholder(?:-\d+)?$/.test(slugText)) return '';
+        var anchors = getVariantSlugBaseAnchors();
+        var parts = slugText.split('-').filter(Boolean);
+        if (parts.length < 2) return '';
+        var anchorIdx = -1;
+        for (var i = 0; i < anchors.length; i++) {
+            var idx = parts.lastIndexOf(anchors[i]);
+            if (idx > anchorIdx) anchorIdx = idx;
+        }
+        if (anchorIdx < 0) {
+            if (parts.length >= 3) return parts.slice(0, -1).join('-');
+            return '';
+        }
+        var anchor = parts[anchorIdx];
+        var before = parts.slice(0, anchorIdx);
+        var fullBase = parts.slice(0, anchorIdx + 1).join('-');
+        if (anchorIdx < parts.length - 1) return fullBase;
+        if (before.length <= 1) return fullBase;
+        if (before.length === 2) {
+            if (/^[0-9]+$/.test(before[1])) return before[0] + '-' + before[1] + '-' + anchor;
+            if (/^(ii|iii|iv|v|vi|vii|viii|ix|x|mk[0-9]+|mkv)$/i.test(before[1])) return before[0] + '-' + before[1] + '-' + anchor;
+            var shortBrandKey = before[0] + '-' + anchor;
+            if (isArmorSlugCatalogMatch(slugCatalog, shortBrandKey)) return shortBrandKey;
+            return fullBase;
+        }
+        if (parts.length >= 4 && /^[0-9]+$/.test(parts[1])) {
+            var modelKey = parts[0] + '-' + parts[1] + '-' + anchor;
+            if (isArmorSlugCatalogMatch(slugCatalog, modelKey) || slugCatalog) return modelKey;
+        }
+        var compoundBrandKey = before[0] + '-' + before[1] + '-' + anchor;
+        if (isArmorSlugCatalogMatch(slugCatalog, compoundBrandKey)) return compoundBrandKey;
+        var rootBrandKey = before[0] + '-' + anchor;
+        if (isArmorSlugCatalogMatch(slugCatalog, rootBrandKey)) return rootBrandKey;
+        return fullBase;
+    }
+
+    function canonicalizeArmorSlugFamilyKey(familyKey, slugCatalog) {
+        if (!familyKey || !slugCatalog || state.group !== 'fps_armor') return familyKey;
+        var candidates = [familyKey];
+        var push = function (k) {
+            if (k && candidates.indexOf(k) < 0) candidates.push(k);
+        };
+        push(familyKey.replace(/-exploration-helmet$/, '-exploration-suit-helmet'));
+        push(familyKey.replace(/-exploration-backpack$/, '-exploration-suit-backpack'));
+        push(familyKey.replace(/-exploration-torso$/, '-exploration-suit-torso'));
+        push(familyKey.replace(/-exploration-legs$/, '-exploration-suit-legs'));
+        push(familyKey.replace(/-exploration-arms$/, '-exploration-suit-arms'));
+        push(familyKey.replace(/-exploration-undersuit$/, '-exploration-suit-undersuit'));
+        if (/-armor-/.test(familyKey)) push(familyKey.replace(/-armor-/g, '-'));
+        var i;
+        for (i = 0; i < candidates.length; i++) {
+            if (slugCatalog[candidates[i]]) return candidates[i];
+        }
+        return familyKey;
+    }
+
+    var ARMOR_INFER_SKIP_BRANDS = { the: true, a: true };
+
+    function slugBelongsToBrandAnchor(slug, brand, anchor) {
+        var s = String(slug || '').trim().toLowerCase();
+        if (!s || !brand || !anchor) return false;
+        var prefix = brand + '-';
+        if (s.indexOf(prefix) !== 0) return false;
+        if (s === brand + '-' + anchor) return true;
+        if (s.indexOf('-' + anchor + '-') >= 0) return true;
+        return s.slice(-(anchor.length + 1)) === '-' + anchor;
+    }
+
+    function buildArmorBrandAnchorCounts(items) {
+        var anchors = getVariantSlugBaseAnchors();
+        var counts = Object.create(null);
+        (items || []).forEach(function (item) {
+            var slug = String(item.slug || '').trim().toLowerCase();
+            if (!slug) return;
+            var parts = slug.split('-').filter(Boolean);
+            if (parts.length < 2) return;
+            var anchorIdx = -1;
+            for (var i = 0; i < anchors.length; i++) {
+                var idx = parts.lastIndexOf(anchors[i]);
+                if (idx > anchorIdx) anchorIdx = idx;
+            }
+            if (anchorIdx < 0) return;
+            var brand = parts[0];
+            var anchor = parts[anchorIdx];
+            if (!brand || !anchor || ARMOR_INFER_SKIP_BRANDS[brand]) return;
+            var key = brand + '-' + anchor;
+            if (slugBelongsToBrandAnchor(slug, brand, anchor)) {
+                counts[key] = (counts[key] || 0) + 1;
+            }
+        });
+        return counts;
+    }
+
+    function isArmorProductLineFamilyKey(familyKey) {
+        var parts = String(familyKey || '').split('-').filter(Boolean);
+        if (parts.length < 3) return false;
+        var mid = parts[1];
+        return /^(ii|iii|iv|v|vi|vii|viii|ix|x|mk[0-9]+|mkv|[0-9]+)$/i.test(mid);
+    }
+
+    function maybeInferBrandAnchorFamilyKey(slug, familyKey, slugCatalog, brandAnchorCounts) {
+        if (!familyKey || !brandAnchorCounts) return familyKey;
+        var anchors = getVariantSlugBaseAnchors();
+        var parts = String(slug || '')
+            .trim()
+            .toLowerCase()
+            .split('-')
+            .filter(Boolean);
+        if (parts.length < 2) return familyKey;
+        var anchorIdx = -1;
+        for (var i = 0; i < anchors.length; i++) {
+            var idx = parts.lastIndexOf(anchors[i]);
+            if (idx > anchorIdx) anchorIdx = idx;
+        }
+        if (anchorIdx < 0) return familyKey;
+        var brand = parts[0];
+        var anchor = parts[anchorIdx];
+        if (!brand || !anchor || ARMOR_INFER_SKIP_BRANDS[brand]) return familyKey;
+        if (isArmorProductLineFamilyKey(familyKey)) return familyKey;
+        var inferred = brand + '-' + anchor;
+        if ((brandAnchorCounts[inferred] || 0) < 2) return familyKey;
+        if (familyKey === inferred) return familyKey;
+        if (slugCatalog && slugCatalog[inferred] && familyKey !== inferred) return inferred;
+        if (!slugBelongsToBrandAnchor(slug, brand, anchor)) return familyKey;
+        return inferred;
+    }
+
+    function resolveArmorSlugFamilyKey(slug, slugCatalog, brandAnchorCounts) {
+        var familyKey = canonicalizeArmorSlugFamilyKey(getArmorSlugFamilyKey(slug, slugCatalog), slugCatalog);
+        return maybeInferBrandAnchorFamilyKey(slug, familyKey, slugCatalog, brandAnchorCounts);
+    }
+
+    function clearArmorVariantExpanded() {
+        state.armorVariantExpanded = {};
+        state.armorVariantGrouping = null;
+    }
+
+    function getVariantNameParts(name) {
+        var s = String(name || '').trim();
+        if (!s) return { base: '', suffix: '' };
+        var paren = s.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
+        if (paren) return { base: paren[1].trim(), suffix: paren[2].trim() };
+        var edition = s.match(/^(.+?)\s+(.+)\s+Edition$/i);
+        if (edition) return { base: edition[1].trim(), suffix: edition[2].trim() + ' Edition' };
+        var camo = s.match(/^(.+?)\s+(.+)\s+Camo$/i);
+        if (camo) return { base: camo[1].trim(), suffix: camo[2].trim() + ' Camo' };
+        var zhQuoted = s.match(/^(.+?)\s+[“"](.+?)[”"]\s*$/);
+        if (zhQuoted) return { base: zhQuoted[1].trim(), suffix: zhQuoted[2].trim() };
+        var enQuoted = s.match(/^(.+?)\s+"(.+?)"\s+(\S+)$/i);
+        if (enQuoted) return { base: enQuoted[1].trim() + ' ' + enQuoted[3].trim(), suffix: enQuoted[2].trim() };
+        var zhArmor = s.match(/^(.+?\s+(?:头盔|胸甲|腿甲|臂甲|护甲|背包))\s+(.+)$/);
+        if (zhArmor) return { base: zhArmor[1].trim(), suffix: zhArmor[2].trim() };
+        var zhFlightSuit = s.match(/^(.+?\s+飞行服)\s+(.+)$/);
+        if (zhFlightSuit) return { base: zhFlightSuit[1].trim(), suffix: zhFlightSuit[2].trim() };
+        var zhWeapon = s.match(
+            /^(.+?\s+(?:手枪|冲锋枪|突击步枪|狙击步枪|霰弹枪|轻机枪|机枪|发射器|十字弩|投掷物|近战武器|工具))\s+(.+)$/
+        );
+        if (zhWeapon) return { base: zhWeapon[1].trim(), suffix: zhWeapon[2].trim() };
+        var zhArmorVariant = s.match(/^(.+?\s+(?:头盔|胸甲|腿甲|臂甲|护甲|背包))(?:\s+(.+))?$/);
+        if (zhArmorVariant && zhArmorVariant[2]) return { base: zhArmorVariant[1].trim(), suffix: zhArmorVariant[2].trim() };
+        var zhShotgun = s.match(/^(.+?霰弹枪)\s+(.+)$/);
+        if (zhShotgun) return { base: zhShotgun[1].trim(), suffix: zhShotgun[2].trim() };
+        var enArmor = s.match(/^(.+\s+(?:Helmet|Backpack|Torso|Legs|Arms|Core|Vest|Undersuit))(?:\s+(.+))?$/i);
+        if (enArmor && enArmor[2]) return { base: enArmor[1].trim(), suffix: enArmor[2].trim() };
+        var enFlightSuit = s.match(/^(.+\s+Flight\s+Suit)\s+(.+)$/i);
+        if (enFlightSuit) return { base: enFlightSuit[1].trim(), suffix: enFlightSuit[2].trim() };
+        var enWeapon = s.match(
+            /^(.+\s+(?:Pistol|SMG|Rifle|Shotgun|Sniper|Launcher|Crossbow|Knife|Sword|Grenade|LMG|Scattergun))\s+(.+)$/i
+        );
+        if (enWeapon) return { base: enWeapon[1].trim(), suffix: enWeapon[2].trim() };
+        var parts = s.split(/\s+/);
+        if (parts.length < 3) return { base: s, suffix: '' };
+        return {
+            base: parts.slice(0, -1).join(' '),
+            suffix: parts[parts.length - 1],
+        };
+    }
+
+    function armorVariantGroupKey(item, slugCatalog, brandAnchorCounts) {
+        if (!item) return '';
+        var familyKey = resolveArmorSlugFamilyKey(item.slug, slugCatalog, brandAnchorCounts);
+        if (familyKey) {
+            return String(item.type || '') + '\0slug\0' + familyKey;
+        }
+        var zhParts = getVariantNameParts(item && item.name_zh);
+        var enParts = getVariantNameParts(item && item.name_en);
+        if (!zhParts.suffix && !enParts.suffix) return '';
+        var zhBase = zhParts.base || '';
+        var enBase = enParts.base || '';
+        if (!zhBase && !enBase) return '';
+        return String((item && item.type) || '') + '\0name\0' + zhBase + '\0' + enBase;
+    }
+
+    function pickArmorVariantLeader(members, slugCatalog, brandAnchorCounts) {
+        if (!members || !members.length) return null;
+        var familyKey = resolveArmorSlugFamilyKey(members[0] && members[0].slug, slugCatalog, brandAnchorCounts);
+        var prefixLeader = null;
+        var prefixSlugLen = Infinity;
+        for (var i = 0; i < members.length; i++) {
+            var slug = String(members[i].slug || '').toLowerCase();
+            if (familyKey && slug === familyKey) return members[i];
+            if (familyKey && slug.indexOf(familyKey + '-') === 0 && slug.length < prefixSlugLen) {
+                prefixLeader = members[i];
+                prefixSlugLen = slug.length;
+            }
+            if (slug && slug.endsWith('-base')) return members[i];
+        }
+        if (prefixLeader) return prefixLeader;
+        for (var j = 0; j < members.length; j++) {
+            if (/\bbase\b/i.test(String(members[j].name_en || ''))) return members[j];
+        }
+        var sorted = members.slice().sort(function (a, b) {
+            return String(a.name_zh || a.name_en || '').localeCompare(String(b.name_zh || b.name_en || ''), 'zh-CN');
+        });
+        return sorted[0];
+    }
+
+    function computeArmorVariantGrouping(items) {
+        state.armorVariantGrouping = null;
+        if (!isArmorVariantGroupingEnabled()) return;
+        var slugCatalog = buildArmorSlugCatalog(items);
+        var brandAnchorCounts = buildArmorBrandAnchorCounts(items);
+        var groups = Object.create(null);
+        (items || []).forEach(function (item) {
+            var key = armorVariantGroupKey(item, slugCatalog, brandAnchorCounts);
+            if (!key) return;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(item);
+        });
+        var variantOf = Object.create(null);
+        var leaderOf = Object.create(null);
+        Object.keys(groups).forEach(function (key) {
+            var members = groups[key];
+            if (members.length < 2) return;
+            var leader = pickArmorVariantLeader(members, slugCatalog, brandAnchorCounts);
+            if (!leader) return;
+            var leaderId = normalizeItemId(leader.id_item);
+            var childCount = 0;
+            members.forEach(function (member) {
+                var memberId = normalizeItemId(member.id_item);
+                if (memberId === leaderId) return;
+                variantOf[memberId] = key;
+                childCount += 1;
+            });
+            if (childCount < 1) return;
+            leaderOf[leaderId] = {
+                groupKey: key,
+                variantCount: childCount,
+            };
+        });
+        state.armorVariantGrouping = { variantOf: variantOf, leaderOf: leaderOf };
+    }
+
+    function filterItemsForArmorVariantDisplay(items) {
+        return orderItemsForArmorVariantDisplay(items);
+    }
+
+    function orderItemsForArmorVariantDisplay(items) {
+        var grouping = state.armorVariantGrouping;
+        if (!grouping || !isArmorVariantGroupingEnabled()) return items;
+        var leaders = [];
+        var standalones = [];
+        var childrenByGroup = Object.create(null);
+        (items || []).forEach(function (item) {
+            var id = normalizeItemId(item.id_item);
+            if (grouping.leaderOf[id]) {
+                leaders.push(item);
+                return;
+            }
+            var groupKey = grouping.variantOf[id];
+            if (groupKey) {
+                if (!childrenByGroup[groupKey]) childrenByGroup[groupKey] = [];
+                childrenByGroup[groupKey].push(item);
+                return;
+            }
+            standalones.push(item);
+        });
+        var out = [];
+        leaders.forEach(function (leader) {
+            out.push(leader);
+            var info = grouping.leaderOf[normalizeItemId(leader.id_item)];
+            if (info && state.armorVariantExpanded[info.groupKey] && childrenByGroup[info.groupKey]) {
+                childrenByGroup[info.groupKey].forEach(function (child) {
+                    out.push(child);
+                });
+            }
+        });
+        standalones.forEach(function (item) {
+            out.push(item);
+        });
+        return out;
+    }
+
+    function getArmorVariantLeaderInfo(itemId) {
+        var grouping = state.armorVariantGrouping;
+        if (!grouping) return null;
+        return grouping.leaderOf[normalizeItemId(itemId)] || null;
+    }
+
+    function isArmorVariantChildRow(itemId) {
+        var grouping = state.armorVariantGrouping;
+        return !!(grouping && grouping.variantOf[normalizeItemId(itemId)]);
+    }
+
+    function toggleArmorVariantGroup(groupKey) {
+        if (!groupKey) return;
+        state.armorVariantExpanded[groupKey] = !state.armorVariantExpanded[groupKey];
+        var snap = snapshotExpandedState();
+        renderTable(snap);
     }
 
     var LOCATION_LABEL_OMIT = {
@@ -1701,10 +2918,319 @@
         };
     }
 
-    function renderMiningModifierTagsHtml(item) {
+    var nameImagePreviewCache = Object.create(null);
+    var nameHoverPreviewEl = null;
+    var activeNameHoverWrap = null;
+    var nameHoverPositionWired = false;
+
+    function absoluteAssetUrl(url) {
+        var raw = String(url || '').trim();
+        if (!raw) return '';
+        if (/^https?:\/\//i.test(raw)) return raw;
+        if (raw.indexOf('//') === 0) return window.location.protocol + raw;
+        var base = API_BASE || (window.location && window.location.origin) || '';
+        if (!base) return raw;
+        return base.replace(/\/$/, '') + (raw.charAt(0) === '/' ? raw : '/' + raw);
+    }
+
+    function componentImageProxyUrl(item) {
+        var id = resolveComponentId(item);
+        if (!id) return '';
+        return absoluteAssetUrl('/api/sc/components/image/' + encodeURIComponent(id));
+    }
+
+    function componentImageDirectUrl(item) {
+        if (!item || !item.image) return '';
+        var raw = item.image.remote_url || item.image.original_url || item.image.url || '';
+        raw = String(raw).trim();
+        if (/^https?:\/\//i.test(raw)) return raw;
+        if (raw.charAt(0) === '/') return absoluteAssetUrl(raw);
+        return '';
+    }
+
+    function collectNameImageCandidates(item) {
+        var out = [];
+        var seen = new Set();
+        function add(url) {
+            var val = String(url || '').trim();
+            if (!val || seen.has(val)) return;
+            seen.add(val);
+            out.push(val);
+        }
+        add(componentImageProxyUrl(item));
+        add(componentImageDirectUrl(item));
+        return out;
+    }
+
+    function ensureNameLinkWrap(link) {
+        if (!link || !link.parentNode) return null;
+        var parent = link.parentElement;
+        if (parent.classList && parent.classList.contains('sc-name-link-wrap')) return parent;
+        var wrap = document.createElement('div');
+        wrap.className = 'sc-name-link-wrap';
+        link.parentNode.insertBefore(wrap, link);
+        wrap.appendChild(link);
+        return wrap;
+    }
+
+    function syncNameHoverImageFrameSize(frame, img) {
+        if (!frame || !img) return;
+        var nw = img.naturalWidth;
+        var nh = img.naturalHeight;
+        if (!nw || !nh) {
+            frame.style.width = '';
+            return;
+        }
+        var frameH = parseFloat(getComputedStyle(frame).height);
+        if (!Number.isFinite(frameH) || frameH <= 0) {
+            frameH = frame.getBoundingClientRect().height;
+        }
+        if (!frameH) return;
+        var width = Math.round((frameH * nw) / nh);
+        var maxW = parseFloat(getComputedStyle(frame).maxWidth);
+        if (Number.isFinite(maxW) && maxW > 0 && width > maxW) {
+            width = maxW;
+        }
+        frame.style.height = frameH + 'px';
+        frame.style.width = Math.max(1, width) + 'px';
+    }
+
+    function isNameLinkHovered(linkWrap) {
+        if (!linkWrap) return false;
+        var link = linkWrap.querySelector('.sc-name-link');
+        return !!(link && (link.matches(':hover') || link === document.activeElement));
+    }
+
+    function ensureGlobalNameHoverPreview() {
+        if (nameHoverPreviewEl) return nameHoverPreviewEl;
+        var figure = document.createElement('figure');
+        figure.className = 'sc-detail-hero-media sc-name-hover-media';
+        figure.hidden = true;
+        figure.setAttribute('aria-hidden', 'true');
+        var frame = document.createElement('span');
+        frame.className = 'sc-detail-media-btn';
+        var img = document.createElement('img');
+        img.className = 'sc-detail-image';
+        img.decoding = 'async';
+        img.loading = 'eager';
+        img.referrerPolicy = 'no-referrer';
+        frame.appendChild(img);
+        figure.appendChild(frame);
+        document.body.appendChild(figure);
+        nameHoverPreviewEl = figure;
+        return figure;
+    }
+
+    function hideAllNameHoverPreviews() {
+        activeNameHoverWrap = null;
+        if (nameHoverPreviewEl) {
+            nameHoverPreviewEl.hidden = true;
+            nameHoverPreviewEl.style.transform = '';
+        }
+        var frame = nameHoverPreviewEl && nameHoverPreviewEl.querySelector('.sc-detail-media-btn');
+        if (frame) frame.style.width = '';
+        document.querySelectorAll('.sc-name-link-wrap .sc-name-hover-media').forEach(function (el) {
+            el.hidden = true;
+        });
+    }
+
+    function getNameHoverAnchorRect(linkWrap) {
+        if (!linkWrap) return null;
+        var link = linkWrap.querySelector('.sc-name-link');
+        var wrapRect = linkWrap.getBoundingClientRect();
+        if (!link) return wrapRect;
+        var zh = link.querySelector('.sc-name-zh');
+        if (!zh) return link.getBoundingClientRect();
+        var top = zh.getBoundingClientRect().top;
+        var bottom = zh.getBoundingClientRect().bottom;
+        var en = link.querySelector('.sc-name-en');
+        if (en && String(en.textContent || '').trim()) {
+            bottom = en.getBoundingClientRect().bottom;
+        }
+        return {
+            top: top,
+            bottom: bottom,
+            left: wrapRect.left,
+            right: wrapRect.right,
+            height: Math.max(0, bottom - top),
+            width: wrapRect.width,
+        };
+    }
+
+    function positionNameHoverPreview(linkWrap) {
+        if (!nameHoverPreviewEl || nameHoverPreviewEl.hidden || !linkWrap) return;
+        var anchor = getNameHoverAnchorRect(linkWrap);
+        if (!anchor) return;
+        var figure = nameHoverPreviewEl;
+        var frame = figure.querySelector('.sc-detail-media-btn');
+        var frameRect = frame ? frame.getBoundingClientRect() : figure.getBoundingClientRect();
+        var width = frameRect.width || 100;
+        var height = frameRect.height || 160;
+        var centerY = anchor.top + anchor.height / 2;
+        var gapX = 0;
+        if (figure) {
+            var cs = getComputedStyle(figure);
+            var off = String(cs.getPropertyValue('--sc-name-hover-offset-x') || '').trim();
+            var rootPx = parseFloat(cs.fontSize) || 16;
+            if (off.indexOf('rem') !== -1) gapX = (parseFloat(off) || 0) * rootPx;
+            else if (off.indexOf('px') !== -1) gapX = parseFloat(off) || 0;
+            else if (off) gapX = parseFloat(off) || 0;
+        }
+        var left = anchor.right + gapX;
+        var margin = 6;
+        if (left + width > window.innerWidth - margin) {
+            left = anchor.left - width - gapX;
+        }
+        if (centerY - height / 2 < margin) {
+            centerY = margin + height / 2;
+        } else if (centerY + height / 2 > window.innerHeight - margin) {
+            centerY = window.innerHeight - margin - height / 2;
+        }
+        figure.style.left = Math.round(left) + 'px';
+        figure.style.top = Math.round(centerY) + 'px';
+        figure.style.transform = 'translateY(-50%)';
+    }
+
+    function schedulePositionNameHoverPreview() {
+        window.requestAnimationFrame(function () {
+            positionNameHoverPreview(activeNameHoverWrap);
+            window.requestAnimationFrame(function () {
+                positionNameHoverPreview(activeNameHoverWrap);
+            });
+        });
+    }
+
+    function wireNameHoverPositionSync() {
+        if (nameHoverPositionWired) return;
+        nameHoverPositionWired = true;
+        window.addEventListener('resize', function () {
+            positionNameHoverPreview(activeNameHoverWrap);
+        });
+        window.addEventListener(
+            'scroll',
+            function () {
+                if (!activeNameHoverWrap || !isNameLinkHovered(activeNameHoverWrap)) {
+                    hideAllNameHoverPreviews();
+                    return;
+                }
+                positionNameHoverPreview(activeNameHoverWrap);
+            },
+            true
+        );
+    }
+
+    function showNameHoverPreview(linkWrap, item, src) {
+        if (!linkWrap || !isNameLinkHovered(linkWrap)) return;
+        wireNameHoverPositionSync();
+        hideAllNameHoverPreviews();
+        activeNameHoverWrap = linkWrap;
+        var figure = ensureGlobalNameHoverPreview();
+        var frame = figure.querySelector('.sc-detail-media-btn');
+        var img = figure.querySelector('.sc-detail-image');
+        if (!img || !frame) return;
+        var names = resolveItemDisplayNames(item);
+        img.alt = names.primary || '配件图片';
+        img.onload = function () {
+            syncNameHoverImageFrameSize(frame, img);
+            if (activeNameHoverWrap === linkWrap && isNameLinkHovered(linkWrap)) {
+                schedulePositionNameHoverPreview();
+            } else {
+                hideAllNameHoverPreviews();
+            }
+        };
+        if (img.src !== src) {
+            frame.style.width = '';
+            img.src = src;
+        }
+        figure.hidden = false;
+        if (img.complete && img.naturalWidth > 0) {
+            syncNameHoverImageFrameSize(frame, img);
+        }
+        schedulePositionNameHoverPreview();
+    }
+
+    function hideNameHoverPreview(linkWrap) {
+        if (activeNameHoverWrap && linkWrap && activeNameHoverWrap !== linkWrap) return;
+        hideAllNameHoverPreviews();
+    }
+
+    function resolveAndShowNamePreview(linkWrap, item) {
+        var id = resolveComponentId(item);
+        if (!id) return;
+        var cached = nameImagePreviewCache[id];
+        if (cached && cached.status === 'fail') return;
+        if (cached && cached.status === 'ok' && cached.src) {
+            showNameHoverPreview(linkWrap, item, cached.src);
+            return;
+        }
+        if (cached && cached.status === 'loading') return;
+
+        var candidates = collectNameImageCandidates(item);
+        if (!candidates.length) {
+            nameImagePreviewCache[id] = { status: 'fail' };
+            return;
+        }
+
+        nameImagePreviewCache[id] = { status: 'loading' };
+
+        (function tryCandidate(index) {
+            if (index >= candidates.length) {
+                nameImagePreviewCache[id] = { status: 'fail' };
+                return;
+            }
+            var src = candidates[index];
+            var probe = new Image();
+            probe.referrerPolicy = 'no-referrer';
+            probe.onload = function () {
+                nameImagePreviewCache[id] = { status: 'ok', src: src };
+                if (activeNameHoverWrap === linkWrap && isNameLinkHovered(linkWrap)) {
+                    showNameHoverPreview(linkWrap, item, src);
+                }
+            };
+            probe.onerror = function () {
+                tryCandidate(index + 1);
+            };
+            probe.src = src;
+        })(0);
+    }
+
+    function wireNameCellImagePreview(td, item) {
+        if (!td || !item || !resolveComponentId(item)) return;
+        var link = td.querySelector('.sc-name-link');
+        if (!link || link.dataset.namePreviewWired === '1') return;
+        var linkWrap = ensureNameLinkWrap(link);
+        if (!linkWrap) return;
+        link.dataset.namePreviewWired = '1';
+
+        function onEnter() {
+            hideAllNameHoverPreviews();
+            activeNameHoverWrap = linkWrap;
+            resolveAndShowNamePreview(linkWrap, item);
+        }
+
+        function onLeave() {
+            hideNameHoverPreview(linkWrap);
+        }
+
+        link.addEventListener('mouseenter', onEnter);
+        link.addEventListener('mouseleave', onLeave);
+        link.addEventListener('focus', onEnter);
+        link.addEventListener('blur', onLeave);
+    }
+
+    function renderItemModifierTagsHtml(item) {
         var wiki = window.ShipComponentWiki;
-        if (!wiki || typeof wiki.buildMiningModifierTags !== 'function') return '';
-        var tags = wiki.buildMiningModifierTags(item, item.type);
+        if (!wiki) return '';
+        var tags = [];
+        if (item.type === 'mining_laser' || item.type === 'ship_module') {
+            if (typeof wiki.buildMiningModifierTags === 'function') {
+                tags = wiki.buildMiningModifierTags(item, item.type);
+            }
+        } else if (item.type === 'attachment_barrel') {
+            if (typeof wiki.buildBarrelModifierTags === 'function') {
+                tags = wiki.buildBarrelModifierTags(item);
+            }
+        }
         if (!tags.length) return '';
         if (typeof wiki.renderMiningModifierTagsMarkup === 'function') {
             return wiki.renderMiningModifierTagsMarkup(tags, escapeHtml);
@@ -1731,7 +3257,7 @@
             if (componentId) {
                 link.href = componentDetailUrl(componentId);
                 var stashListReturn = function () {
-                    rememberListReturnState();
+                    rememberListReturnState(item.id_item);
                     rememberComponentDetailId(componentId);
                 };
                 link.addEventListener('mousedown', stashListReturn);
@@ -1746,8 +3272,60 @@
                 escapeHtml(names.primary) +
                 '</span>' +
                 (names.subtitle ? '<span class="sc-name-en">' + escapeHtml(names.subtitle) + '</span>' : '') +
-                (item.type === 'mining_laser' || item.type === 'ship_module' ? renderMiningModifierTagsHtml(item) : '');
-            td.appendChild(link);
+                renderItemModifierTagsHtml(item);
+
+            var leaderInfo = getArmorVariantLeaderInfo(item.id_item);
+            var isVariantChild = isArmorVariantChildRow(item.id_item);
+            if (leaderInfo || isVariantChild) {
+                var wrap = document.createElement('div');
+                wrap.className =
+                    'sc-name-wrap' + (leaderInfo ? ' sc-name-wrap--has-variants' : '') + (isVariantChild ? ' sc-name-wrap--variant' : '');
+                if (leaderInfo) {
+                    var variantOpen = !!state.armorVariantExpanded[leaderInfo.groupKey];
+                    var toggle = document.createElement('button');
+                    toggle.type = 'button';
+                    toggle.className = 'sc-variant-toggle' + (variantOpen ? ' is-open' : '');
+                    toggle.setAttribute('aria-expanded', variantOpen ? 'true' : 'false');
+                    toggle.setAttribute(
+                        'aria-label',
+                        variantOpen ? '收起 ' + leaderInfo.variantCount + ' 个变种' : '展开 ' + leaderInfo.variantCount + ' 个变种'
+                    );
+                    toggle.title = variantOpen ? '收起变种' : '展开 ' + leaderInfo.variantCount + ' 个变种';
+                    toggle.innerHTML = '<span class="sc-variant-chevron" aria-hidden="true"></span>';
+                    toggle.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleArmorVariantGroup(leaderInfo.groupKey);
+                        toggle.blur();
+                    });
+                    wrap.appendChild(toggle);
+                } else if (isVariantChild) {
+                    var branch = document.createElement('span');
+                    branch.className = 'sc-variant-branch';
+                    branch.setAttribute('aria-hidden', 'true');
+                    wrap.appendChild(branch);
+                }
+                wrap.appendChild(link);
+                td.appendChild(wrap);
+            } else {
+                td.appendChild(link);
+            }
+            wireNameCellImagePreview(td, item);
+            if (
+                IS_EQUIPMENT_PAGE &&
+                window.ShipComponentWeaponLoadout &&
+                window.ShipComponentWeaponLoadout.isWeaponLoadoutEligible(item)
+            ) {
+                var loadoutMount = document.createElement('div');
+                loadoutMount.className = 'sc-weapon-loadout-tags-mount';
+                var loadout = window.ShipComponentWeaponLoadout.getLoadout(item);
+                if (loadout && Object.keys(loadout).length) {
+                    loadoutMount.innerHTML = window.ShipComponentWeaponLoadout.renderListTagsHtml(item) || '';
+                }
+                if (loadoutMount.innerHTML || (loadout && Object.keys(loadout).length)) {
+                    td.appendChild(loadoutMount);
+                }
+            }
         } else if (key === 'type') {
             td.classList.add('sc-col-type-cell');
             if (isTypeColumnVisible()) {
@@ -1775,10 +3353,13 @@
             sizeBadge.textContent = sizeLabel;
             td.appendChild(sizeBadge);
         } else if (key === 'mfg') {
-            var mfgZh = item.manufacturer_zh || item.manufacturer || '—';
+            var mfgZh = itemManufacturerLabel(item);
+            var mfgLines = splitMfgDisplayLines(mfgZh);
             td.innerHTML = renderMfgCellHtml(mfgZh);
-            if (splitMfgDisplayLines(mfgZh).length > 1) td.classList.add('sc-col-mfg--multiline');
-            if (item.manufacturer && item.manufacturer !== mfgZh) td.title = item.manufacturer;
+            td.classList.toggle('sc-col-mfg--multiline', mfgLines.length > 1);
+            if (item.manufacturer && item.manufacturer !== mfgZh && !isPlaceholderManufacturerText(item.manufacturer)) {
+                td.title = item.manufacturer;
+            }
         } else if (key === 'mass') {
             if (isMassVolumeVisible()) td.textContent = formatMass(item.mass);
         } else if (key === 'volume') {
@@ -1804,6 +3385,25 @@
                 td.textContent = '—';
             }
         } else if (key === 'expand') {
+            var actions = document.createElement('div');
+            actions.className = 'sc-row-actions';
+            if (
+                IS_EQUIPMENT_PAGE &&
+                window.ShipComponentWeaponLoadout &&
+                window.ShipComponentWeaponLoadout.isWeaponLoadoutEligible(item)
+            ) {
+                var loadoutBtn = document.createElement('button');
+                loadoutBtn.type = 'button';
+                loadoutBtn.className = 'sc-loadout-btn';
+                loadoutBtn.textContent = '配件';
+                loadoutBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.ShipComponentWeaponLoadout.openModal(item, loadoutBtn);
+                    loadoutBtn.blur();
+                });
+                actions.appendChild(loadoutBtn);
+            }
             var btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'sc-expand-btn' + (expanded ? ' is-open' : '');
@@ -1815,7 +3415,8 @@
                 toggleExpand(item.id_item, tr);
                 btn.blur();
             });
-            td.appendChild(btn);
+            actions.appendChild(btn);
+            td.appendChild(actions);
         }
 
         return td;
@@ -1824,6 +3425,8 @@
     function renderRow(item) {
         var tr = document.createElement('tr');
         tr.dataset.id = normalizeItemId(item.id_item);
+        if (getArmorVariantLeaderInfo(item.id_item)) tr.classList.add('sc-row-armor-variant-leader');
+        if (isArmorVariantChildRow(item.id_item)) tr.classList.add('sc-row-armor-variant');
         var expanded = isItemExpanded(item.id_item);
         getTableStructureItems().forEach(function (structItem) {
             if (structItem.type === 'gap') {
@@ -1835,6 +3438,16 @@
             }
             tr.appendChild(renderRowCell(structItem.key, item, tr, expanded));
         });
+        if (
+            IS_EQUIPMENT_PAGE &&
+            window.ShipComponentWeaponLoadout &&
+            window.ShipComponentWeaponLoadout.isWeaponLoadoutEligible(item)
+        ) {
+            var rowLoadout = window.ShipComponentWeaponLoadout.getLoadout(item);
+            if (rowLoadout && Object.keys(rowLoadout).length) {
+                window.ShipComponentWeaponLoadout.hydrateWeaponLoadoutRow(item, tr);
+            }
+        }
         return tr;
     }
 
@@ -1917,7 +3530,9 @@
         captureBlueprintExpandedState();
         applyExpandedSnapshot(expandedSnapshot);
         els.body.innerHTML = '';
-        var items = sortItems(state.items.filter(isBrowsableItem));
+        var browsable = sortItems(state.items.filter(isBrowsableItem));
+        computeArmorVariantGrouping(browsable);
+        var items = orderItemsForArmorVariantDisplay(browsable);
         if (!items.length) {
             els.body.innerHTML = '<tr><td colspan="' + getColCount() + '">无匹配配件</td></tr>';
             syncExpandedShellClass();
@@ -2144,6 +3759,7 @@
         if (t && t.group) state.group = t.group;
         state.type = item.type;
         state.expanded = {};
+        clearArmorVariantExpanded();
         if (els.search) els.search.value = item.name_en || item.name_zh || '';
         hideSuggest();
         updateHero();
@@ -2180,6 +3796,8 @@
     async function loadList() {
         if (!els.body) return;
         abortPendingFetches();
+        var pendingRestore = isListRestorePending();
+        if (!pendingRestore) clearArmorVariantExpanded();
         state.page = 1;
         state.hasMore = false;
         state.loading = true;
@@ -2189,23 +3807,28 @@
         els.body.innerHTML = '<tr><td colspan="' + getColCount() + '">加载中…</td></tr>';
         updateMetaBar();
         try {
-            var res = await fetch(apiUrl('/api/sc/components?' + buildQuery(1)), { signal: signal });
-            var data = await res.json();
-            if (!res.ok || !data.ok) throw new Error((data && data.message) || '加载失败');
+            var fetched = await fetchJsonWithRetry(apiUrl('/api/sc/components?' + buildQuery(1)), { signal: signal }, {
+                loadingMessage: '配件索引加载中，请稍候',
+            });
+            var data = fetched.data;
             hideGate();
             state.meta = data.meta;
+            applyMetaTypeCounts(data.meta);
             state.items = data.items || [];
             state.total = data.total || 0;
             state.hasMore = state.items.length < state.total;
             syncBodyMode();
             updateSortHeaders();
+            if (pendingRestore) applyArmorVariantRestore(readPendingArmorVariantRestoreKeys());
             renderTable();
             updateMetaBar();
-            var skipScrollTop = false;
+            renderTabs();
+            updateHero();
+            var skipScrollTop = pendingRestore;
             try {
-                skipScrollTop = sessionStorage.getItem(LIST_RESTORE_FLAG_KEY) === '1';
+                if (!skipScrollTop) skipScrollTop = sessionStorage.getItem(LIST_RESTORE_FLAG_KEY) === '1';
             } catch (e) {
-                skipScrollTop = false;
+                skipScrollTop = pendingRestore;
             }
             if (!skipScrollTop) {
                 window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -2215,13 +3838,14 @@
             if (e.message && e.message.indexOf('未同步') >= 0) {
                 showGate('配件数据尚未同步，请超级管理员在管理系统中执行「同步舰船配件」。');
             } else {
-                showGate((e && e.message) || '加载失败');
+                showGate((e && e.message) || '加载失败，请稍后刷新重试');
             }
             els.body.innerHTML = '';
             state.hasMore = false;
         } finally {
             state.loading = false;
             state.listFetchController = null;
+            scheduleCheckLoadMore();
         }
     }
 
@@ -2274,31 +3898,45 @@
             ensureExpandedDetailPresent();
             fixExpandedDetailRowLayout();
             updateMetaBar();
+            scheduleCheckLoadMore();
         }
     }
 
-    function initInfiniteScroll() {
-        if (!els.loadSentinel || typeof IntersectionObserver === 'undefined') {
-            window.addEventListener(
-                'scroll',
-                function () {
-                    if (state.loading || state.loadingMore || !state.hasMore) return;
-                    var doc = document.documentElement;
-                    if (window.innerHeight + window.scrollY >= doc.scrollHeight - 320) {
-                        loadMore();
-                    }
-                },
-                { passive: true }
-            );
-            return;
+    function isLoadSentinelNearViewport() {
+        if (!els.loadSentinel) {
+            var doc = document.documentElement;
+            return window.innerHeight + window.scrollY >= doc.scrollHeight - (LOAD_MORE_ROOT_MARGIN + 80);
         }
+        var rect = els.loadSentinel.getBoundingClientRect();
+        var viewH = window.innerHeight || document.documentElement.clientHeight || 0;
+        return rect.top <= viewH + LOAD_MORE_ROOT_MARGIN;
+    }
+
+    function scheduleCheckLoadMore() {
+        if (state.loading || state.loadingMore || !state.hasMore) return;
+        window.requestAnimationFrame(function () {
+            if (state.loading || state.loadingMore || !state.hasMore) return;
+            if (isLoadSentinelNearViewport()) loadMore();
+        });
+    }
+
+    function initInfiniteScroll() {
+        window.addEventListener(
+            'scroll',
+            function () {
+                if (state.loading || state.loadingMore || !state.hasMore) return;
+                if (isLoadSentinelNearViewport()) loadMore();
+            },
+            { passive: true }
+        );
+        if (!els.loadSentinel || typeof IntersectionObserver === 'undefined') return;
         if (loadMoreObserver) loadMoreObserver.disconnect();
         loadMoreObserver = new IntersectionObserver(
             function (entries) {
                 if (!entries[0] || !entries[0].isIntersecting) return;
                 loadMore();
             },
-            { root: null, rootMargin: '240px 0px', threshold: 0 }
+            { root: null, rootMargin: LOAD_MORE_ROOT_MARGIN + 'px 0px', threshold: 0 }
         );
         loadMoreObserver.observe(els.loadSentinel);
     }
@@ -2500,15 +4138,36 @@
         }
     }
 
+    function applyUrlStateFromHistory() {
+        parseUrlState();
+        ensureTypeInGroup();
+        resetSortIfHiddenGradeClassColumns();
+        if (!isListRestorePending()) clearArmorVariantExpanded();
+        updateHero();
+        syncBodyMode();
+        renderGroupTabs();
+        renderTabs();
+        loadList();
+    }
+
     async function init() {
         parseUrlState();
+        bindLeadNavOnce();
         bindSortHeaders();
         syncBodyMode();
+        ensureTypeInGroup();
+        updateHero();
+        renderGroupTabs();
+        renderTabs();
+        updateUrlState();
         refreshMobileTableScrollState = initMobileTableDragScroll();
         initDesktopTableColumnSync();
         loadMeta();
         try {
-            var typesRes = await fetch(apiUrl('/api/sc/components/types'));
+            var typesUrl = '/api/sc/components/types';
+            var syncParam = apiDataVersionParam();
+            if (syncParam) typesUrl += '?' + syncParam;
+            var typesRes = await fetch(apiUrl(typesUrl));
             var typesData = await typesRes.json();
             if (typesData.ok && typesData.types) {
                 var normalized = normalizeCategoriesPayload(typesData.types, typesData.groups);
@@ -2550,10 +4209,20 @@
             hideSuggest();
         });
         initInfiniteScroll();
+        if (window.ShipComponentWeaponLoadout && typeof window.ShipComponentWeaponLoadout.setOnChange === 'function') {
+            window.ShipComponentWeaponLoadout.setOnChange(refreshWeaponLoadoutRow);
+        }
+        window.addEventListener('uss-weapon-loadout-change', function (e) {
+            if (e && e.detail && e.detail.weaponId) refreshWeaponLoadoutRow(e.detail.weaponId);
+        });
+        window.addEventListener('popstate', applyUrlStateFromHistory);
         var pendingRestore = readPendingListRestoreMeta();
-        if (pendingRestore && pendingRestore.expandedId) {
-            var restoreExpandedId = normalizeItemId(pendingRestore.expandedId);
-            if (restoreExpandedId) state.expanded[restoreExpandedId] = true;
+        if (pendingRestore) {
+            if (pendingRestore.expandedId) {
+                var restoreExpandedId = normalizeItemId(pendingRestore.expandedId);
+                if (restoreExpandedId) state.expanded[restoreExpandedId] = true;
+            }
+            applyArmorVariantRestore(pendingRestore.armorVariantKeys);
         }
         loadList().then(function () {
             return maybeRestoreListView();

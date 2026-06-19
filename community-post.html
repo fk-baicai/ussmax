@@ -23,16 +23,21 @@
         <div class="logo">
             <a href="index.html#community-section" aria-label="首页 · 社区"><img src="fleet-logo.jpg" alt="舰队 LOGO" decoding="async"></a>
         </div>
-        <div class="nav-links" role="navigation" aria-label="站点导航">
-            <div class="nav-dropdown">
-                <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true" data-mega-target="navMegaHangar" aria-controls="navMegaHangar">
-                    行政机库
+        <div class="nav-links" role="navigation" aria-label="站点导航"><div class="nav-dropdown">
+                <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true" data-mega-target="navMegaBlueprint" aria-controls="navMegaBlueprint">
+                    蓝图
                     <span class="nav-dropdown-caret" aria-hidden="true"></span>
                 </button>
             </div>
             <div class="nav-dropdown">
                 <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true" data-mega-target="navMegaShip" aria-controls="navMegaShip">
                     舰船
+                    <span class="nav-dropdown-caret" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="nav-dropdown">
+                <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true" data-mega-target="navMegaEquipment" aria-controls="navMegaEquipment">
+                    装备
                     <span class="nav-dropdown-caret" aria-hidden="true"></span>
                 </button>
             </div>
@@ -45,29 +50,45 @@
         </div>
         </div>
     </nav>
-    <div id="navMegaHangar" class="nav-mega-panel" role="region" aria-label="行政机库" hidden>
+<div id="navMegaShip" class="nav-mega-panel" role="region" aria-label="舰船" hidden>
         <div class="nav-mega-inner">
             <div class="nav-mega-col">
                 <ul class="nav-mega-list">
-                    <li><a href="executive-hangar.html" class="nav-mega-link"><span class="nav-mega-link-title">进入行政机库</span><span class="nav-mega-link-desc">Pyro 行政机库周期与插卡窗口</span></a></li>
+                    <li class="nav-mega-link-row"><a href="ship-components?group=component" class="nav-mega-link" data-nav-ship-group="component" id="navMegaLinkShipComponent"><span class="nav-mega-link-title">舰船组件</span><span class="nav-mega-link-desc">散热 · 电源 · 护盾 · 量子驱动器 · 跳跃驱动器 · 雷达</span></a><a href="ship-components?group=weapon" class="nav-mega-link" data-nav-ship-group="weapon" id="navMegaLinkShipWeapon"><span class="nav-mega-link-title">舰船武器</span><span class="nav-mega-link-desc">舰炮 · 导弹 · 导弹架 · 舰船炮台</span></a></li>
+                    <li class="nav-mega-link-row"><a href="ship-components?group=mining" class="nav-mega-link" data-nav-ship-group="mining" id="navMegaLinkShipMining"><span class="nav-mega-link-title">舰船矿头</span><span class="nav-mega-link-desc">矿头 · 模组</span></a><a href="ship-components?group=salvage" class="nav-mega-link" data-nav-ship-group="salvage" id="navMegaLinkShipSalvage"><span class="nav-mega-link-title">打捞模组</span><span class="nav-mega-link-desc">刮削模块</span></a></li>
+                    <li><a href="ship-components?group=fuel_nozzle" class="nav-mega-link" data-nav-ship-group="fuel_nozzle" id="navMegaLinkShipFuelNozzle"><span class="nav-mega-link-title">燃料喷嘴</span><span class="nav-mega-link-desc">氢燃料 · 量子燃料</span></a></li>
                 </ul>
             </div>
         </div>
     </div>
-    <div id="navMegaShip" class="nav-mega-panel" role="region" aria-label="舰船" hidden>
+    <div id="navMegaEquipment" class="nav-mega-panel" role="region" aria-label="装备" hidden>
         <div class="nav-mega-inner">
             <div class="nav-mega-col">
                 <ul class="nav-mega-list">
-                    <li><a href="ship-components.html" class="nav-mega-link"><span class="nav-mega-link-title">舰船配件</span><span class="nav-mega-link-desc">舰船组件 · 舰船武器 · 舰船矿头</span></a></li>
+                    <li class="nav-mega-link-row"><a href="personal-equipment?group=fps_weapon" class="nav-mega-link" data-nav-equipment-group="fps_weapon" id="navMegaLinkEquipWeapon"><span class="nav-mega-link-title">个人武器</span><span class="nav-mega-link-desc">手枪 · 冲锋枪 · 突击步枪 · 狙击枪 · 霰弹枪 · 机枪 · ...</span></a><a href="personal-equipment?group=fps_magazine" class="nav-mega-link" data-nav-equipment-group="fps_magazine" id="navMegaLinkEquipAttachment"><span class="nav-mega-link-title">武器配件</span><span class="nav-mega-link-desc">弹匣 · 瞄具 · 枪口 · 下挂 · 实用配件 · 发射器导弹</span></a></li>
+                    <li><a href="personal-equipment?group=fps_armor" class="nav-mega-link" data-nav-equipment-group="fps_armor" id="navMegaLinkEquipArmor"><span class="nav-mega-link-title">个人护甲</span><span class="nav-mega-link-desc">头盔 · 胸甲 · 腿甲 · 臂甲 · 背包 · 基底服</span></a></li>
                 </ul>
             </div>
         </div>
     </div>
+            <div id="navMegaBlueprint" class="nav-mega-panel" role="region" aria-label="蓝图" hidden>
+        <div class="nav-mega-inner">
+            <div class="nav-mega-col">
+                <ul class="nav-mega-list">
+                    <li><a href="blueprint-crafting.html" class="nav-mega-link" data-nav-blueprint-page><span class="nav-mega-link-title">蓝图制造</span><span class="nav-mega-link-desc">选择蓝图 · 配置材料品质 · 模拟成品属性</span></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
     <div id="navMegaTools" class="nav-mega-panel" role="region" aria-label="工具" hidden>
         <div class="nav-mega-inner">
             <div class="nav-mega-col">
                 <ul class="nav-mega-list">
-                    <li><a href="server-ip.html" class="nav-mega-link"><span class="nav-mega-link-title">服务器 IP</span><span class="nav-mega-link-desc">服务器运行状态/IP地址</span></a></li>
+                    <li class="nav-mega-tools-row">
+                        <a href="executive-hangar.html" class="nav-mega-link"><span class="nav-mega-link-title">行政机库</span><span class="nav-mega-link-desc">Pyro 行政机库周期与插卡窗口</span></a>
+                        <a href="server-ip.html" class="nav-mega-link"><span class="nav-mega-link-title">服务器 IP</span><span class="nav-mega-link-desc">服务器运行状态/IP地址</span></a>
+                    </li>
                     <li><a href="rsi-funding.html" class="nav-mega-link"><span class="nav-mega-link-title">资金统计</span><span class="nav-mega-link-desc">RSI 众筹资金与玩家数量</span></a></li>
                 </ul>
             </div>

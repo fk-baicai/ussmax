@@ -161,21 +161,28 @@
         else if (phase === 'charging') pipelineHint = '绿灯 ' + greenCount + ' / 5 · 每 24 分钟亮 1 盏';
         else pipelineHint = '冷却段指示灯全灭';
 
+        var goldenWindow =
+            phase === 'discharge' && dt < INSERT_WINDOW && greenCount === 5;
+
         return {
             phase: phase,
             phaseLabel: phaseLabel,
             phaseRange: PHASE_RANGE[phase] || '',
+            phaseRemainingMs: phaseRemainingMs,
             phaseRemainingText: formatMs(phaseRemainingMs),
             phaseRemainLabel: phaseRemainLabel,
             phaseRemainingDisplayText: phaseRemainingDisplayText,
             elapsedText: formatMs(t),
+            cycleRemainingMs: cycleRemainingMs,
             cycleRemainingParts: partsFromMs(cycleRemainingMs),
             cycleRemainingText: formatClockParts(partsFromMs(cycleRemainingMs)),
             cycleProgress: Math.round((t / CYCLE_MS) * 100),
             greenCount: greenCount,
             canInsert: canInsert,
+            goldenWindow: goldenWindow,
             insertLabel: insertLabel,
             insertTone: insertTone,
+            nextAccessMs: canInsert ? phaseRemainingMs : nextAccessMs,
             nextAccessLabelText: nextAccessLabelText,
             nextAccessText: nextAccessText,
             pipelineHint: pipelineHint,
@@ -187,7 +194,8 @@
         return modMs(Date.now() - anchorStartTime + calibrationOffsetMs, CYCLE_MS);
     }
 
-    function buildCard(title, sub, badgeText, tone, details, leds) {
+    function buildCard(title, sub, badgeText, tone, details, leds, opts) {
+        opts = opts || {};
         var card = document.createElement('article');
         card.className = 'rsi-status-card rsi-status-card--' + (tone || 'gray');
 
@@ -200,6 +208,7 @@
 
         var p = document.createElement('p');
         p.className = 'rsi-status-card-sub';
+        if (opts.subEmphasis) p.classList.add('is-emphasis-' + opts.subEmphasis);
         p.textContent = sub || '';
 
         head.appendChild(h3);
@@ -212,8 +221,11 @@
                 if (!row || !row.label) return;
                 var dt = document.createElement('dt');
                 dt.textContent = row.label;
+                if (row.emphasis) dt.classList.add('is-' + row.emphasis);
                 var dd = document.createElement('dd');
                 dd.textContent = row.value || '—';
+                if (row.emphasis) dd.classList.add('is-' + row.emphasis);
+                if (row.urgent) dd.classList.add('is-urgent');
                 dl.appendChild(dt);
                 dl.appendChild(dd);
             });
@@ -267,6 +279,19 @@
         return leds;
     }
 
+    function isSoon(ms) {
+        return ms != null && ms <= 10 * 60000;
+    }
+
+    function insertHint(state) {
+        if (state.canInsert) {
+            if (state.goldenWindow) return '五盏全绿 · 前 12 分钟黄金窗口，建议优先插卡';
+            return '放电段内随时可插卡 · 阶段结束后窗口关闭';
+        }
+        if (state.phase === 'cooldown') return '冷却 5 分钟后进入充电，期间不可插卡';
+        return '充电段结束后进入放电，全程可插卡';
+    }
+
     function render(state) {
         if (!state || !gridEl) return;
 
@@ -277,6 +302,9 @@
 
         var phaseSub = state.phaseLabel + ' · ' + state.phaseRange;
         var leds = pipelineLeds(state.greenCount, state.phase);
+        var showIndicator = state.phase === 'charging' || state.phase === 'discharge';
+        var insertSoon = !state.canInsert && isSoon(state.nextAccessMs);
+        var insertClosing = state.canInsert && isSoon(state.phaseRemainingMs);
 
         gridEl.innerHTML = '';
         gridEl.appendChild(
@@ -286,9 +314,23 @@
                 state.phaseLabel,
                 phaseTone(state.phase, state.canInsert),
                 [
-                    { label: state.phaseRemainLabel, value: state.phaseRemainingDisplayText },
-                    { label: '阶段还剩', value: state.phaseRemainingText },
-                    { label: 'PIPELINE', value: state.greenCount + ' / 5 盏绿灯 · ' + state.pipelineHint },
+                    {
+                        label: state.phaseRemainLabel,
+                        value: state.phaseRemainingDisplayText,
+                        emphasis: showIndicator ? 'key' : '',
+                        urgent: showIndicator && isSoon(state.phaseRemainingMs),
+                    },
+                    {
+                        label: '阶段还剩',
+                        value: state.phaseRemainingText,
+                        emphasis: 'key',
+                        urgent: isSoon(state.phaseRemainingMs),
+                    },
+                    {
+                        label: 'PIPELINE',
+                        value: state.greenCount + ' / 5 盏绿灯 · ' + state.pipelineHint,
+                        emphasis: state.goldenWindow ? 'key' : 'hint',
+                    },
                 ],
                 leds,
             ),
@@ -296,20 +338,36 @@
         gridEl.appendChild(
             buildCard(
                 '插卡窗口',
-                state.canInsert ? '放电段 120 – 180 分钟全程可插卡' : '当前不可插卡',
+                state.canInsert
+                    ? state.goldenWindow
+                        ? '黄金窗口 · 五盏全绿，建议立即插卡'
+                        : '当前可插卡 · 放电段全程开放'
+                    : '当前不可插卡',
                 state.insertLabel,
                 state.insertTone,
                 [
-                    { label: state.nextAccessLabelText, value: state.nextAccessText },
+                    {
+                        label: state.nextAccessLabelText,
+                        value: state.nextAccessText,
+                        emphasis: 'key',
+                        urgent: insertSoon || insertClosing,
+                    },
                     {
                         label: '说明',
-                        value: state.canInsert
-                            ? '窗口关闭后需等下轮放电'
-                            : state.phase === 'cooldown'
-                              ? '冷却 5 分钟后进入充电'
-                              : '充电段结束后进入放电',
+                        value: insertHint(state),
+                        emphasis: 'hint',
                     },
                 ],
+                null,
+                {
+                    subEmphasis: state.canInsert
+                        ? state.goldenWindow
+                            ? 'open-golden'
+                            : 'open'
+                        : state.phase === 'cooldown'
+                          ? 'cooldown'
+                          : 'blocked',
+                },
             ),
         );
         gridEl.appendChild(
@@ -319,9 +377,13 @@
                 state.cycleRemainingText,
                 state.canInsert ? 'green' : 'blue',
                 [
-                    { label: '已进行', value: state.elapsedText },
-                    { label: '距本轮结束', value: state.cycleRemainingText },
-                    { label: '下轮充电', value: chargingNote },
+                    { label: '已进行', value: state.elapsedText, emphasis: 'hint' },
+                    {
+                        label: '距本轮结束',
+                        value: state.cycleRemainingText,
+                        emphasis: 'key',
+                    },
+                    { label: '下轮充电', value: chargingNote, emphasis: 'hint' },
                 ],
             ),
         );

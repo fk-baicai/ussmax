@@ -247,13 +247,13 @@
         renderDetails(null);
         syncView();
         if (pollTimer) clearInterval(pollTimer);
-        pollTimer = setInterval(function () {
-            if (isLoggedIn()) fetchServerIp();
-            else fetchGuestStatus();
-        }, 30000);
+        pollTimer = setInterval(syncView, 30000);
     }
 
     window.addEventListener('storage', syncView);
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') syncView();
+    });
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', start);

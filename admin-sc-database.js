@@ -362,7 +362,7 @@
         var label =
             mode === 'force' ? '强制更新' : mode === 'retry_failed' ? '重试失败' : '补齐缺失';
         if (errEl) errEl.hidden = true;
-        if (statusEl) statusEl.textContent = label + '进行中…（视数量约 1–10 分钟）';
+        if (statusEl) statusEl.textContent = label + '进行中…（约 1 张/秒，视数量可能需 1–2 小时）';
         try {
             var r = await fetch(scApiBase().replace(/\/$/, '') + '/api/admin/sc/sync-component-images', {
                 method: 'POST',

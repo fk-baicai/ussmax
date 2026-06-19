@@ -1,15 +1,14 @@
 /**
  * RSI 众筹资金统计（Funds / Star Citizens + 时间线）
- * 工具页 rsi-funding.html；经本站 /api/rsi-funding-stats 读取。
- * 前端 localStorage 1 小时缓存，与后端 RSI 抓取间隔一致（同 rsi-server-status.js 模式）。
+ * 每次访问强制请求后端 ?fresh=1；localStorage 仅作网络失败时的离线回退。
  */
 (function () {
     'use strict';
 
-    var REFRESH_MS = 60 * 60 * 1000;
     var LOCAL_CACHE_MS = 60 * 60 * 1000;
+    var POLL_MS = 5 * 60 * 1000;
     var LOCAL_CACHE_KEY = 'ussRsiFundingCache';
-    var LOCAL_CACHE_VERSION = 2;
+    var LOCAL_CACHE_VERSION = 4;
     var PERIODS = [
         { id: 'hour', label: '小时' },
         { id: 'day', label: '天' },
@@ -92,7 +91,7 @@
             if (!o || o.v !== LOCAL_CACHE_VERSION || !o.fetchedAt || !o.periods) return null;
             if (!isFinite(Number(o.fundsUsd)) || !isFinite(Number(o.fans))) return null;
             var age = Date.now() - new Date(o.fetchedAt).getTime();
-            if (!isFinite(age) || age < 0) return null;
+            if (!Number.isFinite(age) || age < 0) return null;
             var fresh = age <= LOCAL_CACHE_MS;
             if (!fresh && !allowStale) return null;
             return {
@@ -446,8 +445,7 @@
         renderChart(getPeriodPoints(data, currentPeriod), currentPeriod);
         if (updatedEl && data && data.fetchedAt) {
             var when = formatFetchedAt(data.fetchedAt);
-            if (when && data.stale) when += ' · 缓存';
-            updatedEl.textContent = when || '';
+            updatedEl.textContent = when ? '更新时间：' + when : '';
             updatedEl.hidden = !when;
         }
     }
@@ -471,7 +469,8 @@
     }
 
     async function fetchFromBackend() {
-        var r = await fetch(apiBase() + '/api/rsi-funding-stats', { cache: 'no-store' });
+        var url = apiBase() + '/api/rsi-funding-stats?fresh=1&_=' + Date.now();
+        var r = await fetch(url, { cache: 'no-store' });
         var data = {};
         try {
             data = await r.json();
@@ -488,27 +487,34 @@
         return data;
     }
 
+    function shouldFetchFromBackend(opts) {
+        return !!(opts.forceNetwork || opts.revalidate || opts.force);
+    }
+
     async function loadStats(options) {
         var opts = options || {};
-        var localFresh = readLocalCache(false);
-        var localStale = readLocalCache(true);
-        var localAny = localFresh || localStale;
-        var skipNetwork = localFresh && !opts.forceNetwork && !opts.revalidate;
+        var localFallback = readLocalCache(true);
+        var mustFetch = shouldFetchFromBackend(opts) || !localFallback;
 
-        if (localAny && !opts.silent) {
-            render(localAny);
-        } else if (!localAny && !opts.silent) {
-            renderLoading();
+        if (!opts.silent) {
+            if (mustFetch) {
+                if (!localFallback) renderLoading();
+                else render(localFallback);
+            } else if (localFallback) {
+                render(localFallback);
+            } else {
+                renderLoading();
+            }
         }
 
-        if (skipNetwork) return;
+        if (!mustFetch) return;
 
         try {
             var data = await fetchFromBackend();
             render(data);
         } catch (err) {
-            if (localAny) {
-                render(localAny);
+            if (localFallback) {
+                render(localFallback);
                 return;
             }
             renderError((err && err.message) || '获取资金统计失败');
@@ -518,8 +524,8 @@
     function scheduleRefresh() {
         if (timer) clearInterval(timer);
         timer = setInterval(function () {
-            loadStats({ forceNetwork: true, silent: true });
-        }, REFRESH_MS);
+            loadStats({ forceNetwork: true, revalidate: true, silent: true });
+        }, POLL_MS);
     }
 
     function init() {
@@ -530,7 +536,7 @@
         updatedEl = document.getElementById('rsiFundingUpdated');
         if (!fundsEl || !fansEl || !chartEl) return;
         renderTabs();
-        loadStats({ revalidate: true });
+        loadStats({ forceNetwork: true, revalidate: true });
         scheduleRefresh();
         window.addEventListener('resize', function () {
             clearTimeout(resizeTimer);
@@ -542,22 +548,15 @@
         });
         document.addEventListener('visibilitychange', function () {
             if (document.visibilityState !== 'visible') return;
-            loadStats({ revalidate: true, silent: !!readLocalCache(false) });
+            loadStats({ forceNetwork: true, revalidate: true, silent: !!readLocalCache(true) });
         });
     }
 
     function scheduleInit() {
-        var start = function () {
-            if (window.UssLazyMedia && typeof window.UssLazyMedia.runWhenIdle === 'function') {
-                window.UssLazyMedia.runWhenIdle(init, 800);
-            } else {
-                setTimeout(init, 800);
-            }
-        };
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', start);
+            document.addEventListener('DOMContentLoaded', init);
         } else {
-            start();
+            init();
         }
     }
 

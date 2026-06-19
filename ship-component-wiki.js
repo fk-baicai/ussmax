@@ -40,6 +40,7 @@
     var WIKI_FIELD_UNITS = {
         rpm: ' RPM',
         range: ' m',
+        effective_range: ' m',
         capacity: ' 发',
         damage_per_shot: '',
         lock_time: ' s',
@@ -69,6 +70,7 @@
         decay: '°',
         module_slots: ' 个',
         extraction_throughput: ' SCU/s',
+        volume: ' SCU',
         missile_count: ' 枚',
         max_missiles: ' 枚',
         regen_rate: '/s',
@@ -104,6 +106,7 @@
         radius_min: ' m',
         radius_max: ' m',
         time_to_full_speed: ' s',
+        gforce_resistance: ' G',
     };
     var WIKI_BOOLEAN_NUM_KEYS = {
         enable_lifetime: true,
@@ -111,13 +114,47 @@
         requires_launcher: true,
         enable_cross_section_occlusion: true,
         is_cluster: true,
+        can_be_used_for_take_down: true,
+        can_block: true,
+        can_dodge: true,
+        can_be_used_in_prone: true,
     };
 
     function isUnlimitedRangeKey(key) {
         return key === 'lock_range_max' || key === 'lock_range_min' || key === 'range_max' || key === 'range_min';
     }
 
-    function formatWikiFieldDisplay(key, val) {
+    var ATTACHMENT_SLOT_EXCLUDE_SUB_TYPES = { Magazine: 1 };
+    var ATTACHMENT_SLOT_EXCLUDE_POSITIONS = { ITEM_GRAB: 1, MAGAZINE_WELL: 1 };
+
+    function countWeaponAttachmentSlotsFromPorts(ports) {
+        if (!Array.isArray(ports) || !ports.length) return null;
+        var count = 0;
+        for (var i = 0; i < ports.length; i++) {
+            var p = ports[i];
+            if (!p || typeof p !== 'object') continue;
+            var sub = String(p.sub_type || '').trim();
+            if (!sub || ATTACHMENT_SLOT_EXCLUDE_SUB_TYPES[sub]) continue;
+            var pos = String(p.position || '').toUpperCase();
+            if (ATTACHMENT_SLOT_EXCLUDE_POSITIONS[pos]) continue;
+            var name = String(p.name || '').toLowerCase();
+            if (name === 'item_grab' || name === 'magazine_attach') continue;
+            count += 1;
+        }
+        return count;
+    }
+
+    function getWeaponAttachmentSlotCount(item) {
+        var wf = item && item.wiki_fields;
+        if (!wf) return null;
+        if (typeof wf.attachment_slot_count === 'number' && Number.isFinite(wf.attachment_slot_count)) {
+            return wf.attachment_slot_count;
+        }
+        var fromPorts = countWeaponAttachmentSlotsFromPorts(wf.ports);
+        return fromPorts != null ? fromPorts : null;
+    }
+
+    function formatWikiFieldDisplay(key, val, nestedKey) {
         if (val == null || val === '') return null;
         if (typeof val === 'number' && val < 0 && isUnlimitedRangeKey(key)) {
             return '无限';
@@ -125,19 +162,31 @@
         if (WIKI_BOOLEAN_NUM_KEYS[key] && (val === 0 || val === 1)) {
             return val === 1 ? '是' : '否';
         }
+        if (/_change$/i.test(String(key)) && typeof val === 'number' && Number.isFinite(val)) {
+            if (val === 0) return null;
+            return formatWikiScalar(Math.round(Math.abs(val) * 100)) + '%';
+        }
+        if (key === 'gforce_resistance' && typeof val === 'number' && Number.isFinite(val) && val === 0) {
+            return null;
+        }
         var display = formatWikiScalar(val);
         if (display == null) return null;
-        return appendWikiFieldUnit(key, display);
+        return appendWikiFieldUnit(key, display, nestedKey);
     }
 
-    function appendWikiFieldUnit(key, display) {
+    function appendWikiFieldUnit(key, display, nestedKey) {
         if (display == null || display === '') return display;
         if (display === '无限') return display;
+        if (nestedKey === 'damage' && key === 'max') return display;
         if (!Object.prototype.hasOwnProperty.call(WIKI_FIELD_UNITS, key)) return display;
         var unit = WIKI_FIELD_UNITS[key];
         if (!unit) return display;
         return display + unit;
     }
+
+    var WIKI_NESTED_FIELD_LABELS = {
+        'damage.max': '弹匣总伤害',
+    };
 
     /** Wiki 同义键：渲染时跳过后者，避免重复展示 */
     var WIKI_DUPLICATE_FIELD_SKIP = {
@@ -145,6 +194,9 @@
         minimum: 'min',
         max_shield_health: 'max_health',
         max_shield_regen: 'regen_rate',
+        effective_range: 'range',
+        rof: 'rpm',
+        capacity: 'magazine_size',
     };
 
     /** 汉化库未收录时的兜底（优先使用 global.WIKI_SCALAR_LOC） */
@@ -254,8 +306,24 @@
         thermal: '热能',
         biochemical: '生化',
         stun: '击晕',
+        dps_total: '总 DPS',
+        alpha_total: '单发总伤害',
+        initial_capacity: '初始弹药',
+        max_penetration_thickness: '最大穿透厚度',
+        damage_falloff_level_1: '衰减等级 1',
+        damage_falloff_level_2: '衰减等级 2',
+        damage_falloff_level_3: '衰减等级 3',
         first_attack: '首发散布',
         per_attack: '逐发散布',
+        min_change: '最小散布变化',
+        max_change: '最大散布变化',
+        first_attack_change: '首发散布变化',
+        per_attack_change: '逐发散布变化',
+        decay_change: '散布衰减变化',
+        multiplier: '系数',
+        multiplier_change: '系数变化',
+        decay_multiplier: '衰减系数',
+        ads_spread: '瞄准散布',
         decay: '散布衰减',
         minimum: '最小',
         maximum: '最大',
@@ -346,6 +414,11 @@
         width: '宽度',
         height: '高度',
         length: '长度',
+        volume: '储物体积',
+        cargo_dimension: '货物空间',
+        true_dimension: '实际尺寸',
+        dimensions: '外形尺寸',
+        ui_dimension: '界面尺寸',
         volume_converted: '体积',
         volume_converted_unit: '体积单位',
         health: '生命值',
@@ -377,19 +450,193 @@
         ammo_speed: '弹速',
         ammo_mass: '弹药质量',
         ammo_lifetime: '弹药寿命',
+        personal_weapon: '个人武器',
+        melee_weapon: '近战武器',
+        can_be_used_for_take_down: '可用于制服',
+        can_block: '可格挡',
+        can_dodge: '可闪避',
+        can_be_used_in_prone: '卧姿可用',
+        stance_transition_melee_delay: '近战姿态切换延迟',
+        attack_modes: '攻击模式',
+        attack_impulse: '攻击冲量',
+        force_knockdown: '强制击倒',
+        stun_recovery_modifier: '眩晕恢复修正',
+        block_stun_reduction_modifier: '格挡眩晕减免',
+        block_stun_stamina_modifier: '格挡耐力修正',
+        ignore_body_part_impulse_scale: '忽略部位冲量缩放',
+        category: '攻击类型',
+        suit_armor: '护甲',
+        magazine: '弹匣',
+        ammunition: '弹药',
+        clothing: '服装',
+        slot: '部位',
+        armor_type: '护甲类型',
+        garment_type: '服装类型',
+        magazine_size: '弹匣容量',
+        magazine_type: '弹匣类型',
+        attachment_slot_count: '配件槽',
+        effective_range: '有效射程',
+        damages: '伤害分项',
+        damage_resistance_map: '伤害减免',
+        physical_change: '物理减伤',
+        energy_change: '能量减伤',
+        thermal_change: '热能减伤',
+        biochemical_change: '生化减伤',
+        distortion_change: '畸变减伤',
+        stun_change: '击晕减伤',
+        radiation_resistance: '辐射防护',
+        maximum_radiation_capacity: '辐射容量',
+        radiation_dissipation_rate: '辐射清除率',
+        temp_resistance_min: '最低适用温度',
+        temp_resistance_max: '最高适用温度',
+        gforce_resistance: '抗 G 值',
+        initial_ammo_count: '初始弹药',
+        max_ammo_count: '最大弹药',
+        max_restock_count: '最大补给次数',
+        zoom_scale: '放大倍率',
+        zoom_time_scale: '变焦时间系数',
+        zoom_time_change: '变焦时间变化',
+        second_zoom_scale: '第二放大倍率',
+        hide_weapon_in_ads: '瞄准时隐藏武器',
+        fstop_multiplier: '光圈系数',
+        range_increment: '射程增量',
+        auto_zeroing_time: '自动归零距离',
+        default_range: '默认射程',
+        max_range: '最大射程',
+        spread: '散布',
+        spread_change: '散布变化',
+        aim_recoil: '后坐力',
+        aim_recoil_change: '后坐力变化',
+        visual_recoil: '视觉后坐力',
+        visual_recoil_change: '视觉后坐力变化',
+        projectile_speed: '弹速系数',
+        projectile_speed_change: '弹速变化',
+        muzzle_flash_multiplier: '枪口焰系数',
+        muzzle_flash_change: '枪口焰变化',
+        damage_multiplier: '伤害系数',
+        damage_change: '伤害变化',
+        fire_rate_multiplier: '射速系数',
+        fire_rate_change: '射速变化',
+        projectile_speed_multiplier: '弹速系数',
+        projectile_speed_change: '弹速变化',
+        sound_radius_multiplier: '声响系数',
+        sound_radius_change: '声响变化',
+        heat_generation_multiplier: '热量系数',
+        heat_generation_change: '热量变化',
+        ammo_cost_multiplier: '弹药消耗系数',
+        ammo_cost_change: '弹药消耗变化',
+        charge_time_multiplier: '充能时间系数',
+        charge_time_change: '充能时间变化',
+        activate_on_attach: '挂载激活',
+        ignore_wear: '忽略磨损',
+        impact_damage: '冲击伤害',
+        impact_damage_map: '冲击伤害分布',
+        rof: '射速',
+        class: '伤害类型',
+        pellets_per_shot: '每发弹丸数',
+        mode: '模式',
+        damage_per_second: '每秒伤害',
+        heat_per_shot: '单发热量',
+        wear_per_shot: '单发磨损',
+        shot_count: '连发数',
+        cooldown_time: '冷却时间',
+        ammo_per_shot: '每发耗弹',
     };
 
-    function wikiFieldLabel(key, itemType) {
+    var PERSONAL_WEAPON_DAMAGE_LABELS = {
+        energy: '能量',
+        impact: '冲击',
+        thermal: '热能',
+        physical: '物理',
+        distortion: '畸变',
+        biochemical: '生化',
+        stun: '击晕',
+    };
+
+    var PERSONAL_WEAPON_MODE_LABELS = {
+        auto: '全自动',
+        fullauto: '全自动',
+        full_auto: '全自动',
+        'full auto': '全自动',
+        semi: '半自动',
+        semi_auto: '半自动',
+        'semi auto': '半自动',
+        burst: '点射',
+        single: '单发',
+        shotgun: '霰弹',
+        charge: '充能',
+        heal: '治疗',
+        repair: '维修',
+        salvage: '打捞',
+        mining: '采矿',
+        detach: '分离',
+        tractorbeam: '牵引',
+        tractor: '牵引',
+    };
+
+    function normalizePersonalWeaponModeToken(raw) {
+        return String(raw || '')
+            .trim()
+            .replace(/^\[|\]$/g, '')
+            .replace(/\s+/g, '_')
+            .toLowerCase();
+    }
+
+    function formatPersonalWeaponModeLabel(mode) {
+        var tokens = [mode && mode.localised, mode && mode.mode, mode && mode.type];
+        for (var i = 0; i < tokens.length; i++) {
+            var norm = normalizePersonalWeaponModeToken(tokens[i]);
+            if (!norm) continue;
+            if (PERSONAL_WEAPON_MODE_LABELS[norm]) return PERSONAL_WEAPON_MODE_LABELS[norm];
+        }
+        var fallback = String((mode && mode.mode) || (mode && mode.type) || '').trim();
+        if (fallback) return fallback.replace(/_/g, ' ');
+        return '未知模式';
+    }
+
+    function wikiFieldLabel(key, itemType, nestedKey) {
+        if (nestedKey) {
+            var nestedLabel = WIKI_NESTED_FIELD_LABELS[nestedKey + '.' + key];
+            if (nestedLabel) return nestedLabel;
+        }
         if (key === 'type') {
             if (itemType === 'ship_weapon') return '武器类型';
             if (itemType === 'ship_turret') return '炮台类型';
             if (itemType === 'mining_laser') return '激光类型';
             if (itemType === 'ship_module') return '模组类型';
+            if (itemType === 'personal_weapon') return '武器类型';
+            if (itemType === 'personal_armor') return '护甲类型';
+            if (itemType === 'magazine') return '弹匣类型';
+            if (itemType && itemType.indexOf('weapon_') === 0) return '武器类型';
+            if (itemType && itemType.indexOf('armor_') === 0) return '护甲类型';
         }
         return WIKI_FIELD_LABELS[key] || String(key || '').replace(/_/g, ' ');
     }
 
-    var SKIP_DETAIL_KEYS = { api_link: true, web_url: true, updated_at: true, modes: true };
+    var SKIP_DETAIL_KEYS = {
+        api_link: true,
+        web_url: true,
+        updated_at: true,
+        modes: true,
+        uuid: true,
+        damage_map: true,
+        impact_damage: true,
+        impact_damage_map: true,
+        classification: true,
+        classification_label: true,
+        class_name: true,
+        manufacturer_description: true,
+        position: true,
+        sub_type: true,
+        sub_type_label: true,
+        dimension: true,
+        melee_combat_config: true,
+    };
+
+    var MELEE_ATTACK_CATEGORY_LABEL = {
+        BladeSlash: '挥砍',
+        BladeStab: '刺击',
+    };
 
     var TYPE_WIKI_BLOCK_KEY = {
         cooling: 'cooler',
@@ -404,7 +651,84 @@
         missile_rack: 'missile_rack',
         mining_laser: 'mining_laser',
         ship_module: 'mining_modifier',
+        salvage_scraper: 'weapon_modifier',
+        fuel_nozzle: 'resource_network',
+        weapon_pistol: 'personal_weapon',
+        armor_helmet: 'suit_armor',
+        armor_backpack: 'dimension',
+        magazine: 'magazine',
+        attachment_ironsight: 'iron_sight',
+        attachment_barrel: 'weapon_modifier',
+        attachment_bottom: 'laser_pointer',
+        attachment_utility: 'weapon_modifier',
+        attachment_missile: 'weapon_modifier',
+        weapon_melee: 'melee_weapon',
+        weapon_throwable: 'grenade',
     };
+
+    function resolveWikiBlockKey(typeKey) {
+        var key = String(typeKey || '');
+        if (TYPE_WIKI_BLOCK_KEY[key]) return TYPE_WIKI_BLOCK_KEY[key];
+        if (key.indexOf('weapon_') === 0) return 'personal_weapon';
+        if (key === 'armor_backpack') return 'dimension';
+        if (key === 'personal_armor') return 'suit_armor';
+        if (key.indexOf('armor_') === 0) return 'suit_armor';
+        return null;
+    }
+
+    function resolveDetailSectionKey(typeKey) {
+        var key = String(typeKey || '');
+        if (TYPE_DETAIL_SECTIONS[key]) return key;
+        if (key === 'weapon_melee') return 'weapon_melee';
+        if (key === 'weapon_throwable') return 'weapon_throwable';
+        if (key.indexOf('weapon_') === 0) return 'weapon_pistol';
+        if (key === 'armor_backpack') return 'armor_backpack';
+        if (key.indexOf('armor_') === 0) return 'armor_helmet';
+        if (key.indexOf('attachment_') === 0) return key;
+        if (key === 'personal_weapon') return 'weapon_pistol';
+        if (key === 'personal_armor') return 'armor_helmet';
+        return key;
+    }
+
+    function resolveEquipmentTypeKey(typeKey) {
+        var key = String(typeKey || '');
+        if (WIKI_TABLE_COLUMNS[key]) return key;
+        if (TYPE_WIKI_BLOCK_KEY[key]) return key;
+        if (key === 'weapon_melee') return 'weapon_melee';
+        if (key === 'weapon_throwable') return 'weapon_throwable';
+        if (key.indexOf('weapon_') === 0) return 'weapon_pistol';
+        if (key.indexOf('armor_') === 0) return key === 'armor_backpack' ? 'armor_backpack' : 'armor_helmet';
+        if (key === 'personal_weapon') return 'weapon_pistol';
+        if (key === 'personal_armor') return 'armor_helmet';
+        return key;
+    }
+
+    function getSalvageScraperBlock(item) {
+        var wm = item && item.wiki_fields && item.wiki_fields.weapon_modifier;
+        return wm && wm.salvage ? wm.salvage : null;
+    }
+
+    function getFuelNozzleRates(item) {
+        var net = item && item.wiki_fields && item.wiki_fields.resource_network;
+        var out = { hydrogen: null, quantum: null };
+        if (!net || !Array.isArray(net.states)) return out;
+        for (var si = 0; si < net.states.length; si++) {
+            var deltas = (net.states[si] && net.states[si].deltas) || [];
+            for (var di = 0; di < deltas.length; di++) {
+                var d = deltas[di];
+                if (!d || d.type !== 'Consumption' || d.rate == null) continue;
+                if (d.resource === 'Fuel') out.hydrogen = d.rate;
+                if (d.resource === 'QuantumFuel') out.quantum = d.rate;
+            }
+        }
+        return out;
+    }
+
+    function getItemDurabilityHealth(item) {
+        var d = item && item.wiki_fields && item.wiki_fields.durability;
+        if (d && d.health != null) return d.health;
+        return null;
+    }
 
     var TYPE_DETAIL_SECTIONS = {
         shield: [
@@ -525,7 +849,7 @@
             {
                 title: '伤害',
                 nested: 'damage',
-                fields: ['burst', 'alpha_total', 'sustained_60s', 'max'],
+                fields: ['burst', 'sustained_60s', 'max'],
             },
             {
                 title: '散布',
@@ -667,6 +991,130 @@
             },
             { title: '属性修正', nested: 'modifier_map', fields: ['resistance', 'laser_instability', 'overcharge_rate', 'inert_materials', 'optimal_charge_rate', 'optimal_charge_window_size', 'all_charge_rates'] },
         ],
+        weapon_pistol: [
+            {
+                title: '武器参数',
+                fields: ['type', 'class', 'magazine_type', 'magazine_size', 'pellets_per_shot', 'range', 'effective_range', 'capacity'],
+            },
+            {
+                title: '伤害分项',
+                nested: 'damages',
+                fields: [],
+            },
+            {
+                title: '伤害统计',
+                nested: 'damage',
+                fields: ['alpha_total', 'dps_total'],
+            },
+            {
+                title: '散布',
+                nested: 'spread',
+                fields: ['min', 'first_attack', 'per_attack', 'decay', 'max'],
+            },
+            {
+                title: '弹药',
+                nested: 'ammunition',
+                fields: ['speed', 'range', 'lifetime', 'capacity', 'initial_capacity', 'max_penetration_thickness'],
+            },
+            {
+                title: '开火模式',
+                nested: 'modes',
+                fields: [],
+            },
+        ],
+        weapon_throwable: [
+            {
+                title: '投掷物参数',
+                custom: 'grenade_params',
+            },
+        ],
+        weapon_melee: [
+            {
+                title: '近战参数',
+                fields: [
+                    'can_be_used_for_take_down',
+                    'can_block',
+                    'can_dodge',
+                    'can_be_used_in_prone',
+                    'stance_transition_melee_delay',
+                ],
+            },
+            {
+                title: '攻击模式',
+                custom: 'melee_attacks',
+            },
+        ],
+        armor_helmet: [
+            {
+                title: '护甲参数',
+                fields: ['garment_type'],
+            },
+            {
+                title: '防护',
+                nested: 'damage_resistance_map',
+                fields: ['physical_change', 'energy_change', 'thermal_change', 'biochemical_change', 'distortion_change', 'stun_change'],
+            },
+            {
+                title: '环境耐受',
+                fields: ['temp_resistance_min', 'temp_resistance_max', 'gforce_resistance'],
+            },
+            {
+                title: '辐射防护',
+                nested: 'radiation_resistance',
+                fields: ['maximum_radiation_capacity', 'radiation_dissipation_rate'],
+            },
+        ],
+        armor_backpack: [
+            {
+                title: '储物参数',
+                fields: ['true_dimension'],
+            },
+        ],
+        magazine: [
+            {
+                title: '弹匣参数',
+                fields: ['initial_ammo_count', 'max_restock_count', 'max_ammo_count'],
+            },
+            {
+                title: '弹药',
+                nested: 'ammunition',
+                fields: ['capacity', 'range', 'lifetime', 'speed'],
+            },
+            {
+                title: '弹药伤害',
+                custom: 'magazine_damage',
+            },
+        ],
+        attachment_ironsight: [
+            {
+                title: '瞄具参数',
+                custom: 'ironsight',
+            },
+        ],
+        attachment_barrel: [
+            {
+                title: '枪口参数',
+                custom: 'barrel',
+            },
+        ],
+        attachment_bottom: [
+            {
+                title: '下挂参数',
+                custom: 'bottom',
+            },
+        ],
+        attachment_utility: [
+            {
+                title: '配件修正',
+                custom: 'utility',
+            },
+        ],
+        attachment_missile: [
+            {
+                title: '发射器导弹',
+                custom: 'missile_attachment',
+            },
+        ],
     };
 
     function dedupeWikiDetailRows(rows) {
@@ -693,22 +1141,48 @@
         return false;
     }
 
-    function buildRowForWikiField(block, key, itemType) {
+    function formatWikiDimensionBox(val) {
+        if (!val || typeof val !== 'object' || Array.isArray(val)) return null;
+        var w = val.width;
+        var h = val.height;
+        var l = val.length;
+        if (w == null && h == null && l == null) return null;
+        return (
+            (w != null ? formatWikiScalar(w) : '—') +
+            ' × ' +
+            (h != null ? formatWikiScalar(h) : '—') +
+            ' × ' +
+            (l != null ? formatWikiScalar(l) : '—') +
+            ' m'
+        );
+    }
+
+    function buildRowForWikiField(block, key, itemType, nestedKey) {
         if (!block) return null;
         var val = block[key];
         if (val == null || val === '') return null;
-        if (typeof val === 'object' && !Array.isArray(val)) {
+        if (Array.isArray(val)) return null;
+        if (typeof val === 'object') {
+            if (
+                key === 'cargo_dimension' ||
+                key === 'true_dimension' ||
+                key === 'dimensions' ||
+                key === 'ui_dimension'
+            ) {
+                var box = formatWikiDimensionBox(val);
+                if (box) return { label: wikiFieldLabel(key, itemType, nestedKey), value: box };
+            }
             if (val.formatted != null && val.formatted !== '') {
-                return { label: wikiFieldLabel(key, itemType), value: formatWikiScalar(val.formatted) };
+                return { label: wikiFieldLabel(key, itemType, nestedKey), value: formatWikiScalar(val.formatted) };
             }
             if (val.seconds != null && val.formatted) {
-                return { label: wikiFieldLabel(key, itemType), value: formatWikiScalar(val.formatted) };
+                return { label: wikiFieldLabel(key, itemType, nestedKey), value: formatWikiScalar(val.formatted) };
             }
             return null;
         }
-        var display = formatWikiFieldDisplay(key, val);
+        var display = formatWikiFieldDisplay(key, val, nestedKey);
         if (display == null) return null;
-        return { label: wikiFieldLabel(key, itemType), value: display };
+        return { label: wikiFieldLabel(key, itemType, nestedKey), value: display };
     }
 
     function shouldSkipDuplicateWikiKey(key, obj) {
@@ -718,7 +1192,580 @@
         return true;
     }
 
-    function rowsFromWikiObject(obj, fieldOrder, itemType) {
+    function rowsFromPersonalWeaponDamages(damages, damagePerShot) {
+        if (!Array.isArray(damages) || !damages.length) return [];
+        var rows = damages
+            .map(function (entry, index) {
+                if (!entry || typeof entry !== 'object') return null;
+                var rawName = String(entry.name || entry.type || '').trim();
+                var label =
+                    PERSONAL_WEAPON_DAMAGE_LABELS[rawName.toLowerCase()] ||
+                    wikiFieldLabel(rawName) ||
+                    '伤害 ' + (index + 1);
+                var val = entry.damage != null && entry.damage !== '' ? formatWikiScalar(entry.damage) : null;
+                if (val == null) return null;
+                return { label: label, value: val };
+            })
+            .filter(Boolean);
+        if (
+            rows.length === 1 &&
+            damagePerShot != null &&
+            Number(damages[0].damage) === Number(damagePerShot)
+        ) {
+            return [];
+        }
+        return rows;
+    }
+
+    function rowsFromPersonalWeaponModes(modes, weaponBlock) {
+        if (!Array.isArray(modes) || !modes.length) return [];
+        var baseRpm =
+            weaponBlock && (weaponBlock.rpm != null ? weaponBlock.rpm : weaponBlock.rof);
+        var rows = [];
+        modes.forEach(function (mode, index) {
+            if (!mode || typeof mode !== 'object') return;
+            var modeLabel = formatPersonalWeaponModeLabel(mode);
+            var multi = modes.length > 1;
+            var prefix = multi ? modeLabel + ' · ' : '';
+
+            if (modeLabel) {
+                rows.push({
+                    label: multi ? '模式 ' + (index + 1) : '开火方式',
+                    value: modeLabel,
+                });
+            }
+
+            var rpm = mode.rpm != null ? mode.rpm : mode.rof;
+            if (rpm != null && rpm !== '' && Number(rpm) !== Number(baseRpm)) {
+                rows.push({ label: prefix + '射速', value: formatWikiScalar(rpm) + ' 发/分' });
+            }
+            if (mode.damage_per_second != null && mode.damage_per_second !== '') {
+                rows.push({
+                    label: prefix + '每秒伤害',
+                    value: formatWikiScalar(mode.damage_per_second),
+                });
+            }
+            if (mode.shot_count != null && mode.shot_count !== '') {
+                rows.push({
+                    label: prefix + '连发数',
+                    value: formatWikiScalar(mode.shot_count) + ' 发/点射',
+                });
+            }
+            if (mode.heat_per_shot != null && Number(mode.heat_per_shot) > 0) {
+                rows.push({
+                    label: prefix + '单发热量',
+                    value: formatWikiScalar(mode.heat_per_shot),
+                });
+            }
+            if (mode.cooldown_time != null && Number(mode.cooldown_time) > 0) {
+                rows.push({
+                    label: prefix + '点射冷却',
+                    value: formatWikiScalar(mode.cooldown_time) + ' 秒',
+                });
+            }
+        });
+        return dedupeWikiDetailRows(rows);
+    }
+
+    function getArmorGforceResistance(item) {
+        var wf = (item && item.wiki_fields) || {};
+        var a = wf.suit_armor || {};
+        if (a.gforce_resistance != null) return Number(a.gforce_resistance);
+        if (wf.clothing && wf.clothing.gforce_resistance != null) return Number(wf.clothing.gforce_resistance);
+        if (wf.gforce_resistance != null) return Number(wf.gforce_resistance);
+        return null;
+    }
+
+    function formatGforceSignedDisplay(val) {
+        if (val == null || !Number.isFinite(val) || val === 0) return null;
+        return formatWikiScalar(val) + ' G';
+    }
+
+    var ARMOR_SLOT_SUBTYPES = {
+        Helmet: true,
+        Torso: true,
+        Legs: true,
+        Arms: true,
+        Backpack: true,
+        Undersuit: true,
+    };
+
+    function getArmorSubcategoryRaw(item) {
+        var wf = item && item.wiki_fields;
+        if (!wf) return '';
+        var raw = String(wf.sub_type_label || wf.sub_type || '').trim();
+        if (!raw || ARMOR_SLOT_SUBTYPES[raw] || /^FPS\.Armor\./i.test(raw)) return '';
+        return raw;
+    }
+
+    function formatArmorSubcategory(item) {
+        var raw = getArmorSubcategoryRaw(item);
+        return raw ? formatWikiScalar(raw) : null;
+    }
+
+    function getWeaponModifierBase(item) {
+        var wm = item && item.wiki_fields && item.wiki_fields.weapon_modifier;
+        return wm && wm.base ? wm.base : null;
+    }
+
+    function getBarrelStabilizer(item) {
+        return item && item.wiki_fields && item.wiki_fields.stabilizer;
+    }
+
+    function getBarrelWeaponModifier(item) {
+        return item && item.wiki_fields && item.wiki_fields.weapon_modifier;
+    }
+
+    function getBarrelSpreadMultiplier(item) {
+        var stab = getBarrelStabilizer(item);
+        if (stab && stab.spread != null && stab.spread !== 1) return Number(stab.spread);
+        var spread = getBarrelWeaponModifier(item) && getBarrelWeaponModifier(item).spread;
+        if (!spread || typeof spread !== 'object') return null;
+        var keys = ['max_multiplier', 'min_multiplier', 'first_attack_multiplier', 'per_attack_multiplier'];
+        for (var i = 0; i < keys.length; i++) {
+            var val = spread[keys[i]];
+            if (val != null && val !== 1) return Number(val);
+        }
+        return null;
+    }
+
+    function getBarrelRecoilMultiplier(item) {
+        var stab = getBarrelStabilizer(item);
+        if (stab && stab.aim_recoil != null && stab.aim_recoil !== 1) return Number(stab.aim_recoil);
+        var recoil = getBarrelWeaponModifier(item) && getBarrelWeaponModifier(item).recoil;
+        if (!recoil) return null;
+        if (recoil.multiplier != null && recoil.multiplier !== 1) return Number(recoil.multiplier);
+        if (recoil.multiplier_change != null && recoil.multiplier_change !== 0) {
+            return 1 + Number(recoil.multiplier_change);
+        }
+        return null;
+    }
+
+    function getBarrelDamageMultiplier(item) {
+        var base = getWeaponModifierBase(item);
+        if (!base) return null;
+        if (base.damage_multiplier != null && base.damage_multiplier !== 1) return Number(base.damage_multiplier);
+        if (base.damage_change != null && base.damage_change !== 0) return 1 + Number(base.damage_change);
+        return null;
+    }
+
+    function getBarrelFireRateMultiplier(item) {
+        var base = getWeaponModifierBase(item);
+        if (!base) return null;
+        if (base.fire_rate_multiplier != null && base.fire_rate_multiplier !== 1) return Number(base.fire_rate_multiplier);
+        if (base.fire_rate_change != null && base.fire_rate_change !== 0) return 1 + Number(base.fire_rate_change);
+        return null;
+    }
+
+    function getBarrelSoundMultiplier(item) {
+        var base = getWeaponModifierBase(item);
+        if (!base) return null;
+        if (base.sound_radius_multiplier != null && base.sound_radius_multiplier !== 1) {
+            return Number(base.sound_radius_multiplier);
+        }
+        if (base.sound_radius_change != null && base.sound_radius_change !== 0) {
+            return 1 + Number(base.sound_radius_change);
+        }
+        return null;
+    }
+
+    function getPersonalWeaponSoundCoefficient() {
+        return 1;
+    }
+
+    function getPersonalWeaponRecoilCoefficient() {
+        return 1;
+    }
+
+    function getMeleeWeaponBlock(item) {
+        var wf = item && item.wiki_fields;
+        if (!wf) return null;
+        if (wf.melee_weapon && typeof wf.melee_weapon === 'object') return wf.melee_weapon;
+        return null;
+    }
+
+    function getMeleeAttackMode(melee, category) {
+        var modes = melee && melee.attack_modes;
+        if (!Array.isArray(modes)) return null;
+        for (var i = 0; i < modes.length; i++) {
+            if (modes[i] && modes[i].category === category) return modes[i];
+        }
+        return null;
+    }
+
+    function getMeleeModeDamage(mode) {
+        if (!mode) return null;
+        if (mode.damage != null && mode.damage !== '') return mode.damage;
+        var dm = mode.damages;
+        if (!dm || typeof dm !== 'object') return null;
+        if (dm.physical != null && dm.physical !== '') return dm.physical;
+        var sum = 0;
+        var any = false;
+        ['physical', 'energy', 'thermal', 'biochemical', 'distortion', 'stun'].forEach(function (key) {
+            if (dm[key] == null || dm[key] === '') return;
+            var n = Number(dm[key]);
+            if (!Number.isFinite(n)) return;
+            sum += n;
+            any = true;
+        });
+        return any && sum > 0 ? sum : null;
+    }
+
+    function getMeleeCategoryDamage(item, category) {
+        return getMeleeModeDamage(getMeleeAttackMode(getMeleeWeaponBlock(item), category));
+    }
+
+    function formatMeleeCategoryDamage(item, category) {
+        var damage = getMeleeCategoryDamage(item, category);
+        return damage != null ? formatWikiScalar(damage) : null;
+    }
+
+    function buildMeleeStatTags(item) {
+        var slash = formatMeleeCategoryDamage(item, 'BladeSlash');
+        var stab = formatMeleeCategoryDamage(item, 'BladeStab');
+        var tags = [];
+        if (slash) tags.push({ label: '挥砍', text: slash });
+        if (stab) tags.push({ label: '刺击', text: stab });
+        return tags;
+    }
+
+    function grenadeBlock(item) {
+        return item && item.wiki_fields && item.wiki_fields.grenade;
+    }
+
+    function readGrenadeDescriptionData(wf, name) {
+        var arr = wf && wf.description_data;
+        if (!Array.isArray(arr)) return null;
+        var target = String(name || '').toLowerCase();
+        for (var i = 0; i < arr.length; i++) {
+            if (String(arr[i].name || '').toLowerCase() === target) return arr[i].value || null;
+        }
+        return null;
+    }
+
+    function formatGrenadeDamageType(item) {
+        var wf = item && item.wiki_fields;
+        if (!wf) return null;
+        var fromDesc = readGrenadeDescriptionData(wf, 'Damage Type');
+        if (fromDesc) return formatWikiScalar(fromDesc);
+        var g = wf.grenade;
+        return g && g.damage_type ? formatWikiScalar(g.damage_type) : null;
+    }
+
+    function formatGrenadeDamage(item) {
+        var g = grenadeBlock(item);
+        return g && g.damage != null && g.damage !== '' ? formatWikiScalar(g.damage) : null;
+    }
+
+    function formatGrenadeAreaOfEffect(item) {
+        var wf = item && item.wiki_fields;
+        if (!wf) return null;
+        var fromDesc = readGrenadeDescriptionData(wf, 'Area of Effect');
+        if (fromDesc) return formatWikiScalar(fromDesc);
+        var g = wf.grenade;
+        if (g && g.area_of_effect != null && g.area_of_effect !== '') {
+            return formatWikiScalar(g.area_of_effect) + ' m';
+        }
+        return null;
+    }
+
+    function formatGrenadeSubtype(item) {
+        var wf = item && item.wiki_fields;
+        if (!wf) return null;
+        var label = wf.sub_type_label || wf.sub_type;
+        return label ? formatWikiScalar(label) : null;
+    }
+
+    function rowsFromGrenadeParams(item) {
+        var wf = (item && item.wiki_fields) || {};
+        var g = wf.grenade || {};
+        var rows = [];
+        var dmgType = formatGrenadeDamageType(item);
+        if (dmgType) rows.push({ label: '伤害类型', value: dmgType });
+        var damage = formatGrenadeDamage(item);
+        if (damage) rows.push({ label: '伤害', value: damage });
+        var aoe = formatGrenadeAreaOfEffect(item);
+        if (aoe) rows.push({ label: '作用范围', value: aoe });
+        if (g.aoe) {
+            var min = g.aoe.min != null ? g.aoe.min : g.aoe.minimum;
+            var max = g.aoe.max != null ? g.aoe.max : g.aoe.maximum;
+            if (max != null && max !== '') {
+                if (min != null && min !== '' && min !== max) {
+                    rows.push({
+                        label: '爆炸半径',
+                        value: formatWikiScalar(min) + ' – ' + formatWikiScalar(max) + ' m',
+                    });
+                } else {
+                    rows.push({ label: '爆炸半径', value: formatWikiScalar(max) + ' m' });
+                }
+            }
+        }
+        return rows;
+    }
+
+    function rowsFromMeleeAttackModes(melee) {
+        if (!melee || !Array.isArray(melee.attack_modes)) return [];
+        var rows = [];
+        melee.attack_modes.forEach(function (mode) {
+            if (!mode) return;
+            var cat = String(mode.category || '').trim();
+            var catLabel = MELEE_ATTACK_CATEGORY_LABEL[cat] || formatWikiScalar(cat) || cat || '攻击';
+            var damage = getMeleeModeDamage(mode);
+            if (damage != null && damage !== '') {
+                rows.push({ label: catLabel + '伤害', value: formatWikiScalar(damage) });
+            }
+            if (mode.attack_impulse != null && mode.attack_impulse !== '') {
+                rows.push({ label: catLabel + '冲量', value: formatWikiScalar(mode.attack_impulse) });
+            }
+            if (mode.damages && typeof mode.damages === 'object') {
+                Object.keys(mode.damages).forEach(function (key) {
+                    var val = mode.damages[key];
+                    if (val == null || val === '' || val === 0) return;
+                    rows.push({
+                        label: catLabel + ' · ' + wikiFieldLabel(key, 'weapon_melee'),
+                        value: formatWikiScalar(val),
+                    });
+                });
+            }
+        });
+        return dedupeWikiDetailRows(rows);
+    }
+
+    function formatBarrelDamageDisplay(item) {
+        var base = getWeaponModifierBase(item);
+        if (base) {
+            if (base.damage_change != null && base.damage_change !== 0) {
+                return formatWikiFieldDisplay('damage_change', base.damage_change);
+            }
+            if (base.damage_multiplier != null && base.damage_multiplier !== 1) {
+                return formatWikiScalar(base.damage_multiplier);
+            }
+        }
+        var wm = item.wiki_fields && item.wiki_fields.weapon_modifier;
+        if (wm && wm.recoil && wm.recoil.multiplier_change != null && wm.recoil.multiplier_change !== 0) {
+            return formatWikiFieldDisplay('multiplier_change', wm.recoil.multiplier_change);
+        }
+        return null;
+    }
+
+    function rowsFromMagazineDamage(item) {
+        var ammo = item.wiki_fields && item.wiki_fields.ammunition;
+        if (!ammo) return [];
+        if (Array.isArray(ammo.impact_damage) && ammo.impact_damage.length) {
+            return rowsFromPersonalWeaponDamages(ammo.impact_damage);
+        }
+        var map = ammo.impact_damage_map;
+        if (map && typeof map === 'object') {
+            return Object.keys(map)
+                .filter(function (key) {
+                    return map[key] != null && map[key] !== '';
+                })
+                .map(function (key) {
+                    return {
+                        label: wikiFieldLabel(key, 'magazine'),
+                        value: formatWikiScalar(map[key]),
+                    };
+                });
+        }
+        return [];
+    }
+
+    function rowsFromIronsightAttachment(item) {
+        var wf = item.wiki_fields || {};
+        var rows = rowsFromWikiObject(wf.iron_sight, [
+            'zoom_scale',
+            'zoom_time_scale',
+            'zoom_time_change',
+            'max_range',
+            'default_range',
+            'range_increment',
+            'auto_zeroing_time',
+        ], 'attachment_ironsight');
+        var aim = wf.weapon_modifier && wf.weapon_modifier.aim;
+        if (aim) {
+            rows = rows.concat(
+                rowsFromWikiObject(aim, ['second_zoom_scale', 'hide_weapon_in_ads', 'fstop_multiplier'], 'attachment_ironsight')
+            );
+        }
+        return dedupeWikiDetailRows(rows);
+    }
+
+    function appendBarrelModifierRows(rows, wm) {
+        if (!wm) return rows;
+        if (wm.base) {
+            rows = rows.concat(
+                rowsFromWikiObject(
+                    wm.base,
+                    [
+                        'muzzle_flash_multiplier',
+                        'muzzle_flash_change',
+                        'damage_multiplier',
+                        'damage_change',
+                        'sound_radius_multiplier',
+                        'sound_radius_change',
+                        'fire_rate_multiplier',
+                        'fire_rate_change',
+                        'projectile_speed_multiplier',
+                        'projectile_speed_change',
+                        'heat_generation_multiplier',
+                        'heat_generation_change',
+                        'ammo_cost_multiplier',
+                        'charge_time_multiplier',
+                    ],
+                    'attachment_barrel'
+                )
+            );
+        }
+        if (wm.recoil) {
+            rows = rows.concat(
+                rowsFromWikiObject(
+                    wm.recoil,
+                    ['multiplier', 'multiplier_change', 'decay_multiplier', 'decay_change'],
+                    'attachment_barrel'
+                )
+            );
+        }
+        return rows;
+    }
+
+    function rowsFromBarrelAttachment(item) {
+        var rows = [];
+        var stab = getBarrelStabilizer(item);
+        if (stab) {
+            rows = rows.concat(
+                rowsFromWikiObject(
+                    stab,
+                    [
+                        'spread',
+                        'spread_change',
+                        'aim_recoil',
+                        'aim_recoil_change',
+                        'projectile_speed',
+                        'projectile_speed_change',
+                        'visual_recoil',
+                        'visual_recoil_change',
+                    ],
+                    'attachment_barrel'
+                )
+            );
+        }
+        var wm = item.wiki_fields && item.wiki_fields.weapon_modifier;
+        rows = appendBarrelModifierRows(rows, wm);
+        return dedupeWikiDetailRows(rows);
+    }
+
+    function rowsFromBottomAttachment(item) {
+        var wf = item.wiki_fields || {};
+        var rows = rowsFromWikiObject(wf.laser_pointer, ['range'], 'attachment_bottom');
+        var wm = wf.weapon_modifier;
+        if (wm && wm.spread) {
+            rows = rows.concat(
+                rowsFromWikiObject(
+                    wm.spread,
+                    ['min_change', 'max_change', 'first_attack_change', 'per_attack_change', 'decay_change'],
+                    'attachment_bottom'
+                )
+            );
+        } else if (wm) {
+            rows = rows.concat(
+                rowsFromWikiObject(
+                    wm,
+                    ['activate_on_attach', 'ignore_wear', 'damage_multiplier', 'fire_rate_multiplier', 'sound_radius_multiplier'],
+                    'attachment_bottom'
+                )
+            );
+        }
+        return dedupeWikiDetailRows(rows);
+    }
+
+    function rowsFromUtilityAttachment(item) {
+        var wm = item.wiki_fields && item.wiki_fields.weapon_modifier;
+        if (!wm) return [];
+        return dedupeWikiDetailRows(
+            rowsFromWikiObject(
+                wm,
+                [
+                    'damage_multiplier',
+                    'fire_rate_multiplier',
+                    'projectile_speed_multiplier',
+                    'heat_generation_multiplier',
+                    'ammo_cost_multiplier',
+                    'sound_radius_multiplier',
+                    'charge_time_multiplier',
+                ],
+                'attachment_utility'
+            )
+        );
+    }
+
+    function rowsFromMissileAttachment(item) {
+        var wf = item.wiki_fields || {};
+        var rows = [];
+        if (item.size_label || item.size) {
+            rows.push({ label: '尺寸', value: formatWikiScalar(item.size_label || item.size) });
+        }
+        var sub = wf.sub_type_label || wf.sub_type;
+        if (sub) rows.push({ label: '子类型', value: formatWikiScalar(sub) });
+        return rows;
+    }
+
+    function inferFpsEquipmentGroup(typeKey) {
+        var key = String(typeKey || '');
+        if (key.indexOf('weapon_') === 0) return 'fps_weapon';
+        if (key.indexOf('armor_') === 0) return 'fps_armor';
+        if (key === 'magazine' || key.indexOf('attachment_') === 0) return 'fps_magazine';
+        return '';
+    }
+
+    /** 详情页顶栏摘要已展示的字段标签（下方区块不再重复） */
+    var DETAIL_HIGHLIGHT_LABELS = {
+        ship_weapon: {
+            武器类型: true,
+        },
+        fps_weapon: {
+            单发伤害: true,
+            射速: true,
+            '射速 RPM': true,
+            弹匣容量: true,
+            武器类型: true,
+        },
+        fps_armor: {
+            护甲类型: true,
+            部位: true,
+        },
+        fps_magazine: {
+            最大弹药: true,
+            弹速: true,
+            放大倍率: true,
+            最大射程: true,
+            伤害修正: true,
+            声响系数: true,
+            散布: true,
+        },
+        armor_backpack: {
+            质量: true,
+            储物容量: true,
+        },
+    };
+
+    function pruneDetailSectionsForItem(item, sections) {
+        var fpsGroup = inferFpsEquipmentGroup(item && item.type);
+        var skip =
+            (item && DETAIL_HIGHLIGHT_LABELS[item.type]) ||
+            DETAIL_HIGHLIGHT_LABELS[fpsGroup] ||
+            (item && item.type === 'armor_backpack' ? DETAIL_HIGHLIGHT_LABELS.armor_backpack : null);
+        if (!skip) return sections;
+        return sections
+            .map(function (section) {
+                var rows = (section.rows || []).filter(function (row) {
+                    return row && row.label && !skip[row.label];
+                });
+                return rows.length ? { title: section.title, rows: rows } : null;
+            })
+            .filter(Boolean);
+    }
+
+    function rowsFromWikiObject(obj, fieldOrder, itemType, nestedKey) {
         var rows = [];
         if (!obj || typeof obj !== 'object') return rows;
         var keys = fieldOrder && fieldOrder.length ? fieldOrder : Object.keys(obj);
@@ -726,7 +1773,7 @@
         keys.forEach(function (key) {
             if (shouldSkipRawWikiKey(key, obj)) return;
             if (shouldSkipDuplicateWikiKey(key, obj)) return;
-            var row = buildRowForWikiField(obj, key, itemType);
+            var row = buildRowForWikiField(obj, key, itemType, nestedKey);
             if (!row) return;
             if (seenLabels[row.label]) return;
             seenLabels[row.label] = true;
@@ -819,6 +1866,102 @@
         return tags;
     }
 
+    function formatBarrelStatTag(label, num, beneficialWhen) {
+        if (num == null || num === '' || !Number.isFinite(Number(num))) return null;
+        var n = Number(num);
+        if (n === 1) return null;
+        var text = formatWikiScalar(n);
+        if (text == null) return null;
+        var tone = 'neutral';
+        if (beneficialWhen === 'lower') tone = n < 1 ? 'good' : 'bad';
+        else if (beneficialWhen === 'higher') tone = n > 1 ? 'good' : 'bad';
+        return { label: label, text: text, tone: tone, raw: n };
+    }
+
+    function formatBarrelDamageTag(item) {
+        var base = getWeaponModifierBase(item);
+        if (base) {
+            if (base.damage_change != null && base.damage_change !== 0) {
+                var change = Number(base.damage_change);
+                return {
+                    label: '伤害修正',
+                    text: formatWikiFieldDisplay('damage_change', change),
+                    tone: change > 0 ? 'good' : 'bad',
+                    raw: change,
+                };
+            }
+            if (base.damage_multiplier != null && base.damage_multiplier !== 1) {
+                return formatBarrelStatTag('伤害修正', base.damage_multiplier, 'higher');
+            }
+        }
+        return null;
+    }
+
+    function formatBarrelFireRateTag(item) {
+        var base = getWeaponModifierBase(item);
+        if (base) {
+            if (base.fire_rate_change != null && base.fire_rate_change !== 0) {
+                var change = Number(base.fire_rate_change);
+                return {
+                    label: '射速修正',
+                    text: formatWikiFieldDisplay('fire_rate_change', change),
+                    tone: change > 0 ? 'good' : 'bad',
+                    raw: change,
+                };
+            }
+            if (base.fire_rate_multiplier != null && base.fire_rate_multiplier !== 1) {
+                return formatBarrelStatTag('射速系数', base.fire_rate_multiplier, 'higher');
+            }
+        }
+        return null;
+    }
+
+    function buildBarrelModifierTags(item) {
+        var tags = [];
+        var seen = Object.create(null);
+        function pushTag(tag) {
+            if (!tag || seen[tag.label]) return;
+            seen[tag.label] = true;
+            tags.push(tag);
+        }
+
+        pushTag(formatBarrelDamageTag(item));
+        pushTag(formatBarrelFireRateTag(item));
+
+        var stab = getBarrelStabilizer(item);
+        if (stab) {
+            pushTag(formatBarrelStatTag('散布', stab.spread, 'lower'));
+            pushTag(formatBarrelStatTag('后坐力', stab.aim_recoil, 'lower'));
+        }
+
+        var spreadMult = getBarrelSpreadMultiplier(item);
+        if (spreadMult != null && (!stab || stab.spread == null || stab.spread === 1)) {
+            pushTag(formatBarrelStatTag('散布', spreadMult, 'lower'));
+        }
+
+        var wm = item && item.wiki_fields && item.wiki_fields.weapon_modifier;
+        if (wm && wm.recoil) {
+            if (wm.recoil.multiplier != null && wm.recoil.multiplier !== 1) {
+                pushTag(formatBarrelStatTag('后坐力', wm.recoil.multiplier, 'lower'));
+            } else if (wm.recoil.multiplier_change != null && wm.recoil.multiplier_change !== 0) {
+                var rc = Number(wm.recoil.multiplier_change);
+                pushTag({
+                    label: '后坐力修正',
+                    text: formatWikiFieldDisplay('multiplier_change', rc),
+                    tone: rc > 0 ? 'bad' : 'good',
+                    raw: rc,
+                });
+            }
+        }
+
+        var base = getWeaponModifierBase(item);
+        if (base && base.sound_radius_multiplier != null && base.sound_radius_multiplier !== 1) {
+            pushTag(formatBarrelStatTag('声响系数', base.sound_radius_multiplier, 'lower'));
+        }
+
+        return tags;
+    }
+
     var MINING_MODIFIER_TAGS_PER_ROW = 3;
 
     function renderMiningModifierTagsMarkup(tags, escapeText) {
@@ -884,8 +2027,9 @@
             if (shouldSkipDuplicateWikiKey(key, obj)) return;
             var val = obj[key];
             if (val == null || val === '') return;
+            if (Array.isArray(val)) return;
             var label = wikiFieldLabel(key);
-            if (typeof val === 'object' && !Array.isArray(val)) {
+            if (typeof val === 'object') {
                 rows.push.apply(rows, flattenWikiFields(val, prefix ? prefix + ' · ' + label : label));
             } else {
                 var display = formatWikiFieldDisplay(key, val);
@@ -1258,10 +2402,457 @@
                 },
             },
         ],
+        salvage_scraper: [
+            {
+                key: 'wiki_ss_eff',
+                label: '提取效率',
+                get: function (item) {
+                    var s = getSalvageScraperBlock(item);
+                    if (!s || s.extraction_efficiency == null) return null;
+                    return formatWikiScalar(Math.round(Number(s.extraction_efficiency) * 1000) / 10) + '%';
+                },
+            },
+            {
+                key: 'wiki_ss_radius',
+                label: '作用半径',
+                get: function (item) {
+                    var s = getSalvageScraperBlock(item);
+                    return s && s.radius_multiplier != null
+                        ? formatWikiScalar(s.radius_multiplier) + ' m'
+                        : null;
+                },
+            },
+            {
+                key: 'wiki_ss_speed',
+                label: '提取速度',
+                get: function (item) {
+                    var s = getSalvageScraperBlock(item);
+                    return s && s.salvage_speed_multiplier != null
+                        ? formatWikiScalar(s.salvage_speed_multiplier)
+                        : null;
+                },
+            },
+        ],
+        fuel_nozzle: [
+            {
+                key: 'wiki_fn_h2',
+                label: '氢燃料流速',
+                get: function (item) {
+                    var r = getFuelNozzleRates(item);
+                    return r.hydrogen != null ? formatWikiScalar(r.hydrogen) + ' SCU/s' : null;
+                },
+            },
+            {
+                key: 'wiki_fn_qf',
+                label: '量子燃料流速',
+                get: function (item) {
+                    var r = getFuelNozzleRates(item);
+                    return r.quantum != null ? formatWikiScalar(r.quantum) + ' SCU/s' : null;
+                },
+            },
+            {
+                key: 'wiki_fn_hp',
+                label: '结构完整性',
+                get: function (item) {
+                    var h = getItemDurabilityHealth(item);
+                    return h != null ? formatWikiScalar(h) : null;
+                },
+            },
+        ],
+        weapon_pistol: [
+            {
+                key: 'wiki_pw_class',
+                label: '伤害类型',
+                get: function (item) {
+                    var w = item.wiki_fields && item.wiki_fields.personal_weapon;
+                    return w && w.class ? formatWikiScalar(w.class) : null;
+                },
+            },
+            {
+                key: 'wiki_pw_dmg',
+                label: '单发伤害',
+                get: function (item) {
+                    var w = item.wiki_fields && item.wiki_fields.personal_weapon;
+                    return w && w.damage_per_shot != null ? formatWikiScalar(w.damage_per_shot) : null;
+                },
+            },
+            {
+                key: 'wiki_pw_rpm',
+                label: '射速',
+                get: function (item) {
+                    var w = item.wiki_fields && item.wiki_fields.personal_weapon;
+                    var rpm = w && (w.rpm != null ? w.rpm : w.rof);
+                    return rpm != null ? formatWikiScalar(rpm) + ' RPM' : null;
+                },
+            },
+            {
+                key: 'wiki_pw_range',
+                label: '射程',
+                get: function (item) {
+                    var w = item.wiki_fields && item.wiki_fields.personal_weapon;
+                    var range = w && (w.effective_range != null ? w.effective_range : w.range);
+                    return range != null ? formatWikiScalar(range) + ' m' : null;
+                },
+            },
+            {
+                key: 'wiki_pw_sound',
+                label: '声响系数',
+                get: function () {
+                    return formatWikiScalar(getPersonalWeaponSoundCoefficient());
+                },
+            },
+            {
+                key: 'wiki_pw_recoil',
+                label: '后坐力系数',
+                get: function () {
+                    return formatWikiScalar(getPersonalWeaponRecoilCoefficient());
+                },
+            },
+            {
+                key: 'wiki_pw_cap',
+                label: '弹匣容量',
+                get: function (item) {
+                    var w = item.wiki_fields && item.wiki_fields.personal_weapon;
+                    var cap = w && (w.magazine_size != null ? w.magazine_size : w.capacity);
+                    return cap != null ? formatWikiScalar(cap) : null;
+                },
+            },
+            {
+                key: 'wiki_pw_slots',
+                label: '配件槽',
+                get: function (item) {
+                    var count = getWeaponAttachmentSlotCount(item);
+                    return count != null && count > 0 ? formatWikiScalar(count) : null;
+                },
+            },
+        ],
+        weapon_throwable: [
+            {
+                key: 'wiki_wt_dmg_type',
+                label: '伤害类型',
+                get: function (item) {
+                    return formatGrenadeDamageType(item);
+                },
+            },
+            {
+                key: 'wiki_wt_damage',
+                label: '伤害',
+                get: function (item) {
+                    return formatGrenadeDamage(item);
+                },
+            },
+            {
+                key: 'wiki_wt_aoe',
+                label: '作用范围',
+                get: function (item) {
+                    return formatGrenadeAreaOfEffect(item);
+                },
+            },
+        ],
+        weapon_melee: [
+            {
+                key: 'wiki_mw_subtype',
+                label: '武器子类',
+                get: function (item) {
+                    var wf = item.wiki_fields || {};
+                    var label = wf.sub_type_label || wf.sub_type;
+                    return label ? formatWikiScalar(label) : null;
+                },
+            },
+            {
+                key: 'wiki_mw_slash',
+                label: '挥砍伤害',
+                get: function (item) {
+                    return formatMeleeCategoryDamage(item, 'BladeSlash');
+                },
+            },
+            {
+                key: 'wiki_mw_stab',
+                label: '刺击伤害',
+                get: function (item) {
+                    return formatMeleeCategoryDamage(item, 'BladeStab');
+                },
+            },
+        ],
+        armor_backpack: [
+            {
+                key: 'wiki_bp_cargo',
+                label: '储物容量',
+                get: function (item) {
+                    var dim = item.wiki_fields && item.wiki_fields.dimension;
+                    var c = dim && dim.cargo_dimension;
+                    if (!c || c.width == null || c.height == null || c.length == null) return null;
+                    var scu = Number(c.width) * Number(c.height) * Number(c.length);
+                    if (!Number.isFinite(scu) || scu <= 0) return null;
+                    return formatWikiScalar(scu.toFixed(3)) + ' SCU';
+                },
+            },
+            {
+                key: 'wiki_bp_cargo_dim',
+                label: '货物空间',
+                get: function (item) {
+                    var dim = item.wiki_fields && item.wiki_fields.dimension;
+                    var c = dim && dim.cargo_dimension;
+                    if (!c || c.width == null || c.height == null || c.length == null) return null;
+                    return (
+                        formatWikiScalar(c.width) +
+                        ' × ' +
+                        formatWikiScalar(c.height) +
+                        ' × ' +
+                        formatWikiScalar(c.length) +
+                        ' m'
+                    );
+                },
+            },
+        ],
+        armor_helmet: [
+            {
+                key: 'wiki_pa_subtype',
+                label: '护甲等级',
+                get: function (item) {
+                    return formatArmorSubcategory(item);
+                },
+            },
+            {
+                key: 'wiki_pa_slot',
+                label: '部位',
+                get: function (item) {
+                    var wf = item.wiki_fields || {};
+                    var a = wf.suit_armor || {};
+                    var slot = a.slot || a.armor_type || a.type || wf.classification_label || wf.sub_type_label;
+                    return slot ? formatWikiScalar(slot) : null;
+                },
+            },
+            {
+                key: 'wiki_pa_dr',
+                label: '物理减伤',
+                get: function (item) {
+                    var wf = item.wiki_fields || {};
+                    var a = wf.suit_armor || {};
+                    var map = a.damage_resistance_map || {};
+                    if (map.physical_change != null) {
+                        var pct = Math.abs(Number(map.physical_change));
+                        if (pct === 0) return null;
+                        return formatWikiScalar(Math.round(pct * 100)) + '%';
+                    }
+                    if (map.physical != null && map.physical < 1) {
+                        return formatWikiScalar(Math.round((1 - Number(map.physical)) * 100)) + '%';
+                    }
+                    return null;
+                },
+            },
+            {
+                key: 'wiki_pa_gforce',
+                label: '抗 G 值',
+                get: function (item) {
+                    return formatGforceSignedDisplay(getArmorGforceResistance(item));
+                },
+            },
+            {
+                key: 'wiki_pa_temp',
+                label: '适用温度',
+                get: function (item) {
+                    var wf = item.wiki_fields || {};
+                    var a = wf.suit_armor || {};
+                    var tr = wf.temperature_resistance || {};
+                    var min = a.temp_resistance_min != null ? a.temp_resistance_min : tr.min != null ? tr.min : tr.minimum;
+                    var max = a.temp_resistance_max != null ? a.temp_resistance_max : tr.max != null ? tr.max : tr.maximum;
+                    if (min == null && max == null) return null;
+                    if (min != null && max != null) return formatWikiScalar(min) + ' / ' + formatWikiScalar(max) + ' °C';
+                    return formatWikiScalar(min != null ? min : max) + ' °C';
+                },
+            },
+            {
+                key: 'wiki_pa_rad',
+                label: '辐射容量',
+                get: function (item) {
+                    var wf = item.wiki_fields || {};
+                    var rr = (wf.suit_armor && wf.suit_armor.radiation_resistance) || wf.radiation_resistance || {};
+                    return rr.maximum_radiation_capacity != null
+                        ? formatWikiScalar(rr.maximum_radiation_capacity) + ' REM'
+                        : null;
+                },
+            },
+            {
+                key: 'wiki_pa_rad_rate',
+                label: '辐射清除',
+                get: function (item) {
+                    var wf = item.wiki_fields || {};
+                    var rr = (wf.suit_armor && wf.suit_armor.radiation_resistance) || wf.radiation_resistance || {};
+                    return rr.radiation_dissipation_rate != null
+                        ? formatWikiScalar(rr.radiation_dissipation_rate) + ' REM/s'
+                        : null;
+                },
+            },
+        ],
+        magazine: [
+            {
+                key: 'wiki_mag_cap',
+                label: '容量',
+                get: function (item) {
+                    var m = item.wiki_fields && item.wiki_fields.magazine;
+                    if (!m) return null;
+                    var cap = m.max_ammo_count != null ? m.max_ammo_count : m.initial_ammo_count;
+                    return cap != null ? formatWikiScalar(cap) : null;
+                },
+            },
+            {
+                key: 'wiki_mag_ammo_dmg',
+                label: '弹药伤害',
+                get: function (item) {
+                    var ammo = item.wiki_fields && item.wiki_fields.ammunition;
+                    if (!ammo) return null;
+                    var dmg = ammo.impact_damage_map && ammo.impact_damage_map.physical;
+                    if (dmg == null && Array.isArray(ammo.impact_damage) && ammo.impact_damage[0]) {
+                        dmg = ammo.impact_damage[0].damage;
+                    }
+                    return dmg != null ? formatWikiScalar(dmg) : null;
+                },
+            },
+            {
+                key: 'wiki_mag_speed',
+                label: '弹速',
+                get: function (item) {
+                    var ammo = item.wiki_fields && item.wiki_fields.ammunition;
+                    return ammo && ammo.speed != null ? formatWikiScalar(ammo.speed) + ' m/s' : null;
+                },
+            },
+            {
+                key: 'wiki_mag_range',
+                label: '射程',
+                get: function (item) {
+                    var ammo = item.wiki_fields && item.wiki_fields.ammunition;
+                    return ammo && ammo.range != null ? formatWikiScalar(ammo.range) + ' m' : null;
+                },
+            },
+        ],
+        attachment_ironsight: [
+            {
+                key: 'wiki_att_zoom',
+                label: '放大倍率',
+                get: function (item) {
+                    var s = item.wiki_fields && item.wiki_fields.iron_sight;
+                    return s && s.zoom_scale != null ? formatWikiScalar(s.zoom_scale) + '×' : null;
+                },
+            },
+            {
+                key: 'wiki_att_sight_range',
+                label: '最大射程',
+                get: function (item) {
+                    var s = item.wiki_fields && item.wiki_fields.iron_sight;
+                    return s && s.max_range != null ? formatWikiScalar(s.max_range) + ' m' : null;
+                },
+            },
+        ],
+        attachment_barrel: [
+            {
+                key: 'wiki_att_damage',
+                label: '伤害系数',
+                get: function (item) {
+                    var val = getBarrelDamageMultiplier(item);
+                    return val != null ? formatWikiScalar(val) : null;
+                },
+            },
+            {
+                key: 'wiki_att_fire_rate',
+                label: '射速系数',
+                get: function (item) {
+                    var val = getBarrelFireRateMultiplier(item);
+                    return val != null ? formatWikiScalar(val) : null;
+                },
+            },
+            {
+                key: 'wiki_att_sound',
+                label: '声响系数',
+                get: function (item) {
+                    var val = getBarrelSoundMultiplier(item);
+                    return val != null ? formatWikiScalar(val) : null;
+                },
+            },
+            {
+                key: 'wiki_att_recoil',
+                label: '后坐力系数',
+                get: function (item) {
+                    var val = getBarrelRecoilMultiplier(item);
+                    return val != null ? formatWikiScalar(val) : null;
+                },
+            },
+            {
+                key: 'wiki_att_spread',
+                label: '散布系数',
+                get: function (item) {
+                    var val = getBarrelSpreadMultiplier(item);
+                    return val != null ? formatWikiScalar(val) : null;
+                },
+            },
+            {
+                key: 'wiki_att_proj_speed',
+                label: '弹速',
+                get: function (item) {
+                    var stab = getBarrelStabilizer(item);
+                    if (stab && stab.projectile_speed != null) return formatWikiScalar(stab.projectile_speed);
+                    var base = getWeaponModifierBase(item);
+                    if (base && base.projectile_speed_multiplier != null && base.projectile_speed_multiplier !== 1) {
+                        return formatWikiScalar(base.projectile_speed_multiplier);
+                    }
+                    return null;
+                },
+            },
+            {
+                key: 'wiki_att_muzzle',
+                label: '枪口焰',
+                get: function (item) {
+                    var base = getWeaponModifierBase(item);
+                    if (!base || base.muzzle_flash_multiplier == null || base.muzzle_flash_multiplier === 1) return null;
+                    return formatWikiScalar(base.muzzle_flash_multiplier);
+                },
+            },
+        ],
+        attachment_bottom: [
+            {
+                key: 'wiki_att_laser_range',
+                label: '激光射程',
+                get: function (item) {
+                    var l = item.wiki_fields && item.wiki_fields.laser_pointer;
+                    return l && l.range != null ? formatWikiScalar(l.range) + ' m' : null;
+                },
+            },
+        ],
+        attachment_utility: [
+            {
+                key: 'wiki_att_damage_mult',
+                label: '伤害系数',
+                get: function (item) {
+                    var m = item.wiki_fields && item.wiki_fields.weapon_modifier;
+                    var v = m && (m.base ? m.base.damage_multiplier : m.damage_multiplier);
+                    return v != null ? formatWikiScalar(v) : null;
+                },
+            },
+            {
+                key: 'wiki_att_fire_rate',
+                label: '射速系数',
+                get: function (item) {
+                    var m = item.wiki_fields && item.wiki_fields.weapon_modifier;
+                    var v = m && (m.base ? m.base.fire_rate_multiplier : m.fire_rate_multiplier);
+                    return v != null ? formatWikiScalar(v) : null;
+                },
+            },
+            {
+                key: 'wiki_att_proj_speed',
+                label: '弹速系数',
+                get: function (item) {
+                    var m = item.wiki_fields && item.wiki_fields.weapon_modifier;
+                    var v = m && (m.base ? m.base.projectile_speed_multiplier : m.projectile_speed_multiplier);
+                    return v != null ? formatWikiScalar(v) : null;
+                },
+            },
+        ],
+        attachment_missile: [],
     };
 
     function getWikiTableColumns(typeKey) {
-        return WIKI_TABLE_COLUMNS[typeKey] || [];
+        var resolved = resolveEquipmentTypeKey(typeKey);
+        return WIKI_TABLE_COLUMNS[resolved] || [];
     }
 
     function rowsFromMiningModifierMap(map, fieldOrder) {
@@ -1280,11 +2871,16 @@
     function groupWikiFieldsForDetail(item) {
         var wf = item && item.wiki_fields;
         if (!wf) return [];
-        var type = item.type;
-        var blockKey = TYPE_WIKI_BLOCK_KEY[type];
+        var blockKey = resolveWikiBlockKey(item.type);
         var block = blockKey && wf[blockKey];
-        var sectionDefs = TYPE_DETAIL_SECTIONS[type];
-        if (!block || !sectionDefs) {
+        var sectionKey = resolveDetailSectionKey(item.type);
+        var sectionDefs = TYPE_DETAIL_SECTIONS[sectionKey];
+        var hasCustomSections =
+            sectionDefs &&
+            sectionDefs.some(function (def) {
+                return !!def.custom;
+            });
+        if (!sectionDefs || (!block && !hasCustomSections)) {
             var flat = flattenWikiFields(wf);
             if (!flat.length) return [];
             return [
@@ -1303,15 +2899,124 @@
             var rows = [];
             if (def.nested === 'modifier_map') {
                 rows = rowsFromMiningModifierMap(block[def.nested], def.fields);
+            } else if (def.nested === 'damages') {
+                rows = rowsFromPersonalWeaponDamages(block[def.nested], block.damage_per_shot);
+            } else if (def.nested === 'modes') {
+                rows = rowsFromPersonalWeaponModes(block[def.nested], block);
+            } else if (def.custom === 'magazine_damage') {
+                rows = rowsFromMagazineDamage(item);
+            } else if (def.custom === 'ironsight') {
+                rows = rowsFromIronsightAttachment(item);
+            } else if (def.custom === 'barrel') {
+                rows = rowsFromBarrelAttachment(item);
+            } else if (def.custom === 'bottom') {
+                rows = rowsFromBottomAttachment(item);
+            } else if (def.custom === 'utility') {
+                rows = rowsFromUtilityAttachment(item);
+            } else if (def.custom === 'missile_attachment') {
+                rows = rowsFromMissileAttachment(item);
+            } else if (def.custom === 'melee_attacks') {
+                rows = rowsFromMeleeAttackModes(block);
+            } else if (def.custom === 'grenade_params') {
+                rows = rowsFromGrenadeParams(item);
             } else if (def.nested) {
-                rows = rowsFromWikiObject(block[def.nested], def.fields, type);
+                var nestedObj = block[def.nested];
+                if (!nestedObj && item.type === 'magazine' && def.nested === 'ammunition') {
+                    nestedObj = wf.ammunition;
+                }
+                rows = rowsFromWikiObject(nestedObj, def.fields, sectionKey, def.nested);
             } else if (def.fields) {
-                rows = rowsFromWikiObject(block, def.fields, type);
+                rows = rowsFromWikiObject(block, def.fields, sectionKey);
             }
             rows = dedupeWikiDetailRows(rows);
             if (rows.length) sections.push({ title: def.title, rows: rows });
         });
+        sections = pruneDetailSectionsForItem(item, sections);
+        if (item.type === 'weapon_melee' && (wf.sub_type || wf.sub_type_label)) {
+            var meleeSubRow = {
+                label: '武器子类',
+                value: formatWikiScalar(wf.sub_type_label || wf.sub_type),
+            };
+            if (sections.length) {
+                sections[0].rows = dedupeWikiDetailRows([meleeSubRow].concat(sections[0].rows || []));
+            } else {
+                sections.push({ title: '近战参数', rows: [meleeSubRow] });
+            }
+        }
+        if (item.type && item.type.indexOf('weapon_') === 0) {
+            var slotCount = getWeaponAttachmentSlotCount(item);
+            if (slotCount != null && slotCount > 0) {
+                var slotRow = { label: '配件槽', value: formatWikiScalar(slotCount) };
+                var weaponParamSection = null;
+                for (var si = 0; si < sections.length; si++) {
+                    if (sections[si].title === '武器参数') {
+                        weaponParamSection = sections[si];
+                        break;
+                    }
+                }
+                if (weaponParamSection) {
+                    weaponParamSection.rows = dedupeWikiDetailRows((weaponParamSection.rows || []).concat([slotRow]));
+                } else if (sections.length) {
+                    sections[0].rows = dedupeWikiDetailRows((sections[0].rows || []).concat([slotRow]));
+                } else {
+                    sections.push({ title: '武器参数', rows: [slotRow] });
+                }
+            }
+        }
+        if (!sections.length && block) {
+            var fallbackRows = rowsFromWikiObject(block, ['type', 'class', 'fire_mode'], sectionKey);
+            fallbackRows = dedupeWikiDetailRows(fallbackRows);
+            if (fallbackRows.length) {
+                sections.push({ title: '武器参数', rows: fallbackRows });
+            }
+        }
         return sections;
+    }
+
+    function buildAttachmentModifierTags(item) {
+        if (!item) return [];
+        var type = item.type || '';
+        if (type === 'attachment_barrel' || type === 'attachment_utility') {
+            return buildBarrelModifierTags(item);
+        }
+        if (type === 'attachment_ironsight') {
+            var sightTags = [];
+            var wf = item.wiki_fields || {};
+            var aim = wf.weapon_modifier && wf.weapon_modifier.aim;
+            var isBlock = wf.iron_sight;
+            var zoom = (aim && aim.second_zoom_scale) || (isBlock && isBlock.second_zoom_scale);
+            if (zoom != null && Number(zoom) !== 1) {
+                sightTags.push({ label: '变焦', text: formatWikiScalar(zoom) + '×', tone: 'good', raw: zoom });
+            }
+            if (aim && aim.fstop_multiplier != null && aim.fstop_multiplier !== 1) {
+                sightTags.push({
+                    label: '景深倍率',
+                    text: formatWikiScalar(aim.fstop_multiplier),
+                    tone: 'neutral',
+                    raw: aim.fstop_multiplier,
+                });
+            }
+            return sightTags;
+        }
+        if (type === 'attachment_bottom') {
+            var bottomTags = [];
+            var lp = item.wiki_fields && item.wiki_fields.laser_pointer;
+            if (lp && lp.range != null) {
+                bottomTags.push({
+                    label: '激光射程',
+                    text: formatWikiScalar(lp.range) + ' m',
+                    tone: 'good',
+                    raw: lp.range,
+                });
+            }
+            var bwm = item.wiki_fields && item.wiki_fields.weapon_modifier;
+            if (bwm) {
+                var dmgTag = formatBarrelDamageTag({ wiki_fields: { weapon_modifier: bwm } });
+                if (dmgTag) bottomTags.push(dmgTag);
+            }
+            return bottomTags;
+        }
+        return [];
     }
 
     global.ShipComponentWiki = {
@@ -1319,11 +3024,26 @@
         formatWikiFieldDisplay: formatWikiFieldDisplay,
         formatMiningModifierPercent: formatMiningModifierPercent,
         buildMiningModifierTags: buildMiningModifierTags,
+        buildBarrelModifierTags: buildBarrelModifierTags,
+        buildAttachmentModifierTags: buildAttachmentModifierTags,
+        buildMeleeStatTags: buildMeleeStatTags,
+        formatGrenadeDamageType: formatGrenadeDamageType,
+        formatGrenadeDamage: formatGrenadeDamage,
+        formatGrenadeAreaOfEffect: formatGrenadeAreaOfEffect,
+        formatGrenadeSubtype: formatGrenadeSubtype,
+        getMeleeCategoryDamage: getMeleeCategoryDamage,
+        formatMeleeCategoryDamage: formatMeleeCategoryDamage,
         renderMiningModifierTagsMarkup: renderMiningModifierTagsMarkup,
         wikiFieldLabel: wikiFieldLabel,
         flattenWikiFields: flattenWikiFields,
         groupWikiFieldsForDetail: groupWikiFieldsForDetail,
         getWikiTableColumns: getWikiTableColumns,
+        getWeaponAttachmentSlotCount: getWeaponAttachmentSlotCount,
+        getBarrelRecoilMultiplier: getBarrelRecoilMultiplier,
+        getBarrelSpreadMultiplier: getBarrelSpreadMultiplier,
+        getBarrelDamageMultiplier: getBarrelDamageMultiplier,
+        getBarrelFireRateMultiplier: getBarrelFireRateMultiplier,
+        getBarrelSoundMultiplier: getBarrelSoundMultiplier,
         WIKI_TABLE_COLUMNS: WIKI_TABLE_COLUMNS,
     };
 })(typeof window !== 'undefined' ? window : global);

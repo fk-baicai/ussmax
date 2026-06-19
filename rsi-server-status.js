@@ -1,18 +1,19 @@
 /**
  * 首页 RSI 服务器状态展示（Platform / PU / AC）
  *
- * 经本站 /api/rsi-server-status 读取；前端 localStorage 30 分钟缓存，与后端 RSI 抓取间隔一致。
+ * 每次访问强制请求后端 ?fresh=1；localStorage 仅作网络失败时的离线回退。
  */
 (function () {
     'use strict';
 
-    var REFRESH_MS = 30 * 60 * 1000;
+    var REFRESH_MS = 5 * 60 * 1000;
     var LOCAL_CACHE_MS = 30 * 60 * 1000;
     var LOCAL_CACHE_KEY = 'ussRsiServerStatusCache';
-    var LOCAL_CACHE_VERSION = 3;
+    var LOCAL_CACHE_VERSION = 5;
     var RSI_STATUS_URL = 'https://status.robertsspaceindustries.com/';
 
     var gridEl = null;
+    var updatedEl = null;
     var timer = null;
 
     function apiBase() {
@@ -23,6 +24,25 @@
             return String(window.USS_AUTH_API_BASE).replace(/\/$/, '');
         }
         return 'http://127.0.0.1:3789';
+    }
+
+    function formatFetchedAt(iso) {
+        try {
+            var d = new Date(iso);
+            if (isNaN(d.getTime())) return '';
+            return d.toLocaleString('zh-CN', {
+                hour12: false,
+                timeZone: 'Asia/Shanghai',
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            });
+        } catch (e) {
+            return '';
+        }
     }
 
     function componentsAllUnknown(components) {
@@ -78,9 +98,48 @@
         }
     }
 
+    function ensureUpdatedEl() {
+        if (updatedEl) return updatedEl;
+        var wrap = gridEl && gridEl.closest('.rsi-status-wrap');
+        if (!wrap) return null;
+        updatedEl = document.getElementById('rsiServerStatusUpdated');
+        if (!updatedEl) {
+            updatedEl = document.createElement('p');
+            updatedEl.id = 'rsiServerStatusUpdated';
+            updatedEl.className = 'rsi-funding-updated';
+            updatedEl.hidden = true;
+            wrap.appendChild(updatedEl);
+        }
+        return updatedEl;
+    }
+
+    function renderUpdated(data) {
+        var el = ensureUpdatedEl();
+        if (!el || !data || !data.fetchedAt) {
+            if (el) el.hidden = true;
+            return;
+        }
+        var when = formatFetchedAt(data.fetchedAt);
+        if (data.stale) {
+            if (data.networkDisabled) when += ' · 后端未拉取 RSI';
+            else if (data.refreshFailed) when += ' · 同步失败，显示缓存';
+            else when += ' · 缓存';
+        }
+        el.textContent = when ? '更新时间：' + when : '';
+        el.hidden = !when;
+    }
+
+    function renderSyncing() {
+        var el = ensureUpdatedEl();
+        if (!el) return;
+        el.textContent = '正在同步最新数据…';
+        el.hidden = false;
+    }
+
     function renderLoading() {
         if (!gridEl) return;
         gridEl.innerHTML = '<div class="rsi-status-loading" role="status">正在获取 RSI 服务器状态…</div>';
+        if (updatedEl) updatedEl.hidden = true;
     }
 
     function renderError(msg) {
@@ -142,10 +201,16 @@
         list.forEach(function (row) {
             gridEl.appendChild(renderCard(row));
         });
+        renderUpdated(data);
+    }
+
+    function shouldFetchFromBackend(opts) {
+        return !!(opts.forceNetwork || opts.revalidate || opts.force);
     }
 
     async function fetchFromBackend() {
-        var r = await fetch(apiBase() + '/api/rsi-server-status', { cache: 'no-store' });
+        var url = apiBase() + '/api/rsi-server-status?fresh=1&_=' + Date.now();
+        var r = await fetch(url, { cache: 'no-store' });
         var data = {};
         try {
             data = await r.json();
@@ -165,25 +230,28 @@
     async function loadStatus(options) {
         if (!gridEl) return;
         var opts = options || {};
-        var localFresh = readLocalCache(false);
-        var localStale = readLocalCache(true);
-        var localAny = localFresh || localStale;
-        var skipNetwork = localFresh && !opts.forceNetwork && !opts.revalidate;
+        var localFallback = readLocalCache(true);
+        var mustFetch = shouldFetchFromBackend(opts) || !localFallback;
 
-        if (localAny && !opts.silent) {
-            render(localAny);
-        } else if (!localAny && !opts.silent) {
-            renderLoading();
+        if (!opts.silent) {
+            if (mustFetch) {
+                if (!localFallback) renderLoading();
+                renderSyncing();
+            } else if (localFallback) {
+                render(localFallback);
+            } else {
+                renderLoading();
+            }
         }
 
-        if (skipNetwork) return;
+        if (!mustFetch) return;
 
         try {
             var data = await fetchFromBackend();
             render(data);
         } catch (err) {
-            if (localAny) {
-                render(localAny);
+            if (localFallback) {
+                render(localFallback);
                 return;
             }
             renderError((err && err.message) || '获取状态失败');
@@ -193,41 +261,36 @@
     function scheduleRefresh() {
         if (timer) clearInterval(timer);
         timer = setInterval(function () {
-            loadStatus({ forceNetwork: true, silent: true });
+            loadStatus({ forceNetwork: true, revalidate: true, silent: true });
         }, REFRESH_MS);
     }
 
     function init() {
         gridEl = document.getElementById('rsiServerStatusGrid');
         if (!gridEl) return;
-        loadStatus({ revalidate: true });
+        ensureUpdatedEl();
+        loadStatus({ forceNetwork: true, revalidate: true });
         scheduleRefresh();
         document.addEventListener('visibilitychange', function () {
             if (document.visibilityState !== 'visible') return;
-            loadStatus({ revalidate: true, silent: !!readLocalCache(false) });
+            loadStatus({ forceNetwork: true, revalidate: true, silent: !!readLocalCache(true) });
         });
     }
 
     function scheduleInit() {
-        var start = function () {
-            if (window.UssLazyMedia && typeof window.UssLazyMedia.runWhenIdle === 'function') {
-                window.UssLazyMedia.runWhenIdle(init, 1200);
-            } else {
-                setTimeout(init, 1200);
-            }
-        };
         if (window.__ussPageReady) {
-            start();
+            init();
             return;
         }
         window.addEventListener(
             'uss:page-ready',
             function onReady() {
                 window.removeEventListener('uss:page-ready', onReady);
-                start();
+                init();
             },
             { once: true }
         );
+        setTimeout(init, 0);
     }
 
     if (document.readyState === 'loading') {

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>星际公民工具站 | USS星巢</title>
+    <title>星际公民工具站 | USS星巢 </title>
     <meta name="description" content="星际公民一站式玩家站点，提供服务器延迟查询、行政机库倒计时、新手入门攻略、飞船玩法、游戏报错修复、舰队组队服务，全面覆盖 Star Citizen 游戏相关内容。">
     <meta name="keywords" content="星际公民,Star Citizen,星际公民新手教程,星际公民服务器,行政机库,飞船攻略,游戏卡顿修复,舰队招募,星际公民版本更新">
     <meta name="robots" content="index,follow,max-image-preview:large">
@@ -79,18 +79,9 @@
         <div class="logo">
             <a href="index.html" aria-label="首页"><img src="fleet-logo.jpg" alt="舰队 LOGO" decoding="async" fetchpriority="high"></a>
         </div>
-        <div class="nav-links" role="navigation" aria-label="站点导航">
-            <div class="nav-dropdown">
-                <button
-                    type="button"
-                    class="nav-dropdown-toggle"
-                    id="navExecHangarToggle"
-                    aria-expanded="false"
-                    aria-haspopup="true"
-                    data-mega-target="navMegaHangar"
-                    aria-controls="navMegaHangar"
-                >
-                    行政机库
+        <div class="nav-links" role="navigation" aria-label="站点导航"><div class="nav-dropdown">
+                <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true" data-mega-target="navMegaBlueprint" aria-controls="navMegaBlueprint">
+                    蓝图
                     <span class="nav-dropdown-caret" aria-hidden="true"></span>
                 </button>
             </div>
@@ -105,6 +96,19 @@
                     aria-controls="navMegaShip"
                 >
                     舰船
+                    <span class="nav-dropdown-caret" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="nav-dropdown">
+                <button
+                    type="button"
+                    class="nav-dropdown-toggle"
+                    aria-expanded="false"
+                    aria-haspopup="true"
+                    data-mega-target="navMegaEquipment"
+                    aria-controls="navMegaEquipment"
+                >
+                    装备
                     <span class="nav-dropdown-caret" aria-hidden="true"></span>
                 </button>
             </div>
@@ -134,50 +138,46 @@
             </button>
         </div>
     </nav>
-    <div id="navMegaHangar" class="nav-mega-panel" role="region" aria-label="行政机库" hidden>
+<div id="navMegaShip" class="nav-mega-panel" role="region" aria-label="舰船" hidden>
         <div class="nav-mega-inner">
             <div class="nav-mega-col">
                 <ul class="nav-mega-list">
-                    <li>
-                        <a href="executive-hangar.html" class="nav-mega-link">
-                            <span class="nav-mega-link-title">进入行政机库</span>
-                            <span class="nav-mega-link-desc">舰队行政与机库管理统一入口</span>
-                        </a>
-                    </li>
+                    <li class="nav-mega-link-row"><a href="ship-components?group=component" class="nav-mega-link" data-nav-ship-group="component" id="navMegaLinkShipComponent"><span class="nav-mega-link-title">舰船组件</span><span class="nav-mega-link-desc">散热 · 电源 · 护盾 · 量子驱动器 · 跳跃驱动器 · 雷达</span></a><a href="ship-components?group=weapon" class="nav-mega-link" data-nav-ship-group="weapon" id="navMegaLinkShipWeapon"><span class="nav-mega-link-title">舰船武器</span><span class="nav-mega-link-desc">舰炮 · 导弹 · 导弹架 · 舰船炮台</span></a></li>
+                    <li class="nav-mega-link-row"><a href="ship-components?group=mining" class="nav-mega-link" data-nav-ship-group="mining" id="navMegaLinkShipMining"><span class="nav-mega-link-title">舰船矿头</span><span class="nav-mega-link-desc">矿头 · 模组</span></a><a href="ship-components?group=salvage" class="nav-mega-link" data-nav-ship-group="salvage" id="navMegaLinkShipSalvage"><span class="nav-mega-link-title">打捞模组</span><span class="nav-mega-link-desc">刮削模块</span></a></li>
+                    <li><a href="ship-components?group=fuel_nozzle" class="nav-mega-link" data-nav-ship-group="fuel_nozzle" id="navMegaLinkShipFuelNozzle"><span class="nav-mega-link-title">燃料喷嘴</span><span class="nav-mega-link-desc">氢燃料 · 量子燃料</span></a></li>
                 </ul>
             </div>
         </div>
     </div>
-    <div id="navMegaShip" class="nav-mega-panel" role="region" aria-label="舰船" hidden>
+    <div id="navMegaEquipment" class="nav-mega-panel" role="region" aria-label="装备" hidden>
         <div class="nav-mega-inner">
             <div class="nav-mega-col">
                 <ul class="nav-mega-list">
-                    <li>
-                        <a href="ship-components.html" class="nav-mega-link">
-                            <span class="nav-mega-link-title">舰船配件</span>
-                            <span class="nav-mega-link-desc">舰船组件 · 舰船武器 · 舰船矿头</span>
-                        </a>
-                    </li>
+                    <li class="nav-mega-link-row"><a href="personal-equipment?group=fps_weapon" class="nav-mega-link" data-nav-equipment-group="fps_weapon" id="navMegaLinkEquipWeapon"><span class="nav-mega-link-title">个人武器</span><span class="nav-mega-link-desc">手枪 · 冲锋枪 · 突击步枪 · 狙击枪 · 霰弹枪 · 机枪 · ...</span></a><a href="personal-equipment?group=fps_magazine" class="nav-mega-link" data-nav-equipment-group="fps_magazine" id="navMegaLinkEquipAttachment"><span class="nav-mega-link-title">武器配件</span><span class="nav-mega-link-desc">弹匣 · 瞄具 · 枪口 · 下挂 · 实用配件 · 发射器导弹</span></a></li>
+                    <li><a href="personal-equipment?group=fps_armor" class="nav-mega-link" data-nav-equipment-group="fps_armor" id="navMegaLinkEquipArmor"><span class="nav-mega-link-title">个人护甲</span><span class="nav-mega-link-desc">头盔 · 胸甲 · 腿甲 · 臂甲 · 背包 · 基底服</span></a></li>
                 </ul>
             </div>
         </div>
     </div>
+            <div id="navMegaBlueprint" class="nav-mega-panel" role="region" aria-label="蓝图" hidden>
+        <div class="nav-mega-inner">
+            <div class="nav-mega-col">
+                <ul class="nav-mega-list">
+                    <li><a href="blueprint-crafting.html" class="nav-mega-link" data-nav-blueprint-page><span class="nav-mega-link-title">蓝图制造</span><span class="nav-mega-link-desc">选择蓝图 · 配置材料品质 · 模拟成品属性</span></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
     <div id="navMegaTools" class="nav-mega-panel" role="region" aria-label="工具" hidden>
         <div class="nav-mega-inner">
             <div class="nav-mega-col">
                 <ul class="nav-mega-list">
-                    <li>
-                        <a href="server-ip.html" class="nav-mega-link">
-                            <span class="nav-mega-link-title">服务器 IP</span>
-                            <span class="nav-mega-link-desc">服务器运行状态/IP地址</span>
-                        </a>
+                    <li class="nav-mega-tools-row">
+                        <a href="executive-hangar.html" class="nav-mega-link"><span class="nav-mega-link-title">行政机库</span><span class="nav-mega-link-desc">Pyro 行政机库周期与插卡窗口</span></a>
+                        <a href="server-ip.html" class="nav-mega-link"><span class="nav-mega-link-title">服务器 IP</span><span class="nav-mega-link-desc">服务器运行状态/IP地址</span></a>
                     </li>
-                    <li>
-                        <a href="rsi-funding.html" class="nav-mega-link">
-                            <span class="nav-mega-link-title">资金统计</span>
-                            <span class="nav-mega-link-desc">RSI 众筹资金与玩家数量</span>
-                        </a>
-                    </li>
+                    <li><a href="rsi-funding.html" class="nav-mega-link"><span class="nav-mega-link-title">资金统计</span><span class="nav-mega-link-desc">RSI 众筹资金与玩家数量</span></a></li>
                 </ul>
             </div>
         </div>
@@ -263,6 +263,12 @@
                             aria-controls="heroScSearchSuggest"
                             aria-expanded="false"
                         >
+                        <button type="submit" class="hero-sc-search-icon-btn" aria-label="搜索">
+                            <svg class="hero-sc-search-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                                <path d="M374 686C207.2 686 71.6 550.3 71.6 383.6S207.2 81.1 374 81.1c166.8 0 302.5 135.7 302.5 302.4S540.8 686 374 686z m0-522.7c-121.4 0-220.3 98.8-220.3 220.3 0 121.5 98.8 220.3 220.3 220.3 121.5 0 220.3-98.8 220.3-220.3 0-121.5-98.8-220.3-220.3-220.3z" fill="currentColor"/>
+                                <path d="M843.8 930.8L635.4 722.4c-16-16-16-42.1 0-58.1s42.1-16 58.1 0l208.4 208.4c16 16 16 42.1 0 58.1-16.1 16.1-42.1 16.1-58.1 0z" fill="currentColor"/>
+                            </svg>
+                        </button>
                     </label>
                     <div id="heroScSearchSuggest" class="hero-sc-search-suggest" role="listbox" aria-label="配件匹配结果" hidden></div>
                 </form>
@@ -691,7 +697,6 @@
                                 <span class="rsi-pw-toggle-icon" aria-hidden="true"><svg class="rsi-pw-icon rsi-pw-icon--show" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 6a6 6 0 1 1 0 12 6 6 0 0 1 0-12m0-4C6.5 2 1.73 7.11 1 12c.73 4.89 5.5 10 11 10s10.27-5.11 11-10C21.27 7.11 17.5 2 12 2m0 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg><svg class="rsi-pw-icon rsi-pw-icon--hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" hidden aria-hidden="true"><path d="M2.28 3.51 1 4.79l4.37 4.37C3.61 10.28 2.12 11.09 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l2.92 2.92L21 20.73 22.27 19.5 3.51 2.28M12 17c-2.76 0-5-2.24-5-5 0-.65.13-1.26.36-1.83l1.63 1.63c.17.58.68 1 1.31 1 1.1 0 2-.9 2-2 0-.63-.42-1.14-1-1.31l1.63 1.63c.57-.23 1.18-.36 1.83-.36 2.76 0 5 2.24 5 5 0 .79-.2 1.53-.53 2.2l1.46 1.46A9.9 9.9 0 0 0 12 17m6.24-3.59-1.88-1.88a2.98 2.98 0 0 0 .05-.41 3 3 0 0 0-3-3c-.14 0-.28.02-.41.05L11.41 7.3A4.98 4.98 0 0 1 12 7c2.76 0 5 2.24 5 5 0 .7-.15 1.36-.41 1.97z"/></svg></span>
                             </button>
                         </div>
-                        <p id="loginFormHint" class="rsi-form-hint rsi-form-hint--error" hidden></p>
                         <div class="rsi-field rsi-field--session" id="loginSessionDaysField">
                             <div class="rsi-custom-select" id="loginSessionDaysWrap">
                                 <input type="hidden" id="loginSessionDays" value="7">
@@ -720,6 +725,7 @@
                                 </ul>
                             </div>
                         </div>
+                        <p id="loginFormHint" class="rsi-form-hint rsi-form-hint--error" hidden></p>
                         <div class="rsi-auth-row rsi-auth-row--end">
                             <button type="button" class="rsi-auth-link rsi-auth-link--small" onclick="openForgotPasswordDialog()">忘记密码？</button>
                         </div>
@@ -1867,6 +1873,13 @@
         let communityInboxSnapshot = { fleetMaxSeq: 0, dmMaxByPeer: {} };
         /** 全量成员（含自己），用于 @ 补全 */
         let communityChatRosterMembersList = [];
+        /** 聊天历史懒渲染：先画可见区，上滑再补更早消息 */
+        const COMMUNITY_CHAT_HISTORY_BATCH = 24;
+        let communityChatBufferedMessages = [];
+        let communityChatBufferedLineKind = 'fleet';
+        let communityChatRenderedCount = 0;
+        let communityChatHistoryLoading = false;
+        let communityChatHistoryObserver = null;
         const communityMentionNotifiedKeys = new Set();
         let communityMentionUI = {
             open: false,
@@ -2945,21 +2958,142 @@
             if (unpinBtn) unpinBtn.hidden = !sessionIsCommunityStaff();
         }
 
-        function scrollToCommunityChatMessage(messageId) {
-            if (!messageId) return;
-            const line = document.querySelector(
-                '.community-chat-line[data-id="' + String(messageId) + '"][data-chat-kind="fleet"]'
+        function getCommunityChatInitialRenderCount() {
+            const sc = getCommunityChatScrollEl();
+            const h = sc && sc.clientHeight > 0 ? sc.clientHeight : 480;
+            return Math.max(16, Math.min(48, Math.ceil(h / 72) + 8));
+        }
+
+        function resetCommunityChatLazyState() {
+            communityChatBufferedMessages = [];
+            communityChatBufferedLineKind = 'fleet';
+            communityChatRenderedCount = 0;
+            communityChatHistoryLoading = false;
+        }
+
+        function removeCommunityChatHistorySentinel(log) {
+            if (!log) return;
+            const sentinel = log.querySelector('.community-chat-history-sentinel');
+            if (sentinel) sentinel.remove();
+        }
+
+        function ensureCommunityChatHistorySentinel(log) {
+            if (!log) return null;
+            let sentinel = log.querySelector('.community-chat-history-sentinel');
+            if (!sentinel) {
+                sentinel = document.createElement('div');
+                sentinel.className = 'community-chat-history-sentinel';
+                sentinel.setAttribute('role', 'status');
+                sentinel.textContent = '向上滚动加载更早消息…';
+                log.insertBefore(sentinel, log.firstChild);
+            }
+            observeCommunityChatHistorySentinel();
+            return sentinel;
+        }
+
+        function observeCommunityChatHistorySentinel() {
+            if (!communityChatHistoryObserver) return;
+            const log = document.getElementById('communityChatLog');
+            if (!log) return;
+            const sentinel = log.querySelector('.community-chat-history-sentinel');
+            communityChatHistoryObserver.disconnect();
+            if (sentinel) communityChatHistoryObserver.observe(sentinel);
+        }
+
+        function mountCommunityChatMessageNodes(log, messages, startIdx, endIdx, lineKind, insertBeforeNode) {
+            if (!log || !messages || startIdx >= endIdx) return;
+            let prev = startIdx > 0 ? messages[startIdx - 1].createdAt : null;
+            const frag = document.createDocumentFragment();
+            for (let i = startIdx; i < endIdx; i++) {
+                const m = messages[i];
+                if (!m || m.seq == null) continue;
+                if (shouldShowCommunityChatTimeDivider(prev, m.createdAt)) {
+                    frag.appendChild(buildCommunityChatTimeDivider(m.createdAt));
+                }
+                frag.appendChild(buildCommunityChatLine(m, lineKind));
+                prev = m.createdAt;
+            }
+            if (insertBeforeNode) log.insertBefore(frag, insertBeforeNode);
+            else log.appendChild(frag);
+        }
+
+        function prependOlderCommunityChatMessages() {
+            const log = document.getElementById('communityChatLog');
+            if (!log || communityChatHistoryLoading) return false;
+            const total = communityChatBufferedMessages.length;
+            if (communityChatRenderedCount >= total) {
+                removeCommunityChatHistorySentinel(log);
+                return false;
+            }
+            communityChatHistoryLoading = true;
+            const batch = Math.min(COMMUNITY_CHAT_HISTORY_BATCH, total - communityChatRenderedCount);
+            const endIdx = total - communityChatRenderedCount;
+            const startIdx = endIdx - batch;
+            const sc = getCommunityChatScrollEl();
+            const prevHeight = sc ? sc.scrollHeight : 0;
+            const sentinel = log.querySelector('.community-chat-history-sentinel');
+            mountCommunityChatMessageNodes(
+                log,
+                communityChatBufferedMessages,
+                startIdx,
+                endIdx,
+                communityChatBufferedLineKind,
+                sentinel || log.firstChild
             );
-            if (!line) {
-                setCommunityChatHint('原消息已不存在或不在当前列表中');
+            communityChatRenderedCount += batch;
+            if (startIdx <= 0) removeCommunityChatHistorySentinel(log);
+            else observeCommunityChatHistorySentinel();
+            if (sc) {
+                const delta = sc.scrollHeight - prevHeight;
+                if (delta > 0) sc.scrollTop += delta;
+            }
+            bindCommunityChatAvatars(log, { eagerLast: 0 });
+            communityChatHistoryLoading = false;
+            return true;
+        }
+
+        function revealCommunityChatMessageById(messageId, chatKind, done) {
+            const log = document.getElementById('communityChatLog');
+            if (!log) {
+                if (done) done(null);
                 return;
             }
-            clearCommunityChatHint();
-            line.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            line.classList.add('community-chat-line--highlight');
-            window.setTimeout(function () {
-                line.classList.remove('community-chat-line--highlight');
-            }, 2200);
+            const kind = chatKind || 'fleet';
+            function findLine() {
+                return log.querySelector(
+                    '.community-chat-line[data-id="' + String(messageId) + '"][data-chat-kind="' + kind + '"]'
+                );
+            }
+            function step() {
+                const line = findLine();
+                if (line) {
+                    if (done) done(line);
+                    return;
+                }
+                if (communityChatRenderedCount >= communityChatBufferedMessages.length) {
+                    if (done) done(null);
+                    return;
+                }
+                prependOlderCommunityChatMessages();
+                requestAnimationFrame(step);
+            }
+            step();
+        }
+
+        function scrollToCommunityChatMessage(messageId) {
+            if (!messageId) return;
+            revealCommunityChatMessageById(messageId, 'fleet', function (line) {
+                if (!line) {
+                    setCommunityChatHint('原消息已不存在或不在当前列表中');
+                    return;
+                }
+                clearCommunityChatHint();
+                line.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                line.classList.add('community-chat-line--highlight');
+                window.setTimeout(function () {
+                    line.classList.remove('community-chat-line--highlight');
+                }, 2200);
+            });
         }
 
         async function handleCommunityChatUnpin(chatKind) {
@@ -3088,7 +3222,7 @@
             if (!root || !window.UssLazyMedia) return;
             const scroll = getCommunityChatScrollEl();
             const options = opts || {};
-            const eagerLast = options.eagerLast != null ? options.eagerLast : 20;
+            const eagerLast = options.eagerLast != null ? options.eagerLast : 10;
             const lines = root.querySelectorAll('.community-chat-line');
             const startEager = Math.max(0, lines.length - eagerLast);
             lines.forEach(function (line, idx) {
@@ -3517,7 +3651,7 @@
                     null,
                     avatarRsiHref,
                     m.authorLabel,
-                    isMine
+                    false
                 )
             );
             const bubble = document.createElement('div');
@@ -3553,16 +3687,26 @@
         function renderCommunityChatMessagesToLog(log, list, lineKind) {
             if (!log) return;
             log.innerHTML = '';
-            let prev = null;
-            (list || []).forEach(function (m) {
-                if (!m || m.seq == null) return;
-                if (shouldShowCommunityChatTimeDivider(prev, m.createdAt)) {
-                    log.appendChild(buildCommunityChatTimeDivider(m.createdAt));
-                }
-                log.appendChild(buildCommunityChatLine(m, lineKind));
-                prev = m.createdAt;
+            resetCommunityChatLazyState();
+            communityChatBufferedMessages = (list || []).filter(function (m) {
+                return m && m.seq != null;
             });
-            bindCommunityChatAvatars(log);
+            communityChatBufferedLineKind = lineKind != null ? lineKind : communityChatKind;
+            const total = communityChatBufferedMessages.length;
+            if (!total) return;
+            const initialCount = Math.min(total, getCommunityChatInitialRenderCount());
+            communityChatRenderedCount = initialCount;
+            const startIdx = total - initialCount;
+            mountCommunityChatMessageNodes(
+                log,
+                communityChatBufferedMessages,
+                startIdx,
+                total,
+                communityChatBufferedLineKind,
+                null
+            );
+            if (startIdx > 0) ensureCommunityChatHistorySentinel(log);
+            bindCommunityChatAvatars(log, { eagerLast: initialCount });
         }
 
         function syncCommunityFeedLayout(hasPosts) {
@@ -3801,7 +3945,6 @@
                     renderCommunityChatMessagesToLog(log, list, 'fleet');
                 }
                 scrollCommunityChatToBottom(true);
-                bindCommunityChatAvatars(log);
                 markCommunityFleetRead(communityChatMaxSeq);
             } catch (e) {
                 log.innerHTML = '';
@@ -3843,7 +3986,6 @@
                     renderCommunityChatMessagesToLog(log, list, 'dm');
                 }
                 scrollCommunityChatToBottom(true);
-                bindCommunityChatAvatars(log);
                 if (communityChatDmPeer) {
                     markCommunityDmPeerRead(communityChatDmPeer, communityDmMaxSeq);
                 }
@@ -3999,8 +4141,7 @@
                 const img = document.createElement('img');
                 img.className = 'community-chat-roster-avatar-img';
                 img.alt = bid;
-                const src = communityAvatarSrc(mem.avatarUrl);
-                img.src = src || communityAvatarFallbackDataUri(communityAuthorInitial(bid));
+                communityPrepareAvatarImg(img, bid, mem.avatarUrl, null, false);
                 av.appendChild(img);
                 const lab = document.createElement('span');
                 lab.className = 'community-chat-roster-label';
@@ -4017,6 +4158,13 @@
             applyCommunityRosterSearchFilter(communityRosterSearchQuery);
             syncCommunityChatRosterActive();
             updateCommunityUnreadBadges();
+            if (window.UssLazyMedia) {
+                window.UssLazyMedia.observeAll(
+                    '.community-chat-roster-avatar-img[data-src]',
+                    { root: inner, rootMargin: '160px 0px' },
+                    inner
+                );
+            }
         }
 
         async function loadCommunityRoster() {
@@ -4703,6 +4851,7 @@
             installCommunityChatPinBar();
             wireCommunityChatRoster();
             refreshCommunitySessionUi({ deferNetwork: true });
+            installCommunityChatHistoryLazyLoad();
             installCommunityChatScrollLazyReload();
 
             document.addEventListener('visibilitychange', function () {
@@ -4713,6 +4862,22 @@
                     if (isLoggedIn()) startCommunityChatPoll();
                 }
             });
+        }
+
+        function installCommunityChatHistoryLazyLoad() {
+            const sc = getCommunityChatScrollEl();
+            if (!sc || sc.dataset.historyLazy === '1') return;
+            sc.dataset.historyLazy = '1';
+            if (typeof IntersectionObserver !== 'function') return;
+            communityChatHistoryObserver = new IntersectionObserver(
+                function (entries) {
+                    entries.forEach(function (entry) {
+                        if (!entry.isIntersecting || communityChatHistoryLoading) return;
+                        prependOlderCommunityChatMessages();
+                    });
+                },
+                { root: sc, rootMargin: '120px 0px', threshold: 0 }
+            );
         }
 
         function installCommunityChatScrollLazyReload() {
@@ -5402,9 +5567,9 @@
     </script>
     <script defer src="oopz-bind.js"></script>
     <script defer src="oopz-user-prefs.js"></script>
-    <script defer src="rsi-server-status.js?v=20260603g"></script>
+    <script defer src="rsi-server-status.js?v=20260617c"></script>
     <script defer src="sc-festival-countdown.js?v=20260606a"></script>
-    <script defer src="home-exec-hangar.js?v=20260609b"></script>
+    <script defer src="home-exec-hangar.js?v=20260617a"></script>
     <script defer src="oopz-bridge.js"></script>
     <script defer src="site-footer.js"></script>
 </body>

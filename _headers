@@ -40,6 +40,14 @@
   Cache-Control: no-store, no-cache, must-revalidate
   Netlify-CDN-Cache-Control: no-store
 
+/api/client-public-ip
+  Cache-Control: no-store, no-cache, must-revalidate
+  Netlify-CDN-Cache-Control: no-store
+
+/api/client-public-ip/*
+  Cache-Control: no-store, no-cache, must-revalidate
+  Netlify-CDN-Cache-Control: no-store
+
 /api/sc-festival-countdown
   Cache-Control: no-store, no-cache, must-revalidate
   Netlify-CDN-Cache-Control: no-store

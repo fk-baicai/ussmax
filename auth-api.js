@@ -309,7 +309,7 @@
         },
 
         async getClientPublicIpStatus() {
-            var r = await fetch(joinUrl('/api/client-public-ip/status'));
+            var r = await fetch(joinUrl('/api/client-public-ip/status'), { cache: 'no-store' });
             var data = await parseJson(r);
             if (r.status === 404) {
                 return { ok: false, code: (data && data.code) || 'IP_001' };
@@ -321,6 +321,7 @@
         async getClientPublicIp(token) {
             var r = await fetch(joinUrl('/api/client-public-ip'), {
                 headers: { Authorization: 'Bearer ' + token },
+                cache: 'no-store',
             });
             var data = await parseJson(r);
             if (r.status === 404) {
@@ -605,7 +606,7 @@
 
         /** 首页 RSI 服务器状态（无需登录） */
         async rsiServerStatus() {
-            var r = await fetch(joinUrl('/api/rsi-server-status'));
+            var r = await fetch(joinUrl('/api/rsi-server-status?fresh=1&_=' + Date.now()), { cache: 'no-store' });
             var data = await parseJson(r);
             throwIfNotOk(r, data, 'RSI_001');
             return data;

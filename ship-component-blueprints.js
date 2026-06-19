@@ -7,15 +7,28 @@
 
     var listCache = Object.create(null);
     var detailCache = Object.create(null);
-    var DETAIL_SCHEMA_VERSION = 12;
- 
+    var DETAIL_SCHEMA_VERSION = 14;
+
+    function missionBriefingZh(detail, summary) {
+        var zh = detail && detail.description_zh ? String(detail.description_zh).trim() : '';
+        if (zh) return zh;
+        if (summary && summary.description_zh) return String(summary.description_zh).trim();
+        return '';
+    }
+
     function isUsableMissionDetail(detail) {
-        return (
-            detail &&
-            Array.isArray(detail.blueprint_pools) &&
-            detail.blueprint_pools.length > 0 &&
-            detail.__detailSchemaVersion === DETAIL_SCHEMA_VERSION
-        );
+        if (
+            !detail ||
+            !Array.isArray(detail.blueprint_pools) ||
+            !detail.blueprint_pools.length ||
+            detail.__detailSchemaVersion !== DETAIL_SCHEMA_VERSION
+        ) {
+            return false;
+        }
+        var descEn = String(detail.description_en || '').trim();
+        var descZh = String(detail.description_zh || '').trim();
+        if (descEn && !descZh) return false;
+        return true;
     }
 
     function apiUrl(path) {
@@ -48,7 +61,10 @@
     }
 
     function itemHasBlueprintHints(item) {
-        var wf = item && item.wiki_fields;
+        if (!item) return false;
+        if (Number(item.unlocking_missions_count) > 0) return true;
+        if (Array.isArray(item.unlocking_missions) && item.unlocking_missions.length) return true;
+        var wf = item.wiki_fields;
         if (wf && Array.isArray(wf.blueprint_refs) && wf.blueprint_refs.length) return true;
         if (wf && Array.isArray(wf.blueprint_unlock_missions) && wf.blueprint_unlock_missions.length) return true;
         return false;
@@ -830,7 +846,43 @@
         if (m.uuid) return String(m.uuid);
         var url = String(m.web_url || '');
         var match = url.match(/\/missions\/([^/?#]+)/i);
-        return match ? decodeURIComponent(match[1]) : '';
+        if (match) return decodeURIComponent(match[1]);
+        if (m.debug_name) return String(m.debug_name).trim();
+        return '';
+    }
+
+    function missionListCacheKey(item) {
+        item = item || {};
+        var blueprintUuid = String(item.blueprint_uuid || '').trim();
+        var useComponent = item.use_component_missions === true;
+        var id = item.id_item || item.uuid;
+        if (useComponent && id) return 'c:' + String(id);
+        if (blueprintUuid) return 'b:' + blueprintUuid;
+        if (id) return 'c:' + String(id);
+        return '';
+    }
+
+    function missionsForContainer(container) {
+        var panelRoot = container.closest('[data-blueprint-panel]') || container;
+        var cacheKey =
+            container.dataset.missionsCacheKey || panelRoot.dataset.missionsCacheKey || '';
+        if (cacheKey && listCache[cacheKey]) return listCache[cacheKey];
+        if (container._bpMissions && container._bpMissions.length) return container._bpMissions;
+        if (panelRoot._bpMissions && panelRoot._bpMissions.length) return panelRoot._bpMissions;
+        return [];
+    }
+
+    function rememberMissionsOnPanel(container, item, missions) {
+        var panelRoot = container.closest('[data-blueprint-panel]') || container;
+        var cacheKey = missionListCacheKey(item);
+        var list = missions || [];
+        container._bpMissions = list;
+        if (panelRoot !== container) panelRoot._bpMissions = list;
+        if (cacheKey) {
+            listCache[cacheKey] = list;
+            container.dataset.missionsCacheKey = cacheKey;
+            panelRoot.dataset.missionsCacheKey = cacheKey;
+        }
     }
 
     function renderMetaRow(label, value) {
@@ -892,7 +944,7 @@
             (isOpen ? '' : ' hidden') +
             '>';
         if (isOpen && detailCache[ref] && isUsableMissionDetail(detailCache[ref])) {
-            html += renderMissionDetailBody(detailCache[ref], readNavContext());
+            html += renderMissionDetailBody(detailCache[ref], readNavContext(), m);
         } else if (isOpen) {
             html += '<p class="sc-acquire-loading">加载任务详情…</p>';
         }
@@ -900,10 +952,10 @@
         return html;
     }
 
-    function renderMissionDetailBody(detail, navContext) {
+    function renderMissionDetailBody(detail, navContext, summary) {
         if (!detail) return '<p class="sc-acquire-empty">暂无任务详情</p>';
         var ctx = navContext || readNavContext();
-        var body = detail.description_zh || '';
+        var body = missionBriefingZh(detail, summary);
         var html = '<div class="sc-blueprint-mission-detail-inner">';
         html += renderMissionSummarySections(detail.fields, detail, ['overview']);
         if (body) {
@@ -928,6 +980,32 @@
         return html;
     }
 
+    function flattenUnlockingMissionGroups(groups) {
+        if (!Array.isArray(groups) || !groups.length) return [];
+        var out = [];
+        groups.forEach(function (group) {
+            (group.missions || []).forEach(function (m) {
+                if (!m || typeof m !== 'object') return;
+                var title = m.title || m.debug_name || '';
+                var stub = { web_url: m.web_url || null, uuid: m.uuid || null };
+                out.push({
+                    uuid: m.uuid || missionRef(stub) || null,
+                    title_en: title || '未命名任务',
+                    title_zh: title || '未命名任务',
+                    debug_name: m.debug_name || null,
+                    web_url: m.web_url || null,
+                    chance: m.chance != null ? m.chance : null,
+                    reward_scope: m.reward_scope || null,
+                });
+            });
+        });
+        return out;
+    }
+
+    function embeddedBlueprintMissions(item) {
+        return flattenUnlockingMissionGroups(item && item.unlocking_missions);
+    }
+
     function renderMissionListHtml(missions, expandedId) {
         if (!missions || !missions.length) {
             return '<p class="sc-acquire-empty">暂无蓝图解锁任务</p>';
@@ -941,21 +1019,45 @@
     }
 
     async function fetchBlueprintMissions(item) {
-        var id = item && (item.id_item || item.uuid);
-        if (!id) return [];
-        var cacheKey = String(id);
+        item = item || {};
+        var blueprintUuid = String(item.blueprint_uuid || '').trim();
+        var useComponent = item.use_component_missions === true;
+        var id = item.id_item || item.uuid;
+        var cacheKey;
+        var url;
+        if (useComponent && id) {
+            cacheKey = 'c:' + String(id);
+            url = apiUrl('/api/sc/components/' + encodeURIComponent(id) + '/blueprint-missions');
+        } else if (blueprintUuid) {
+            cacheKey = 'b:' + blueprintUuid;
+            url = apiUrl('/api/sc/blueprints/' + encodeURIComponent(blueprintUuid) + '/missions');
+        } else if (id) {
+            cacheKey = 'c:' + String(id);
+            url = apiUrl('/api/sc/components/' + encodeURIComponent(id) + '/blueprint-missions');
+        } else {
+            return [];
+        }
         if (listCache[cacheKey]) return listCache[cacheKey];
 
-        var res = await fetch(
-            apiUrl('/api/sc/components/' + encodeURIComponent(cacheKey) + '/blueprint-missions') +
-                '?_=' +
-                Date.now(),
-            { cache: 'no-store' }
-        );
-        var data = await parseJsonResponse(res, '蓝图任务响应解析失败');
-        if (!res.ok || !data.ok) throw new Error((data && data.message) || '蓝图任务加载失败');
-        listCache[cacheKey] = data.missions || [];
-        return listCache[cacheKey];
+        var embedded = embeddedBlueprintMissions(item);
+        try {
+            var res = await fetch(url + '?_=' + Date.now(), { cache: 'no-store' });
+            var data = await parseJsonResponse(res, '蓝图任务响应解析失败');
+            if (!res.ok || !data.ok) throw new Error((data && data.message) || '蓝图任务加载失败');
+            var missions = data.missions || [];
+            if (!missions.length && embedded.length) {
+                listCache[cacheKey] = embedded;
+                return embedded;
+            }
+            listCache[cacheKey] = missions;
+            return missions;
+        } catch (e) {
+            if (embedded.length) {
+                listCache[cacheKey] = embedded;
+                return embedded;
+            }
+            throw e;
+        }
     }
 
     async function fetchMissionDetail(ref, debugName) {
@@ -996,7 +1098,7 @@
 
     async function loadMissionDetail(container, ref) {
         var panelRoot = container.closest('[data-blueprint-panel]') || container;
-        var missions = listCache[panelRoot.dataset.itemId || ''] || [];
+        var missions = missionsForContainer(container);
         var detailEl = container.querySelector('[data-mission-detail="' + cssEscape(ref) + '"]');
         if (!detailEl) return;
 
@@ -1005,16 +1107,33 @@
 
         if (detailCache[ref] && isUsableMissionDetail(detailCache[ref])) {
             detailEl.hidden = false;
-            detailEl.innerHTML = renderMissionDetailBody(detailCache[ref], readNavContext(container));
+            detailEl.innerHTML = renderMissionDetailBody(detailCache[ref], readNavContext(container), summary);
             return;
         }
 
         detailEl.hidden = false;
-        detailEl.innerHTML = '<p class="sc-acquire-loading">加载任务详情…</p>';
+        if (summary && missionBriefingZh(null, summary)) {
+            detailEl.innerHTML =
+                renderMissionDetailBody(
+                    {
+                        fields: [],
+                        description_zh: summary.description_zh,
+                        description_en: summary.description_en || '',
+                        loc_matched: summary.loc_matched,
+                    },
+                    readNavContext(container),
+                    summary
+                ) + '<p class="sc-acquire-loading">加载完整任务详情…</p>';
+        } else {
+            detailEl.innerHTML = '<p class="sc-acquire-loading">加载任务详情…</p>';
+        }
         try {
             var detail = await fetchMissionDetail(ref, debugName);
+            if (!String(detail.description_zh || '').trim() && summary && summary.description_zh) {
+                detail.description_zh = summary.description_zh;
+            }
             if (panelRoot.dataset.expandedMission !== ref) return;
-            detailEl.innerHTML = renderMissionDetailBody(detail, readNavContext(container));
+            detailEl.innerHTML = renderMissionDetailBody(detail, readNavContext(container), summary);
             if (summary && detail.title_zh) {
                 summary.title_zh = stripMissionFlowTitleSuffix(detail.title_zh);
                 summary.description_zh = detail.description_zh;
@@ -1030,7 +1149,7 @@
     async function toggleMissionDetail(container, ref) {
         var panelRoot = container.closest('[data-blueprint-panel]') || container;
         var expanded = panelRoot.dataset.expandedMission || '';
-        var missions = listCache[panelRoot.dataset.itemId || ''] || [];
+        var missions = missionsForContainer(container);
         var nextRef = expanded === ref ? '' : ref;
         panelRoot.dataset.expandedMission = nextRef;
         if (typeof container._bpOnExpandedChange === 'function') {
@@ -1094,6 +1213,7 @@
 
         try {
             var missions = await fetchBlueprintMissions(item);
+            rememberMissionsOnPanel(container, item, missions);
             if (!container.isConnected) return;
             var expandedId = options.expandedId || container.dataset.expandedMission || '';
             if (expandedId) panelRoot.dataset.expandedMission = expandedId;
@@ -1101,6 +1221,15 @@
             if (expandedId) await loadMissionDetail(container, expandedId);
         } catch (e) {
             if (!container.isConnected) return;
+            var embedded = embeddedBlueprintMissions(item);
+            if (embedded.length) {
+                rememberMissionsOnPanel(container, item, embedded);
+                var expandedEmbedded = options.expandedId || container.dataset.expandedMission || '';
+                if (expandedEmbedded) panelRoot.dataset.expandedMission = expandedEmbedded;
+                container.innerHTML = renderMissionListHtml(embedded, expandedEmbedded);
+                if (expandedEmbedded) await loadMissionDetail(container, expandedEmbedded);
+                return;
+            }
             var expandedId = options.expandedId || container.dataset.expandedMission || '';
             if (!itemHasBlueprintHints(item) && isJsonParseFailureMessage(e && e.message)) {
                 container.innerHTML = renderMissionListHtml([], expandedId);
@@ -1117,6 +1246,9 @@
 
     window.ShipComponentBlueprints = {
         mount: mount,
+        wirePanel: wirePanel,
+        missionListCacheKey: missionListCacheKey,
+        rememberMissionsOnPanel: rememberMissionsOnPanel,
         fetchBlueprintMissions: fetchBlueprintMissions,
         fetchMissionDetail: fetchMissionDetail,
         renderMissionListHtml: renderMissionListHtml,
