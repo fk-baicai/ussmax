@@ -1,20 +1,16 @@
 /**
  * 首页 RSI 服务器状态展示（Platform / PU / AC）
- *
- * 每次访问强制请求后端 ?fresh=1；localStorage 仅作网络失败时的离线回退。
+ * 仅从后端缓存读取，不访问 RSI，不使用 localStorage。
  */
 (function () {
     'use strict';
 
     var REFRESH_MS = 5 * 60 * 1000;
-    var LOCAL_CACHE_MS = 30 * 60 * 1000;
-    var LOCAL_CACHE_KEY = 'ussRsiServerStatusCache';
-    var LOCAL_CACHE_VERSION = 5;
-    var RSI_STATUS_URL = 'https://status.robertsspaceindustries.com/';
 
     var gridEl = null;
     var updatedEl = null;
     var timer = null;
+    var lastData = null;
 
     function apiBase() {
         if (window.UssAuthApi && window.UssAuthApi.base) {
@@ -45,59 +41,6 @@
         }
     }
 
-    function componentsAllUnknown(components) {
-        return (
-            Array.isArray(components) &&
-            components.length > 0 &&
-            components.every(function (row) {
-                return !row || row.status === 'unknown';
-            })
-        );
-    }
-
-    function readLocalCache(allowStale) {
-        try {
-            var raw = localStorage.getItem(LOCAL_CACHE_KEY);
-            if (!raw) return null;
-            var o = JSON.parse(raw);
-            if (!o || o.v !== LOCAL_CACHE_VERSION || !o.fetchedAt || !Array.isArray(o.components)) return null;
-            if (componentsAllUnknown(o.components)) return null;
-            var age = Date.now() - new Date(o.fetchedAt).getTime();
-            if (!Number.isFinite(age) || age < 0) return null;
-            var fresh = age <= LOCAL_CACHE_MS;
-            if (!fresh && !allowStale) return null;
-            return {
-                ok: true,
-                source: o.source || RSI_STATUS_URL,
-                fetchedAt: o.fetchedAt,
-                components: o.components,
-                cached: true,
-                stale: !fresh || !!o.stale,
-                cacheLayer: 'local',
-            };
-        } catch (e) {
-            return null;
-        }
-    }
-
-    function writeLocalCache(data) {
-        if (!data || !Array.isArray(data.components)) return;
-        try {
-            localStorage.setItem(
-                LOCAL_CACHE_KEY,
-                JSON.stringify({
-                    v: LOCAL_CACHE_VERSION,
-                    source: data.source || RSI_STATUS_URL,
-                    fetchedAt: data.fetchedAt || new Date().toISOString(),
-                    components: data.components,
-                    stale: !!data.stale,
-                })
-            );
-        } catch (e) {
-            /* quota / private mode */
-        }
-    }
-
     function ensureUpdatedEl() {
         if (updatedEl) return updatedEl;
         var wrap = gridEl && gridEl.closest('.rsi-status-wrap');
@@ -120,25 +63,13 @@
             return;
         }
         var when = formatFetchedAt(data.fetchedAt);
-        if (data.stale) {
-            if (data.networkDisabled) when += ' · 后端未拉取 RSI';
-            else if (data.refreshFailed) when += ' · 同步失败，显示缓存';
-            else when += ' · 缓存';
-        }
         el.textContent = when ? '更新时间：' + when : '';
         el.hidden = !when;
     }
 
-    function renderSyncing() {
-        var el = ensureUpdatedEl();
-        if (!el) return;
-        el.textContent = '正在同步最新数据…';
-        el.hidden = false;
-    }
-
     function renderLoading() {
         if (!gridEl) return;
-        gridEl.innerHTML = '<div class="rsi-status-loading" role="status">正在获取 RSI 服务器状态…</div>';
+        gridEl.innerHTML = '<div class="rsi-status-loading" role="status">正在加载服务器状态…</div>';
         if (updatedEl) updatedEl.hidden = true;
     }
 
@@ -201,15 +132,12 @@
         list.forEach(function (row) {
             gridEl.appendChild(renderCard(row));
         });
+        lastData = data;
         renderUpdated(data);
     }
 
-    function shouldFetchFromBackend(opts) {
-        return !!(opts.forceNetwork || opts.revalidate || opts.force);
-    }
-
     async function fetchFromBackend() {
-        var url = apiBase() + '/api/rsi-server-status?fresh=1&_=' + Date.now();
+        var url = apiBase() + '/api/rsi-server-status?_=' + Date.now();
         var r = await fetch(url, {
             cache: 'no-store',
             headers: { Pragma: 'no-cache', 'Cache-Control': 'no-cache' },
@@ -226,37 +154,19 @@
                 typeof UssApiError !== 'undefined' ? UssApiError.formatUserError(code) : '错误代码：' + code
             );
         }
-        writeLocalCache(data);
         return data;
     }
 
     async function loadStatus(options) {
         if (!gridEl) return;
         var opts = options || {};
-        var localFallback = readLocalCache(true);
-        var mustFetch = shouldFetchFromBackend(opts) || !localFallback;
-
-        if (!opts.silent) {
-            if (mustFetch) {
-                if (!localFallback) renderLoading();
-                renderSyncing();
-            } else if (localFallback) {
-                render(localFallback);
-            } else {
-                renderLoading();
-            }
-        }
-
-        if (!mustFetch) return;
+        if (!opts.silent) renderLoading();
 
         try {
             var data = await fetchFromBackend();
             render(data);
         } catch (err) {
-            if (localFallback) {
-                render(localFallback);
-                return;
-            }
+            if (opts.silent && lastData) return;
             renderError((err && err.message) || '获取状态失败');
         }
     }
@@ -264,7 +174,7 @@
     function scheduleRefresh() {
         if (timer) clearInterval(timer);
         timer = setInterval(function () {
-            loadStatus({ forceNetwork: true, revalidate: true, silent: true });
+            loadStatus({ silent: true });
         }, REFRESH_MS);
     }
 
@@ -272,11 +182,11 @@
         gridEl = document.getElementById('rsiServerStatusGrid');
         if (!gridEl) return;
         ensureUpdatedEl();
-        loadStatus({ forceNetwork: true, revalidate: true });
+        loadStatus();
         scheduleRefresh();
         document.addEventListener('visibilitychange', function () {
             if (document.visibilityState !== 'visible') return;
-            loadStatus({ forceNetwork: true, revalidate: true, silent: !!readLocalCache(true) });
+            loadStatus({ silent: true });
         });
     }
 

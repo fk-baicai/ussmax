@@ -1,14 +1,11 @@
 /**
  * RSI 众筹资金统计（Funds / Star Citizens + 时间线）
- * 每次访问强制请求后端 ?fresh=1；localStorage 仅作网络失败时的离线回退。
+ * 仅从后端缓存读取，不访问 RSI，不使用 localStorage。
  */
 (function () {
     'use strict';
 
-    var LOCAL_CACHE_MS = 60 * 60 * 1000;
     var POLL_MS = 5 * 60 * 1000;
-    var LOCAL_CACHE_KEY = 'ussRsiFundingCache';
-    var LOCAL_CACHE_VERSION = 4;
     var PERIODS = [
         { id: 'hour', label: '小时' },
         { id: 'day', label: '天' },
@@ -80,53 +77,6 @@
             });
         } catch (e) {
             return '';
-        }
-    }
-
-    function readLocalCache(allowStale) {
-        try {
-            var raw = localStorage.getItem(LOCAL_CACHE_KEY);
-            if (!raw) return null;
-            var o = JSON.parse(raw);
-            if (!o || o.v !== LOCAL_CACHE_VERSION || !o.fetchedAt || !o.periods) return null;
-            if (!isFinite(Number(o.fundsUsd)) || !isFinite(Number(o.fans))) return null;
-            var age = Date.now() - new Date(o.fetchedAt).getTime();
-            if (!Number.isFinite(age) || age < 0) return null;
-            var fresh = age <= LOCAL_CACHE_MS;
-            if (!fresh && !allowStale) return null;
-            return {
-                ok: true,
-                source: o.source,
-                fetchedAt: o.fetchedAt,
-                fundsUsd: o.fundsUsd,
-                fans: o.fans,
-                periods: o.periods,
-                cached: true,
-                stale: !fresh || !!o.stale,
-                cacheLayer: 'local',
-            };
-        } catch (e) {
-            return null;
-        }
-    }
-
-    function writeLocalCache(data) {
-        if (!data || !data.periods) return;
-        try {
-            localStorage.setItem(
-                LOCAL_CACHE_KEY,
-                JSON.stringify({
-                    v: LOCAL_CACHE_VERSION,
-                    source: data.source,
-                    fetchedAt: data.fetchedAt || new Date().toISOString(),
-                    fundsUsd: data.fundsUsd,
-                    fans: data.fans,
-                    periods: data.periods,
-                    stale: !!data.stale,
-                })
-            );
-        } catch (e) {
-            /* quota / private mode */
         }
     }
 
@@ -445,16 +395,9 @@
         renderChart(getPeriodPoints(data, currentPeriod), currentPeriod);
         if (updatedEl && data && data.fetchedAt) {
             var when = formatFetchedAt(data.fetchedAt);
-            if (data.stale) {
-                if (data.networkDisabled) when += ' · 后端未拉取 RSI';
-                else if (data.refreshFailed) when += ' · 同步失败，显示缓存';
-                else when += ' · 缓存';
-            } else if (data.cacheLayer === 'local') {
-                when += ' · 离线缓存';
-            }
             updatedEl.textContent = when ? '更新时间：' + when : '';
             updatedEl.hidden = !when;
-            updatedEl.classList.toggle('is-stale', !!(data.stale || data.refreshFailed));
+            updatedEl.classList.remove('is-stale');
         }
     }
 
@@ -462,7 +405,7 @@
         if (fundsEl) fundsEl.textContent = '…';
         if (fansEl) fansEl.textContent = '…';
         if (chartEl) {
-            chartEl.innerHTML = '<p class="rsi-funding-chart-empty" role="status">正在获取 RSI 资金统计…</p>';
+            chartEl.innerHTML = '<p class="rsi-funding-chart-empty" role="status">正在加载资金统计…</p>';
         }
         if (updatedEl) updatedEl.hidden = true;
     }
@@ -477,7 +420,7 @@
     }
 
     async function fetchFromBackend() {
-        var url = apiBase() + '/api/rsi-funding-stats?fresh=1&_=' + Date.now();
+        var url = apiBase() + '/api/rsi-funding-stats?_=' + Date.now();
         var r = await fetch(url, {
             cache: 'no-store',
             headers: { Pragma: 'no-cache', 'Cache-Control': 'no-cache' },
@@ -494,40 +437,18 @@
                 typeof UssApiError !== 'undefined' ? UssApiError.formatUserError(code) : '错误代码：' + code
             );
         }
-        writeLocalCache(data);
         return data;
-    }
-
-    function shouldFetchFromBackend(opts) {
-        return !!(opts.forceNetwork || opts.revalidate || opts.force);
     }
 
     async function loadStats(options) {
         var opts = options || {};
-        var localFallback = readLocalCache(true);
-        var mustFetch = shouldFetchFromBackend(opts) || !localFallback;
-
-        if (!opts.silent) {
-            if (mustFetch) {
-                if (!localFallback) renderLoading();
-                else render(localFallback);
-            } else if (localFallback) {
-                render(localFallback);
-            } else {
-                renderLoading();
-            }
-        }
-
-        if (!mustFetch) return;
+        if (!opts.silent) renderLoading();
 
         try {
             var data = await fetchFromBackend();
             render(data);
         } catch (err) {
-            if (localFallback) {
-                render(localFallback);
-                return;
-            }
+            if (opts.silent && lastData) return;
             renderError((err && err.message) || '获取资金统计失败');
         }
     }
@@ -535,7 +456,7 @@
     function scheduleRefresh() {
         if (timer) clearInterval(timer);
         timer = setInterval(function () {
-            loadStats({ forceNetwork: true, revalidate: true, silent: true });
+            loadStats({ silent: true });
         }, POLL_MS);
     }
 
@@ -547,7 +468,7 @@
         updatedEl = document.getElementById('rsiFundingUpdated');
         if (!fundsEl || !fansEl || !chartEl) return;
         renderTabs();
-        loadStats({ forceNetwork: true, revalidate: true });
+        loadStats();
         scheduleRefresh();
         window.addEventListener('resize', function () {
             clearTimeout(resizeTimer);
@@ -559,7 +480,7 @@
         });
         document.addEventListener('visibilitychange', function () {
             if (document.visibilityState !== 'visible') return;
-            loadStats({ forceNetwork: true, revalidate: true, silent: !!readLocalCache(true) });
+            loadStats({ silent: true });
         });
     }
 

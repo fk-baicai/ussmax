@@ -604,9 +604,9 @@
             return adminJson(token, q);
         },
 
-        /** 首页 RSI 服务器状态（无需登录） */
+        /** 首页 RSI 服务器状态（无需登录，读后端缓存） */
         async rsiServerStatus() {
-            var r = await fetch(joinUrl('/api/rsi-server-status?fresh=1&_=' + Date.now()), { cache: 'no-store' });
+            var r = await fetch(joinUrl('/api/rsi-server-status?_=' + Date.now()), { cache: 'no-store' });
             var data = await parseJson(r);
             throwIfNotOk(r, data, 'RSI_001');
             return data;
