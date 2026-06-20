@@ -1106,7 +1106,8 @@ button.sc-lead-item.is-active {
 }
 
 .sc-blueprint-mission-table-wrap {
-    --sc-bp-mission-cols: minmax(0, 1fr) 3.85rem 5.75rem 1.15rem;
+    --sc-bp-mission-cols: minmax(0, 1fr) max-content minmax(4.85rem, auto) 1.15rem;
+    --sc-bp-mission-row-h: 1.34rem;
     margin-top: 0.1rem;
 }
 
@@ -1124,11 +1125,35 @@ button.sc-lead-item.is-active {
 
 .sc-blueprint-mission-table-head,
 .sc-blueprint-mission-toggle {
-    display: grid;
-    grid-template-columns: var(--sc-bp-mission-cols);
+    display: flex;
     align-items: center;
-    column-gap: 0.35rem;
+    gap: 0.45rem;
     width: 100%;
+}
+
+.sc-bp-mission-th--name {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-left: clamp(0.1rem, 0.4vw, 0.4rem);
+    text-align: left;
+}
+
+.sc-bp-mission-th--meta {
+    flex: 0 0 auto;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.sc-bp-mission-th--reward {
+    flex: 0 0 auto;
+    margin-left: auto;
+    min-width: 4.85rem;
+    padding-right: 0.15rem;
+    text-align: right;
+}
+
+.sc-bp-mission-th--exp {
+    flex: 0 0 0.85rem;
 }
 
 .sc-blueprint-mission-table-head {
@@ -1144,18 +1169,16 @@ button.sc-lead-item.is-active {
     min-width: 0;
 }
 
-.sc-bp-mission-th--name {
-    padding-left: clamp(0.1rem, 0.4vw, 0.4rem);
-    text-align: left;
-}
-
 .sc-bp-mission-th--type {
     text-align: center;
 }
 
-.sc-bp-mission-th--reward {
-    padding-right: 0.15rem;
-    text-align: right;
+.sc-bp-mission-th--giver {
+    text-align: center;
+}
+
+.sc-bp-mission-th--legality {
+    text-align: center;
 }
 
 .sc-blueprint-mission-list {
@@ -1182,7 +1205,7 @@ button.sc-lead-item.is-active {
 
 .sc-blueprint-mission-toggle {
     align-items: center;
-    gap: 0;
+    gap: 0.45rem;
     margin: 0;
     padding: 0.5rem 0.75rem;
     border: 0;
@@ -1207,11 +1230,11 @@ button.sc-lead-item.is-active {
 }
 
 .sc-blueprint-mission-chevron {
-    flex-shrink: 0;
-    justify-self: end;
+    flex: 0 0 auto;
+    align-self: center;
     width: 0.45rem;
     height: 0.45rem;
-    margin-right: 0.1rem;
+    margin: 0 0.1rem 0 0;
     border-right: 1.5px solid rgba(160, 195, 220, 0.72);
     border-bottom: 1.5px solid rgba(160, 195, 220, 0.72);
     transform: rotate(45deg);
@@ -1669,7 +1692,12 @@ button.sc-mission-chip--link {
     color: rgba(200, 225, 240, 0.88);
 }
 
-.sc-blueprint-mission-meta {
+.sc-blueprint-mission-toggle .sc-blueprint-mission-meta {
+    display: inline-flex;
+    margin: 0;
+}
+
+.sc-blueprint-mission-detail-meta {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
     gap: 0.45rem 0.85rem;
@@ -1710,20 +1738,31 @@ button.sc-mission-chip--link {
 }
 
 .sc-blueprint-mission-title {
+    flex: 1 1 auto;
     min-width: 0;
     padding-left: clamp(0.1rem, 0.4vw, 0.4rem);
     font-size: 0.82rem;
     color: rgba(232, 244, 255, 0.92);
-    line-height: 1.35;
-    word-break: break-word;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.28rem;
+    align-self: center;
+}
+
+.sc-blueprint-mission-title-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .sc-blueprint-mission-scope,
 .sc-blueprint-mission-variants {
-    display: inline;
-    margin-left: 0.35rem;
+    flex: 0 0 auto;
+    display: inline-block;
     font-size: 0.66rem;
-    line-height: 1.2;
+    line-height: 1;
     letter-spacing: 0.03em;
     white-space: nowrap;
 }
@@ -1737,18 +1776,37 @@ button.sc-mission-chip--link {
     color: rgba(140, 180, 210, 0.55);
 }
 
+.sc-blueprint-mission-meta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.18rem;
+    flex: 0 0 auto;
+    align-self: center;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+}
+
+.sc-blueprint-mission-type,
+.sc-blueprint-mission-giver,
+.sc-blueprint-mission-legality {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.14rem 0.32rem;
+    line-height: 1.15;
+}
+
 .sc-blueprint-mission-type {
     justify-self: center;
     display: inline-flex;
-    align-items: center;
     justify-content: center;
     max-width: 100%;
     font-size: 0.64rem;
     font-weight: 500;
-    line-height: 1.2;
     color: rgba(143, 224, 255, 0.92);
     letter-spacing: 0.03em;
-    padding: 0.1rem 0.34rem;
     border-radius: 3px;
     border: 1px solid rgba(95, 184, 255, 0.22);
     background: rgba(95, 184, 255, 0.08);
@@ -1758,6 +1816,8 @@ button.sc-mission-chip--link {
 }
 
 .sc-blueprint-mission-type--empty,
+.sc-blueprint-mission-giver--empty,
+.sc-blueprint-mission-legality--empty,
 .sc-blueprint-mission-reward--empty {
     color: rgba(160, 195, 220, 0.38);
     border-color: transparent;
@@ -1765,19 +1825,68 @@ button.sc-mission-chip--link {
     font-weight: 400;
 }
 
+.sc-blueprint-mission-giver {
+    justify-self: center;
+    display: inline-flex;
+    justify-content: center;
+    max-width: none;
+    font-size: 0.64rem;
+    font-weight: 500;
+    color: rgba(196, 220, 238, 0.9);
+    letter-spacing: 0.02em;
+    border-radius: 3px;
+    border: 1px solid rgba(120, 160, 190, 0.2);
+    background: rgba(120, 160, 190, 0.06);
+    white-space: nowrap;
+    overflow: visible;
+}
+
+.sc-blueprint-mission-legality {
+    justify-self: center;
+    display: inline-flex;
+    justify-content: center;
+    max-width: 100%;
+    font-size: 0.64rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    border-radius: 3px;
+    white-space: nowrap;
+}
+
+.sc-blueprint-mission-legality--legal {
+    color: rgba(120, 230, 170, 0.95);
+    border: 1px solid rgba(80, 200, 140, 0.28);
+    background: rgba(80, 200, 140, 0.08);
+}
+
+.sc-blueprint-mission-legality--illegal {
+    color: rgba(255, 168, 120, 0.96);
+    border: 1px solid rgba(255, 140, 90, 0.32);
+    background: rgba(255, 120, 80, 0.1);
+}
+
 .sc-blueprint-mission-reward {
-    justify-self: end;
+    flex: 0 0 auto;
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 4.85rem;
+    margin-left: 0.2rem;
+    padding-left: 0.15rem;
     padding-right: 0.15rem;
     text-align: right;
-    font-size: 0.82rem;
+    font-size: 0.72rem;
     font-weight: 500;
-    line-height: 1.3;
+    line-height: 1;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
 
 .sc-blueprint-mission-reward.sc-price {
     color: #8ee0ff;
+    line-height: 1 !important;
+    white-space: nowrap;
 }
 
 @media (max-width: 900px) {
@@ -3398,12 +3507,15 @@ body.sc-mode-search #scTable th.sc-col-volume {
     }
 
     [data-blueprint-panel] .sc-blueprint-mission-table-wrap {
-        --sc-bp-mission-cols: minmax(0, 1fr) 3.2rem 4.75rem 1rem;
+        --sc-bp-mission-cols: minmax(0, 1fr) max-content minmax(4.5rem, auto) 1rem;
     }
 
     [data-blueprint-panel] .sc-bp-mission-th,
     [data-blueprint-panel] .sc-blueprint-mission-scope,
     [data-blueprint-panel] .sc-blueprint-mission-type,
+    [data-blueprint-panel] .sc-blueprint-mission-meta,
+    [data-blueprint-panel] .sc-blueprint-mission-giver,
+    [data-blueprint-panel] .sc-blueprint-mission-legality,
     [data-blueprint-panel] .sc-blueprint-mission-reward,
     [data-blueprint-panel] .sc-blueprint-mission-variants {
         font-size: 10.5px;

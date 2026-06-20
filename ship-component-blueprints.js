@@ -922,12 +922,53 @@
         return label || '';
     }
 
+    function missionGiverLabel(m) {
+        return (m && (m.mission_giver_zh || m.mission_giver)) || '';
+    }
+
+    function missionLegalityLabel(m) {
+        if (m && m.legality_zh) return m.legality_zh;
+        if (m && m.illegal === true) return '非法';
+        if (m && m.legality_label === 'Legal') return '合法';
+        if (m && m.legality_label === 'Illegal') return '非法';
+        return (m && m.legality_label) || '';
+    }
+
     function renderMissionTypeCell(m) {
         var typeLabel = missionTypeLabel(m);
         if (!typeLabel) {
             return '<span class="sc-blueprint-mission-type sc-blueprint-mission-type--empty">—</span>';
         }
         return '<span class="sc-blueprint-mission-type">' + escapeHtml(typeLabel) + '</span>';
+    }
+
+    function renderMissionGiverCell(m) {
+        var giver = missionGiverLabel(m);
+        if (!giver) {
+            return '<span class="sc-blueprint-mission-giver sc-blueprint-mission-giver--empty">—</span>';
+        }
+        return '<span class="sc-blueprint-mission-giver" title="' + escapeHtml(giver) + '">' + escapeHtml(giver) + '</span>';
+    }
+
+    function renderMissionLegalityCell(m) {
+        var legality = missionLegalityLabel(m);
+        if (!legality) {
+            return '<span class="sc-blueprint-mission-legality sc-blueprint-mission-legality--empty">—</span>';
+        }
+        var cls = 'sc-blueprint-mission-legality';
+        if (legality === '非法') cls += ' sc-blueprint-mission-legality--illegal';
+        else if (legality === '合法') cls += ' sc-blueprint-mission-legality--legal';
+        return '<span class="' + cls + '">' + escapeHtml(legality) + '</span>';
+    }
+
+    function renderMissionMetaGroup(m) {
+        return (
+            '<span class="sc-blueprint-mission-meta">' +
+            renderMissionTypeCell(m) +
+            renderMissionGiverCell(m) +
+            renderMissionLegalityCell(m) +
+            '</span>'
+        );
     }
 
     function renderMissionRewardCell(m) {
@@ -944,7 +985,7 @@
         return (
             '<div class="sc-blueprint-mission-table-head" aria-hidden="true">' +
             '<span class="sc-bp-mission-th sc-bp-mission-th--name">任务</span>' +
-            '<span class="sc-bp-mission-th sc-bp-mission-th--type">类型</span>' +
+            '<span class="sc-bp-mission-th sc-bp-mission-th--meta">类型 / 发布方 / 合法性</span>' +
             '<span class="sc-bp-mission-th sc-bp-mission-th--reward">aUEC</span>' +
             '<span class="sc-bp-mission-th sc-bp-mission-th--exp"></span>' +
             '</div>'
@@ -976,10 +1017,12 @@
             (isOpen ? 'true' : 'false') +
             '">' +
             '<span class="sc-blueprint-mission-title">' +
+            '<span class="sc-blueprint-mission-title-text">' +
             escapeHtml(missionDisplayTitle(m)) +
+            '</span>' +
             titleSuffix +
             '</span>' +
-            renderMissionTypeCell(m) +
+            renderMissionMetaGroup(m) +
             renderMissionRewardCell(m) +
             '<span class="sc-blueprint-mission-chevron" aria-hidden="true"></span>' +
             '</button>';
@@ -1045,6 +1088,15 @@
                     web_url: m.web_url || null,
                     chance: m.chance != null ? m.chance : null,
                     reward_scope: m.reward_scope || null,
+                    mission_type: m.mission_type || null,
+                    mission_type_zh: m.mission_type_zh || null,
+                    mission_giver: m.mission_giver || null,
+                    mission_giver_zh: m.mission_giver_zh || null,
+                    legality_label: m.legality_label || null,
+                    illegal: m.illegal === true,
+                    legality_zh: m.legality_zh || null,
+                    reward_auec_label: m.reward_auec_label || null,
+                    reward_min: m.reward_min != null ? m.reward_min : null,
                 });
             });
         });

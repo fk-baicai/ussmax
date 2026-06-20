@@ -1356,6 +1356,15 @@
                     web_url: m.web_url || null,
                     chance: m.chance != null ? m.chance : null,
                     reward_scope: m.reward_scope || null,
+                    mission_type: m.mission_type || null,
+                    mission_type_zh: m.mission_type_zh || null,
+                    mission_giver: m.mission_giver || null,
+                    mission_giver_zh: m.mission_giver_zh || null,
+                    legality_label: m.legality_label || null,
+                    illegal: m.illegal === true,
+                    legality_zh: m.legality_zh || null,
+                    reward_auec_label: m.reward_auec_label || null,
+                    reward_min: m.reward_min != null ? m.reward_min : null,
                 });
             });
         });
@@ -1597,6 +1606,318 @@
         return 'var(--bp-red)';
     }
 
+    function roundCraftNumber(value) {
+        var n = Number(value);
+        if (!Number.isFinite(n)) return null;
+        return Math.round(n * 100) / 100;
+    }
+
+    function formatCraftPct(value) {
+        var n = roundCraftNumber(value);
+        if (n == null) return '';
+        if (Math.abs(n) < 0.005) return '';
+        return (n > 0 ? '+' : '') + n.toFixed(2) + '%';
+    }
+
+    /** 与 sc-database/config/blueprint-crafting-config.json 中 modifier_* 映射一致 */
+    var MODIFIER_STAT_KEYS = {
+        weapon_damage: ['damage_per_shot'],
+        weapon_firerate: ['rpm'],
+        weapon_range: ['range', 'effective_range'],
+        weapon_magazine_size: ['magazine_size', 'capacity'],
+        health_maxhealth: ['max_health'],
+        itemresource_coolantgeneration: ['coolant_segment_generation', 'cooling_rate'],
+        itemresource_powergeneration: ['power_segment_generation'],
+        shield_maxshieldhealth: ['max_health'],
+        shield_maxhealth: ['max_health'],
+        shield_shieldregen: ['regen_rate', 'max_shield_regen'],
+        quantum_quantumspeed: ['quantum_speed', 'drive_speed'],
+        quantum_speed: ['quantum_speed', 'drive_speed'],
+        quantum_fuelrequirement: ['quantum_fuel_requirement'],
+        radar_maxaimassistdistance: ['max_aim_assist_distance'],
+        radar_minaimassistdistance: ['min_aim_assist_distance'],
+        armor_damagemitigation: ['gforce_resistance'],
+        armor_temperaturemax: ['temp_resistance_max'],
+        armor_temperaturemin: ['temp_resistance_min'],
+        weapon_hullscraping_efficiency: ['efficiency'],
+        weapon_hullscraping_radius: ['radius'],
+        weapon_hullscraping_speed: ['speed'],
+        weapon_recoil_smoothness: ['weapon_recoil_smoothness'],
+        weapon_recoil_handling: ['weapon_recoil_handling'],
+        weapon_recoil_kick: ['weapon_recoil_kick'],
+    };
+
+    var MODIFIER_LABEL_STAT_KEYS = {
+        'Impact Force': ['damage_per_shot'],
+        'Fire Rate': ['rpm'],
+        Range: ['range', 'effective_range'],
+        Damage: ['damage_per_shot'],
+        'Weapon Damage': ['damage_per_shot'],
+        Integrity: ['max_health'],
+        'Max Health': ['max_health'],
+        Durability: ['max_health'],
+        'Coolant Rating': ['coolant_segment_generation', 'cooling_rate'],
+        'Power Generation': ['power_segment_generation'],
+        Efficiency: ['efficiency'],
+        Radius: ['radius'],
+        Speed: ['speed'],
+        'Recoil Smoothness': ['weapon_recoil_smoothness'],
+        'Recoil Handling': ['weapon_recoil_handling'],
+        'Recoil Kick': ['weapon_recoil_kick'],
+        'Quantum Speed': ['quantum_speed', 'drive_speed'],
+        'Quantum Fuel Burn': ['quantum_fuel_requirement'],
+        'Max. Shield Strength': ['max_health'],
+        'Damage Mitigation': ['gforce_resistance'],
+        'Max Temp': ['temp_resistance_max'],
+        'Min Temp': ['temp_resistance_min'],
+    };
+
+    var STAT_KEY_LABEL_ZH = {
+        damage_per_shot: '单发伤害',
+        rpm: '射速',
+        range: '射程',
+        effective_range: '有效射程',
+        magazine_size: '弹匣容量',
+        max_health: '结构完整性',
+        weapon_recoil_smoothness: '后坐力平滑度',
+        weapon_recoil_handling: '后坐力控制',
+        weapon_recoil_kick: '枪口上跳',
+        quantum_speed: '量子速度',
+        drive_speed: '量子速度',
+        quantum_fuel_requirement: '量子燃料消耗',
+        gforce_resistance: '伤害减免',
+        temp_resistance_max: '耐温上限',
+        temp_resistance_min: '耐温下限',
+        efficiency: '提取效率',
+        radius: '作用半径',
+        speed: '提取速度',
+        coolant_segment_generation: '冷却效率',
+        cooling_rate: '冷却效率',
+        power_segment_generation: '能量点',
+        regen_rate: '回复速率',
+        max_shield_regen: '回复速率',
+    };
+
+    var MODIFIER_LABEL_ZH_STAT_KEYS = {
+        武器伤害: ['damage_per_shot'],
+        射速: ['rpm'],
+        射程: ['range', 'effective_range'],
+        后坐力平滑度: ['weapon_recoil_smoothness'],
+        后坐力控制: ['weapon_recoil_handling'],
+        枪口上跳: ['weapon_recoil_kick'],
+        结构完整性: ['max_health'],
+        最大护盾强度: ['max_health'],
+        冷却效率: ['coolant_segment_generation', 'cooling_rate'],
+        能量点: ['power_segment_generation'],
+        量子速度: ['quantum_speed', 'drive_speed'],
+        量子燃料消耗: ['quantum_fuel_requirement'],
+        伤害减免: ['gforce_resistance'],
+        耐温上限: ['temp_resistance_max'],
+        耐温下限: ['temp_resistance_min'],
+        提取效率: ['efficiency'],
+        作用半径: ['radius'],
+        提取速度: ['speed'],
+    };
+
+    function canonicalSimStatKey(statKey) {
+        var k = String(statKey || '').trim();
+        if (k === 'rof') return 'rpm';
+        if (k === 'drive_speed') return 'quantum_speed';
+        return k;
+    }
+
+    function resolveModifierStatKeys(mod) {
+        var keys = [];
+        var pk = String((mod && mod.property_key) || '').trim();
+        var label = String((mod && mod.label) || '').trim();
+        var labelZh = normalizeBlueprintStatLabelZh((mod && mod.label_zh) || '');
+        if (pk && MODIFIER_STAT_KEYS[pk]) keys = keys.concat(MODIFIER_STAT_KEYS[pk]);
+        if (label && MODIFIER_LABEL_STAT_KEYS[label]) keys = keys.concat(MODIFIER_LABEL_STAT_KEYS[label]);
+        if (labelZh && MODIFIER_LABEL_ZH_STAT_KEYS[labelZh]) {
+            keys = keys.concat(MODIFIER_LABEL_ZH_STAT_KEYS[labelZh]);
+        }
+        if (!keys.length && pk) keys.push(pk);
+        var seen = {};
+        return keys
+            .map(canonicalSimStatKey)
+            .filter(function (k) {
+                if (!k || seen[k]) return false;
+                seen[k] = true;
+                return true;
+            });
+    }
+
+    function collectMaterialStatAdjustments(ingredients, qualities) {
+        var multDeltas = {};
+        var adds = {};
+        var defaultQ = defaultQuality();
+        (ingredients || []).forEach(function (ing) {
+            var q =
+                qualities[ing.key] != null
+                    ? Math.max(0, Math.min(1000, Number(qualities[ing.key]) || 0))
+                    : defaultQ;
+            var baseline =
+                ing.initial_quality != null
+                    ? Math.max(0, Math.min(1000, Number(ing.initial_quality) || 0))
+                    : defaultQ;
+            (ing.stat_modifiers || []).forEach(function (mod) {
+                var statKeys = resolveModifierStatKeys(mod);
+                if (!statKeys.length) return;
+                var effect = modifierAtQuality(mod, q, baseline);
+                var applied = {};
+                statKeys.forEach(function (sk) {
+                    if (applied[sk]) return;
+                    applied[sk] = true;
+                    if (effect.kind === 'additive') {
+                        adds[sk] = (adds[sk] || 0) + (Number(effect.value) || 0);
+                    } else {
+                        var mult = Number(effect.value) || 1;
+                        multDeltas[sk] = (multDeltas[sk] || 0) + (mult - 1);
+                    }
+                });
+            });
+        });
+        var mults = {};
+        Object.keys(multDeltas).forEach(function (k) {
+            mults[k] = 1 + multDeltas[k];
+        });
+        return { mults: mults, adds: adds };
+    }
+
+    function rebuildStatsFromMaterials(stats, ingredients, qualities) {
+        var adj = collectMaterialStatAdjustments(ingredients, qualities);
+        if (!Object.keys(adj.mults).length && !Object.keys(adj.adds).length) return stats;
+        return (stats || []).map(function (st) {
+            var key = canonicalSimStatKey(st.key);
+            var mult = adj.mults[key] != null ? adj.mults[key] : 1;
+            var add = adj.adds[key] != null ? adj.adds[key] : 0;
+            if (Math.abs(mult - 1) < 0.000001 && add === 0) return st;
+            var base =
+                st.base != null && Number.isFinite(Number(st.base)) ? Number(st.base) : null;
+            var gainPct = roundCraftNumber((mult - 1) * 100);
+            var final = null;
+            var modifierOnly = false;
+            if (base != null) final = roundCraftNumber(base * mult + add);
+            else if (add !== 0) final = roundCraftNumber(add);
+            else if (Math.abs(mult - 1) > 0.000001) modifierOnly = true;
+            var deltaPct =
+                base != null && base !== 0 && final != null
+                    ? roundCraftNumber(((final - base) / base) * 100)
+                    : gainPct;
+            var gainValue =
+                base != null && final != null
+                    ? roundCraftNumber(final - base)
+                    : add !== 0
+                      ? roundCraftNumber(add)
+                      : null;
+            return Object.assign({}, st, {
+                multiplier: roundCraftNumber(mult),
+                gain_pct: gainPct,
+                delta_pct: deltaPct,
+                final: final,
+                gain_value: gainValue,
+                modifiable: Math.abs(mult - 1) > 0.000001 || add !== 0,
+                modifier_only: modifierOnly,
+            });
+        });
+    }
+
+    function buildSimStatEntryClient(opts) {
+        var key = opts.key;
+        var label_zh = normalizeBlueprintStatLabelZh(opts.label_zh || key);
+        var unit = opts.unit || '';
+        var base =
+            opts.base != null && Number.isFinite(Number(opts.base)) ? Number(opts.base) : null;
+        var mult = opts.mult != null ? opts.mult : 1;
+        var add = opts.add != null ? opts.add : 0;
+        var gainPct = roundCraftNumber((mult - 1) * 100);
+        var modifiable = Math.abs(mult - 1) > 0.000001 || add !== 0;
+        var final = null;
+        var modifierOnly = false;
+        if (base != null) final = roundCraftNumber(base * mult + add);
+        else if (add !== 0) final = roundCraftNumber(add);
+        else if (Math.abs(mult - 1) > 0.000001) modifierOnly = true;
+        var deltaPct =
+            base != null && base !== 0 && final != null
+                ? roundCraftNumber(((final - base) / base) * 100)
+                : gainPct;
+        var gainValue =
+            base != null && final != null
+                ? roundCraftNumber(final - base)
+                : add !== 0
+                  ? roundCraftNumber(add)
+                  : null;
+        return {
+            key: key,
+            label_zh: label_zh,
+            unit: unit,
+            base: base,
+            final: final,
+            delta_pct: deltaPct,
+            gain_pct: gainPct,
+            gain_value: gainValue,
+            multiplier: roundCraftNumber(mult),
+            modifiable: modifiable,
+            modifier_only: modifierOnly,
+        };
+    }
+
+    /** 浏览器端计算产出属性（材料加成相加，不依赖 API 旧算法） */
+    function simulateCraftClient(blueprint, qualities) {
+        if (!blueprint) return [];
+        var adj = collectMaterialStatAdjustments(blueprint.ingredients, qualities);
+        var baseStats = blueprint.base_stats || {};
+        var stats = [];
+        var seen = {};
+
+        function append(entry) {
+            if (!entry || seen[entry.key]) return;
+            seen[entry.key] = true;
+            stats.push(entry);
+        }
+
+        Object.keys(baseStats).forEach(function (rawKey) {
+            var def = baseStats[rawKey];
+            var base = Number(def.value);
+            if (!Number.isFinite(base)) return;
+            var statKey = canonicalSimStatKey(def.key || rawKey);
+            var mult = adj.mults[statKey] != null ? adj.mults[statKey] : 1;
+            var add = adj.adds[statKey] != null ? adj.adds[statKey] : 0;
+            append(
+                buildSimStatEntryClient({
+                    key: statKey,
+                    label_zh: def.label_zh || STAT_KEY_LABEL_ZH[statKey] || statKey,
+                    unit: def.unit || '',
+                    base: base,
+                    mult: mult,
+                    add: add,
+                })
+            );
+        });
+
+        Object.keys(adj.mults)
+            .concat(Object.keys(adj.adds))
+            .forEach(function (sk) {
+                var canon = canonicalSimStatKey(sk);
+                if (seen[canon]) return;
+                var mult = adj.mults[sk] != null ? adj.mults[sk] : 1;
+                var add = adj.adds[sk] != null ? adj.adds[sk] : 0;
+                if (Math.abs(mult - 1) < 0.000001 && add === 0) return;
+                append(
+                    buildSimStatEntryClient({
+                        key: canon,
+                        label_zh: STAT_KEY_LABEL_ZH[canon] || canon,
+                        unit: '',
+                        base: null,
+                        mult: mult,
+                        add: add,
+                    })
+                );
+            });
+
+        return stats;
+    }
+
     function modifierAtQuality(mod, quality, baselineQuality) {
         var type = String((mod && mod.value_range_type) || 'linear').trim();
         if (type === 'linear_integer_additive') {
@@ -1662,21 +1983,23 @@
         if (!effect || effect.kind === 'additive') {
             var add = effect && effect.value ? Number(effect.value) : 0;
             if (!add) return '';
-            return (add > 0 ? '+' : '') + add;
+            var addRounded = roundCraftNumber(add);
+            if (addRounded == null || Math.abs(addRounded) < 0.005) return '';
+            return (addRounded > 0 ? '+' : '') + addRounded.toFixed(2);
         }
         var mult = Number(effect.value) || 1;
-        var pct = Math.round((mult - 1) * 1000) / 10;
-        if (Math.abs(pct) < 0.05) return '';
-        return (pct > 0 ? '+' : '') + pct + '%';
+        return formatCraftPct((mult - 1) * 100);
     }
 
     function formatCraftStatDelta(delta) {
-        if (delta == null || Math.abs(delta) < 0.05) return '';
+        if (delta == null || Math.abs(delta) < 0.005) return '';
+        var pct = roundCraftNumber(delta);
+        if (pct == null) return '';
         return (
             '<span class="bp-sim-stat-delta' +
-            (delta > 0 ? ' is-up' : ' is-down') +
+            (pct > 0 ? ' is-up' : ' is-down') +
             '">' +
-            escapeHtml((delta > 0 ? '+' : '') + delta + '%') +
+            escapeHtml((pct > 0 ? '+' : '') + pct.toFixed(2) + '%') +
             '</span>'
         );
     }
@@ -1685,13 +2008,10 @@
         var n = Number(value);
         if (!Number.isFinite(n)) return '—';
         var abs = Math.abs(n);
-        if (abs >= 1e9) return (Math.round((n / 1e9) * 100) / 100) + 'G';
-        if (abs >= 1e6) return (Math.round((n / 1e6) * 100) / 100) + 'M';
+        if (abs >= 1e9) return roundCraftNumber(n / 1e9).toFixed(2) + 'G';
+        if (abs >= 1e6) return roundCraftNumber(n / 1e6).toFixed(2) + 'M';
         if (abs >= 1e4) return Math.round(n).toLocaleString('zh-CN');
-        if (abs >= 100) return String(Math.round(n * 10) / 10);
-        if (abs >= 1) return String(Math.round(n * 100) / 100);
-        if (abs >= 0.001) return String(Math.round(n * 10000) / 10000);
-        return String(Math.round(n * 1e6) / 1e6);
+        return roundCraftNumber(n).toFixed(2);
     }
 
     function resolveCraftStatGainValue(st) {
@@ -1710,11 +2030,12 @@
         var parts = [];
         var gainPct =
             st.gain_pct != null
-                ? st.gain_pct
+                ? roundCraftNumber(st.gain_pct)
                 : st.multiplier != null
-                  ? Math.round((Number(st.multiplier) - 1) * 1000) / 10
-                  : st.delta_pct;
+                  ? roundCraftNumber((Number(st.multiplier) - 1) * 100)
+                  : roundCraftNumber(st.delta_pct);
         var gainVal = resolveCraftStatGainValue(st);
+        if (gainVal != null) gainVal = roundCraftNumber(gainVal);
         var up =
             (gainPct != null && gainPct > 0) || (gainVal != null && gainVal > 0);
         var down =
@@ -1723,8 +2044,8 @@
             'bp-sim-stat-gain' +
             (up ? ' is-up' : down ? ' is-down' : '');
 
-        if (gainPct != null && Math.abs(gainPct) >= 0.05) {
-            var pctText = '增益 ' + (gainPct > 0 ? '+' : '') + gainPct + '%';
+        if (gainPct != null && Math.abs(gainPct) >= 0.005) {
+            var pctText = '增益 ' + (gainPct > 0 ? '+' : '') + gainPct.toFixed(2) + '%';
             if (gainVal != null && Math.abs(gainVal) >= 0.001) {
                 pctText +=
                     ' <span class="bp-sim-stat-gain-val">(' +
@@ -1938,6 +2259,14 @@
             headers: { 'Content-Type': 'application/json' },
             body: { materials: state.qualities },
         })
+            .then(function (data) {
+                if (data && data.ok && state.blueprint) {
+                    data = Object.assign({}, data, {
+                        stats: simulateCraftClient(state.blueprint, state.qualities),
+                    });
+                }
+                return data;
+            })
             .then(renderSimResult)
             .catch(function () {
                 if (el.simSummary) {
@@ -1964,17 +2293,17 @@
             if (ratio === 1 || st.modifier_only) return st;
             var base = st.final != null ? st.final : st.base;
             if (base == null || !Number.isFinite(base)) return st;
-            var combined = Math.round(base * ratio * 100) / 100;
+            var combined = roundCraftNumber(base * ratio);
             var deltaPct =
                 st.base != null && st.base !== 0
-                    ? Math.round(((combined - st.base) / st.base) * 1000) / 10
-                    : st.delta_pct;
+                    ? roundCraftNumber(((combined - st.base) / st.base) * 100)
+                    : roundCraftNumber(st.delta_pct);
             return Object.assign({}, st, {
                 final: combined,
                 delta_pct: deltaPct,
                 gain_value:
                     st.base != null && Number.isFinite(st.base)
-                        ? Math.round((combined - st.base) * 100) / 100
+                        ? roundCraftNumber(combined - st.base)
                         : st.gain_value,
                 with_attachments: true,
             });
@@ -2006,7 +2335,7 @@
             li.className = 'bp-sim-stat';
             var deltaPct = 0;
             if (baseVal != null && val != null && baseVal !== 0 && baseVal !== val) {
-                deltaPct = Math.round(((val - baseVal) / baseVal) * 1000) / 10;
+                deltaPct = roundCraftNumber(((val - baseVal) / baseVal) * 100);
             }
             li.innerHTML =
                 '<span class="bp-sim-stat-label">' +
@@ -2035,6 +2364,11 @@
 
     function renderSimResult(data) {
         if (!data || !data.ok) return;
+        if (state.blueprint && state.blueprint.ingredients) {
+            data = Object.assign({}, data, {
+                stats: simulateCraftClient(state.blueprint, state.qualities),
+            });
+        }
         state.lastSimData = data;
         if (el.simSummary) {
             var score = Number(data.material_score) || 0;
