@@ -11,6 +11,7 @@
     --magenta: #b388ff;
     --danger: #ff7a8a;
     --ok: #6ef0a8;
+    --sc-section-gap: 1.25rem;
 }
 
 * {
@@ -113,6 +114,15 @@ main {
     max-width: 1140px;
     margin: 0 auto;
     padding: 1.35rem 1rem 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sc-section-gap);
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sc-section-gap);
 }
 
 #gateMsg:empty {
@@ -124,7 +134,7 @@ main {
     border-radius: 12px;
     border: 1px solid rgba(255, 120, 140, 0.35);
     background: rgba(40, 12, 20, 0.55);
-    margin-bottom: 1rem;
+    margin: 0;
     color: var(--danger);
 }
 
@@ -133,7 +143,7 @@ section {
     border: 1px solid var(--card-border);
     border-radius: 16px;
     padding: 1.2rem 1.35rem;
-    margin-bottom: 1.2rem;
+    margin: 0;
     backdrop-filter: blur(18px);
 }
 
@@ -345,7 +355,7 @@ code {
 }
 
 .sc-update-section {
-    margin-bottom: 0.5rem;
+    margin: 0;
 }
 
 .sc-update-head {
@@ -462,4 +472,112 @@ code {
 .sc-update-card-action a:hover {
     border-color: var(--accent);
     color: var(--accent-hot);
+}
+
+.sc-global-progress {
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+}
+
+.sc-global-progress--dock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 200;
+    padding: 0 0 max(0.65rem, env(safe-area-inset-bottom, 0px));
+    pointer-events: none;
+}
+
+.sc-global-progress--dock:not([hidden]) {
+    pointer-events: auto;
+}
+
+.sc-global-progress__inner {
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 0.75rem 1rem 0.85rem;
+    border-radius: 14px 14px 0 0;
+    border: 1px solid rgba(95, 184, 255, 0.32);
+    border-bottom: none;
+    background: linear-gradient(180deg, rgba(10, 22, 40, 0.97) 0%, rgba(6, 14, 28, 0.98) 100%);
+    box-shadow:
+        0 -8px 32px rgba(0, 0, 0, 0.45),
+        0 0 24px rgba(95, 184, 255, 0.08);
+    backdrop-filter: blur(16px);
+}
+
+body.sc-sync-dock-open {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.sc-global-progress__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--accent-hot);
+}
+
+.sc-global-progress__track {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(95, 184, 255, 0.12);
+    overflow: hidden;
+}
+
+.sc-global-progress__bar {
+    width: 0%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #3aa8ff 0%, #5fd4ff 45%, #6ef0a8 100%);
+    box-shadow: 0 0 12px rgba(95, 212, 255, 0.45);
+    transition: width 0.35s ease;
+}
+
+.sc-global-progress.is-indeterminate .sc-global-progress__bar {
+    width: 35% !important;
+    animation: sc-progress-indeterminate 1.4s ease-in-out infinite;
+}
+
+@keyframes sc-progress-indeterminate {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(320%); }
+}
+
+.sc-global-progress.is-indeterminate .sc-global-progress__track {
+    position: relative;
+    overflow: hidden;
+}
+
+.sc-global-progress.is-done .sc-global-progress__bar {
+    background: linear-gradient(90deg, #3ecf8e 0%, #6ef0a8 100%);
+}
+
+.sc-global-progress.is-error .sc-global-progress__bar {
+    background: linear-gradient(90deg, #ff6b7a 0%, #ff9aa5 100%);
+    box-shadow: 0 0 10px rgba(255, 122, 138, 0.35);
+}
+
+.sc-global-progress__detail {
+    margin: 0.45rem 0 0;
+    font-size: 0.8rem;
+    color: var(--muted);
+    min-height: 1.2em;
+}
+
+.row .hint.sc-sync-result {
+    color: var(--ok);
+    font-size: 0.85rem;
+}
+
+.row .hint.sc-sync-result.is-error {
+    color: var(--danger);
 }

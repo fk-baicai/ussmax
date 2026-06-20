@@ -74,6 +74,24 @@
 
     function triggerUpdateAction(action) {
         if (!action) return;
+        if (action.type === 'sync') {
+            if (action.sync === 'uex') return runScSync('uex');
+            if (action.sync === 'wiki') return runScSync('wiki');
+            if (action.sync === 'localization') return runScLocalizationSync(false);
+            if (action.sync === 'blueprints') return runScBlueprintSync();
+            if (action.sync === 'localization_then_components') {
+                return runScLocalizationSync(false).then(function () {
+                    return runScSync('uex').then(function () {
+                        return runScSync('wiki');
+                    });
+                });
+            }
+            if (action.button_id) {
+                var syncBtn = document.getElementById(action.button_id);
+                if (syncBtn) syncBtn.click();
+            }
+            return;
+        }
         if (action.type === 'scroll') {
             scrollToSection(action.target);
             if (action.button_id) {
@@ -87,6 +105,312 @@
                 navigator.clipboard.writeText(action.command).catch(function () {});
             }
             window.alert('请在项目根目录终端执行：\n\n' + action.command);
+        }
+    }
+
+    function setButtonsDisabled(ids, disabled) {
+        (ids || []).forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.disabled = !!disabled;
+        });
+    }
+
+    var SC_SYNC_BUTTON_IDS = [
+        'btnScSync',
+        'btnScSyncWiki',
+        'btnScSyncLocalization',
+        'btnScSyncLocalizationForce',
+        'btnScSyncBlueprints',
+        'btnScImageMissing',
+        'btnScImageRetry',
+        'btnScImageForce',
+    ];
+
+    var progressPollTimer = null;
+    var progressHideTimer = null;
+
+    function renderGlobalProgress(p) {
+        if (!p || (!p.active && !p.done)) {
+            hideGlobalProgress();
+            return;
+        }
+        var wrap = document.getElementById('scGlobalProgress');
+        var label = document.getElementById('scGlobalProgressLabel');
+        var pct = document.getElementById('scGlobalProgressPct');
+        var bar = document.getElementById('scGlobalProgressBar');
+        var detail = document.getElementById('scGlobalProgressDetail');
+        var track = wrap && wrap.querySelector('.sc-global-progress__track');
+        if (!wrap || !bar) return;
+        wrap.hidden = false;
+        document.body.classList.add('sc-sync-dock-open');
+        wrap.classList.toggle('is-done', !!p.done && p.ok !== false);
+        wrap.classList.toggle('is-error', !!p.done && p.ok === false);
+        wrap.classList.toggle('is-active', !!p.active && !p.done);
+        var percent = p.done ? 100 : p.percent != null ? p.percent : 0;
+        if (label) label.textContent = p.label || '同步中';
+        if (pct) pct.textContent = p.active && !p.done && p.percent == null ? '…' : percent + '%';
+        bar.style.width = (p.active && !p.done && p.percent == null ? 35 : percent) + '%';
+        wrap.classList.toggle('is-indeterminate', !!(p.active && !p.done && p.percent == null));
+        if (track) track.setAttribute('aria-valuenow', String(percent));
+        if (detail) {
+            var parts = [];
+            if (p.message) parts.push(p.message);
+            if (p.detail) parts.push(p.detail);
+            detail.textContent = parts.join(' · ');
+        }
+    }
+
+    function hideGlobalProgress() {
+        var wrap = document.getElementById('scGlobalProgress');
+        document.body.classList.remove('sc-sync-dock-open');
+        if (wrap) {
+            wrap.hidden = true;
+            wrap.classList.remove('is-done', 'is-error', 'is-active', 'is-indeterminate');
+        }
+    }
+
+    function handleProgressSnapshot(p) {
+        if (!p) return null;
+        if (p.active || p.done) {
+            renderGlobalProgress(p);
+            if (p.active && !p.done) {
+                setButtonsDisabled(SC_SYNC_BUTTON_IDS, true);
+                if (!progressPollTimer) {
+                    progressPollTimer = setInterval(pollSyncProgress, 450);
+                }
+            }
+            if (p.done) {
+                if (progressPollTimer) {
+                    clearInterval(progressPollTimer);
+                    progressPollTimer = null;
+                }
+                setButtonsDisabled(SC_SYNC_BUTTON_IDS, false);
+                if (!progressHideTimer) {
+                    progressHideTimer = setTimeout(function () {
+                        progressHideTimer = null;
+                        hideGlobalProgress();
+                    }, 3200);
+                }
+            }
+            return p;
+        }
+        if (!progressPollTimer && !progressHideTimer) {
+            hideGlobalProgress();
+            setButtonsDisabled(SC_SYNC_BUTTON_IDS, false);
+        }
+        return null;
+    }
+
+    function pollSyncProgress() {
+        var s = loadSess();
+        if (!s || !s.token) return Promise.resolve(null);
+        return fetch(scApiBase().replace(/\/$/, '') + '/api/admin/sc/sync-progress', {
+            headers: { Authorization: 'Bearer ' + s.token },
+        })
+            .then(function (r) {
+                return r.json();
+            })
+            .then(function (data) {
+                if (!data.ok || !data.progress) return null;
+                return handleProgressSnapshot(data.progress);
+            })
+            .catch(function () {
+                return null;
+            });
+    }
+
+    function startSyncProgressPoll() {
+        if (progressHideTimer) {
+            clearTimeout(progressHideTimer);
+            progressHideTimer = null;
+        }
+        if (progressPollTimer) clearInterval(progressPollTimer);
+        renderGlobalProgress({ active: true, percent: 0, label: '同步中', message: '准备' });
+        setButtonsDisabled(SC_SYNC_BUTTON_IDS, true);
+        pollSyncProgress();
+        progressPollTimer = setInterval(pollSyncProgress, 450);
+    }
+
+    function stopSyncProgressPoll(hideLater) {
+        if (progressPollTimer) {
+            clearInterval(progressPollTimer);
+            progressPollTimer = null;
+        }
+        pollSyncProgress().then(function (p) {
+            if (hideLater && p && p.done) {
+                if (!progressHideTimer) {
+                    progressHideTimer = setTimeout(function () {
+                        progressHideTimer = null;
+                        hideGlobalProgress();
+                    }, 3200);
+                }
+            }
+        });
+    }
+
+    function resumeSyncProgressWatch() {
+        return pollSyncProgress();
+    }
+
+    function setBriefStatus(el, text, isError) {
+        if (!el) return;
+        if (!text) {
+            el.textContent = '';
+            el.className = 'hint';
+            return;
+        }
+        el.textContent = text;
+        el.className = 'hint sc-sync-result' + (isError ? ' is-error' : '');
+    }
+
+    function renderScLocalizationStatus(data) {
+        var el = document.getElementById('scLocalizationStatus');
+        if (!el || !data) return;
+        var lines = [];
+        if (data.ready) {
+            lines.push(
+                '<strong>' +
+                    escHtml(data.local_version || '—') +
+                    '</strong> · ' +
+                    (data.total_entries != null ? data.total_entries : '?') +
+                    ' 条 · ' +
+                    escHtml(formatAt(data.synced_at))
+            );
+        } else {
+            lines.push('未同步');
+        }
+        if (data.target_version) {
+            lines.push(
+                '远程 ' +
+                    escHtml(data.target_version) +
+                    (data.update_available ? ' · <span style="color:#ffd27a">可更新</span>' : ' · 最新')
+            );
+        }
+        el.innerHTML = lines.map(function (line) {
+            return '<div>' + line + '</div>';
+        }).join('');
+    }
+
+    async function loadScLocalizationStatus() {
+        var s = loadSess();
+        var el = document.getElementById('scLocalizationStatus');
+        try {
+            var r = await fetch(scApiBase().replace(/\/$/, '') + '/api/admin/sc/localization-status', {
+                headers: { Authorization: 'Bearer ' + s.token },
+            });
+            var data = await r.json();
+            if (!r.ok || !data.ok) throw new Error((data && data.message) || '读取失败');
+            renderScLocalizationStatus(data);
+            return data;
+        } catch (e) {
+            if (el) el.textContent = (e && e.message) || '无法读取汉化库状态';
+            return null;
+        }
+    }
+
+    async function runScLocalizationSync(force) {
+        var s = loadSess();
+        var errEl = document.getElementById('scLocalizationSyncErr');
+        var statusEl = document.getElementById('scLocalizationSyncStatus');
+        if (errEl) errEl.hidden = true;
+        setBriefStatus(statusEl, '');
+        setButtonsDisabled(SC_SYNC_BUTTON_IDS, true);
+        startSyncProgressPoll();
+        try {
+            var r = await fetch(scApiBase().replace(/\/$/, '') + '/api/admin/sc/sync-localization', {
+                method: 'POST',
+                headers: { Authorization: 'Bearer ' + s.token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ force: !!force }),
+            });
+            var data = await r.json();
+            if (!r.ok || !data.ok) throw new Error((data && data.message) || '同步失败');
+            setBriefStatus(
+                statusEl,
+                data.skipped ? '已是最新' : '完成 · ' + (data.total_entries != null ? data.total_entries + ' 条' : data.target_version)
+            );
+            loadScLocalizationStatus();
+            loadScUpdateChecklist();
+            loadScSources();
+            return data;
+        } catch (e) {
+            if (errEl) {
+                errEl.textContent = (e && e.message) || '同步失败';
+                errEl.hidden = false;
+            }
+            setBriefStatus(statusEl, (e && e.message) || '失败', true);
+            throw e;
+        } finally {
+            setButtonsDisabled(SC_SYNC_BUTTON_IDS, false);
+            stopSyncProgressPoll(true);
+        }
+    }
+
+    function renderScBlueprintsStatus(data) {
+        var el = document.getElementById('scBlueprintsStatus');
+        if (!el || !data) return;
+        if (!data.ready) {
+            el.textContent = '未同步';
+            return;
+        }
+        el.innerHTML =
+            '<div><strong>' +
+            (data.total || 0) +
+            '</strong> 条 · 关联 ' +
+            (data.linked_count || 0) +
+            ' · ' +
+            escHtml(data.game_version || '—') +
+            '</div><div>' +
+            escHtml(formatAt(data.synced_at)) +
+            '</div>';
+    }
+
+    async function loadScBlueprintsStatus() {
+        var s = loadSess();
+        var el = document.getElementById('scBlueprintsStatus');
+        try {
+            var r = await fetch(scApiBase().replace(/\/$/, '') + '/api/admin/sc/blueprints-status', {
+                headers: { Authorization: 'Bearer ' + s.token },
+            });
+            var data = await r.json();
+            if (!r.ok || !data.ok) throw new Error((data && data.message) || '读取失败');
+            renderScBlueprintsStatus(data);
+            return data;
+        } catch (e) {
+            if (el) el.textContent = (e && e.message) || '无法读取蓝图状态';
+            return null;
+        }
+    }
+
+    async function runScBlueprintSync() {
+        var s = loadSess();
+        var errEl = document.getElementById('scBlueprintsSyncErr');
+        var statusEl = document.getElementById('scBlueprintsSyncStatus');
+        if (errEl) errEl.hidden = true;
+        setBriefStatus(statusEl, '');
+        setButtonsDisabled(SC_SYNC_BUTTON_IDS, true);
+        startSyncProgressPoll();
+        try {
+            var r = await fetch(scApiBase().replace(/\/$/, '') + '/api/admin/sc/sync-blueprints', {
+                method: 'POST',
+                headers: { Authorization: 'Bearer ' + s.token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({}),
+            });
+            var data = await r.json();
+            if (!r.ok || !data.ok) throw new Error((data && data.message) || '同步失败');
+            setBriefStatus(statusEl, '完成 · ' + (data.meta && data.meta.total != null ? data.meta.total + ' 条' : ''));
+            loadScBlueprintsStatus();
+            loadScUpdateChecklist();
+            return data;
+        } catch (e) {
+            if (errEl) {
+                errEl.textContent = (e && e.message) || '同步失败';
+                errEl.hidden = false;
+            }
+            setBriefStatus(statusEl, (e && e.message) || '失败', true);
+            throw e;
+        } finally {
+            setButtonsDisabled(SC_SYNC_BUTTON_IDS, false);
+            stopSyncProgressPoll(true);
         }
     }
 
@@ -359,10 +683,10 @@
         var s = loadSess();
         var errEl = document.getElementById('scImageSyncErr');
         var statusEl = document.getElementById('scImageSyncStatus');
-        var label =
-            mode === 'force' ? '强制更新' : mode === 'retry_failed' ? '重试失败' : '补齐缺失';
         if (errEl) errEl.hidden = true;
-        if (statusEl) statusEl.textContent = label + '进行中…（约 1 张/秒，视数量可能需 1–2 小时）';
+        setBriefStatus(statusEl, '');
+        setButtonsDisabled(SC_SYNC_BUTTON_IDS, true);
+        startSyncProgressPoll();
         try {
             var r = await fetch(scApiBase().replace(/\/$/, '') + '/api/admin/sc/sync-component-images', {
                 method: 'POST',
@@ -371,7 +695,11 @@
             });
             var data = await r.json();
             if (!r.ok || !data.ok) throw new Error((data && data.message) || '同步失败');
-            if (statusEl) statusEl.textContent = data.message || label + '完成';
+            var st = data.stats || {};
+            setBriefStatus(
+                statusEl,
+                '完成 · 新增 ' + (st.cached != null ? st.cached : 0) + ' · 失败 ' + (st.failed != null ? st.failed : 0)
+            );
             loadScImageStatus();
             loadScSyncLog();
             loadScUpdateChecklist();
@@ -380,7 +708,10 @@
                 errEl.textContent = (e && e.message) || '同步失败';
                 errEl.hidden = false;
             }
-            if (statusEl) statusEl.textContent = '';
+            setBriefStatus(statusEl, (e && e.message) || '失败', true);
+        } finally {
+            setButtonsDisabled(SC_SYNC_BUTTON_IDS, false);
+            stopSyncProgressPoll(true);
         }
     }
 
@@ -395,7 +726,18 @@
         var btnImageForce = document.getElementById('btnScImageForce');
         var btnImageRefresh = document.getElementById('btnScImageRefreshStatus');
         var btnUpdateChecklist = document.getElementById('btnReloadScUpdateChecklist');
+        var btnLocSync = document.getElementById('btnScSyncLocalization');
+        var btnLocForce = document.getElementById('btnScSyncLocalizationForce');
+        var btnBpSync = document.getElementById('btnScSyncBlueprints');
         if (btnUpdateChecklist) btnUpdateChecklist.onclick = loadScUpdateChecklist;
+        if (btnLocSync) btnLocSync.onclick = function () { runScLocalizationSync(false); };
+        if (btnLocForce) {
+            btnLocForce.onclick = function () {
+                if (!window.confirm('将强制重新下载汉化包并重建索引，确定继续？')) return;
+                runScLocalizationSync(true);
+            };
+        }
+        if (btnBpSync) btnBpSync.onclick = function () { runScBlueprintSync(); };
         if (btnSync) btnSync.onclick = function () { runScSync('uex'); };
         if (btnSyncWiki) btnSyncWiki.onclick = function () { runScSync('wiki'); };
         if (btnLog) btnLog.onclick = loadScSyncLog;
@@ -815,12 +1157,11 @@
             if (!r.ok || !data.ok) throw new Error('读取失败');
             if (data.uex_token_configured) {
                 hint.innerHTML =
-                    'UEX Token：<span style="color:var(--ok)">已配置</span>' +
-                    (data.data_ready ? ' · 配件数据已同步' : ' · 配件数据尚未同步，请点击上方按钮');
+                    '<span style="color:var(--ok)">Token 已配置</span>' +
+                    (data.data_ready ? ' · 数据已就绪' : ' · 待同步');
             } else {
                 hint.innerHTML =
-                    'UEX Token：<span style="color:var(--danger)">未配置</span> — 请在<strong>配件服务器</strong> <code>sc-components-server/.env</code> 配置 <code>UEX_API_TOKEN</code>。' +
-                    (data.remote ? '（远程配件服务模式）' : '');
+                    '<span style="color:var(--danger)">Token 未配置</span> — 请在 <code>backend/.env</code> 设置 <code>UEX_API_TOKEN</code>';
             }
         } catch (e) {
             hint.textContent = '无法读取 SC 配置状态';
@@ -833,10 +1174,9 @@
         var statusEl = document.getElementById('scSyncStatus');
         var src = source || 'uex';
         if (errEl) errEl.hidden = true;
-        if (statusEl) {
-            statusEl.textContent =
-                src === 'wiki' ? 'Wiki 同步中…（约 1–2 分钟）' : 'UEX 同步中…（约 1–2 分钟）';
-        }
+        setBriefStatus(statusEl, '');
+        setButtonsDisabled(SC_SYNC_BUTTON_IDS, true);
+        startSyncProgressPoll();
         try {
             var r = await fetch(scApiBase().replace(/\/$/, '') + '/api/admin/sc/sync-ship-components', {
                 method: 'POST',
@@ -845,10 +1185,10 @@
             });
             var data = await r.json();
             if (!r.ok || !data.ok) throw new Error((data && data.message) || '同步失败');
-            if (statusEl) {
-                statusEl.textContent =
-                    '同步成功 · 共 ' + (data.meta && data.meta.total_items != null ? data.meta.total_items : '?') + ' 条';
-            }
+            setBriefStatus(
+                statusEl,
+                '完成 · ' + (data.meta && data.meta.total_items != null ? data.meta.total_items + ' 条' : '')
+            );
             loadScSyncLog();
             loadScAdminStatus();
             loadScSources();
@@ -860,7 +1200,10 @@
                 errEl.textContent = (e && e.message) || '同步失败';
                 errEl.hidden = false;
             }
-            if (statusEl) statusEl.textContent = '';
+            setBriefStatus(statusEl, (e && e.message) || '失败', true);
+        } finally {
+            setButtonsDisabled(SC_SYNC_BUTTON_IDS, false);
+            stopSyncProgressPoll(true);
         }
     }
 
@@ -881,17 +1224,25 @@
             }
             listEl.innerHTML = data.logs
                 .map(function (log) {
+                    var sourceLabel =
+                        log.source === 'wiki'
+                            ? 'Wiki'
+                            : log.source === 'uex'
+                              ? 'UEX'
+                              : log.source === 'wiki-images'
+                                ? '图片'
+                                : log.source || '';
                     return (
                         '<li style="margin-bottom:0.5rem;padding:0.5rem 0;border-bottom:1px solid rgba(95,184,255,0.12);">' +
                         '<strong style="color:' +
                         (log.ok ? 'var(--ok)' : 'var(--danger)') +
                         '">' +
                         (log.ok ? '成功' : '失败') +
-                        '</strong> · ' +
-                        escHtml(formatAt(log.started_at)) +
+                        '</strong>' +
+                        (sourceLabel ? ' · ' + escHtml(sourceLabel) : '') +
                         ' · ' +
-                        escHtml(log.message || '') +
-                        (log.duration_ms ? ' · ' + log.duration_ms + 'ms' : '') +
+                        escHtml(formatAt(log.started_at)) +
+                        (log.duration_ms ? ' · ' + Math.round(log.duration_ms / 1000) + 's' : '') +
                         '</li>'
                     );
                 })
@@ -927,11 +1278,14 @@
         app.hidden = false;
         wireUi();
         loadScUpdateChecklist();
+        loadScLocalizationStatus();
+        loadScBlueprintsStatus();
         loadScAdminStatus();
         loadScSources();
         loadScSyncLog();
         loadScImageStatus();
         loadScManualLoc();
+        resumeSyncProgressWatch();
     }
 
     if (document.readyState === 'loading') {

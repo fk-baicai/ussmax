@@ -32,7 +32,7 @@
 
             <section id="secScSource">
                 <h2>配件数据来源</h2>
-                <p class="hint">前台展示的数据库可在 UEX 与 SC Wiki API 之间切换；建议两边都定期同步，便于互为备份。</p>
+                <p class="hint">前台展示用 UEX 或 Wiki，建议两边都定期同步。</p>
                 <div class="row sc-source-row">
                     <label class="sc-source-label" for="scActiveSource">当前展示</label>
                     <select id="scActiveSource" class="sc-source-select">
@@ -46,18 +46,41 @@
                 <div id="scSourceErr" class="err" hidden></div>
             </section>
 
-            <section id="secScSync">
-                <h2>舰船配件与个人装备数据同步</h2>
-                <p class="hint">分别从 UEX 与 SC Wiki API 同步到本地缓存（舰船组件/武器/矿头 + 个人武器/护甲/弹夹）。</p>
+            <section id="secScLocalization">
+                <h2>汉化库</h2>
+                <p class="hint">拉取 SCToolBox 最新汉化包。更新后请再同步 UEX / Wiki。</p>
+                <div id="scLocalizationStatus" class="hint sc-localization-status">加载中…</div>
                 <div class="row">
-                    <button type="button" id="btnScSync">同步 UEX 数据</button>
-                    <button type="button" id="btnScSyncWiki" class="btn-secondary">同步 Wiki 数据</button>
+                    <button type="button" id="btnScSyncLocalization">同步汉化库</button>
+                    <button type="button" id="btnScSyncLocalizationForce" class="btn-secondary">强制重下</button>
+                    <span id="scLocalizationSyncStatus" class="hint"></span>
+                </div>
+                <div id="scLocalizationSyncErr" class="err" hidden></div>
+            </section>
+
+            <section id="secScBlueprints">
+                <h2>蓝图制造</h2>
+                <p class="hint">从 Wiki 同步蓝图列表与材料配方。</p>
+                <div id="scBlueprintsStatus" class="hint sc-blueprints-status">加载中…</div>
+                <div class="row">
+                    <button type="button" id="btnScSyncBlueprints">同步蓝图制造</button>
+                    <span id="scBlueprintsSyncStatus" class="hint"></span>
+                </div>
+                <div id="scBlueprintsSyncErr" class="err" hidden></div>
+            </section>
+
+            <section id="secScSync">
+                <h2>配件数据</h2>
+                <p class="hint">同步舰船组件、武器、矿头与个人装备到本地缓存。</p>
+                <div class="row">
+                    <button type="button" id="btnScSync">同步 UEX</button>
+                    <button type="button" id="btnScSyncWiki" class="btn-secondary">同步 Wiki</button>
                     <span id="scSyncStatus" class="hint"></span>
                 </div>
                 <p id="scTokenHint" class="hint"></p>
                 <div id="scSyncErr" class="err" hidden></div>
-                <h3 style="margin-top: 1.25rem; font-size: 1rem">同步日志</h3>
-                <p class="hint">仅保留最近 5 条，更早记录会自动清理。</p>
+                <h3 style="margin-top: 1.25rem; font-size: 1rem">日志</h3>
+                <p class="hint">最近 5 条记录。</p>
                 <div class="row">
                     <button type="button" id="btnReloadScSyncLog" class="btn-secondary">刷新日志</button>
                 </div>
@@ -65,14 +88,8 @@
             </section>
 
             <section id="secScImages">
-                <h2>配件图片本地化</h2>
-                <p class="hint">
-                    图片保存在配件服务器 <code>data/component-images/</code>，状态记录在
-                    <code>sync-state.json</code>。<strong>Wiki 数据同步不会改动已有本地图</strong>，仅更新配件参数。
-                    新配件请点「补齐缺失」；失败项可「重试失败」；Wiki 换图后由管理员点「强制更新全部」。
-                    下载约 1 张/秒（可在配件服务器设置 <code>SC_IMAGE_NETWORK_DELAY_MS</code>），大批量需较长时间。
-                    手动上传（<code>manual</code>）与已本地化（<code>local</code>）的图片默认都不会被自动覆盖。
-                </p>
+                <h2>配件图片</h2>
+                <p class="hint">将 Wiki 图片下载到本地。新配件用「补齐缺失」，失败用「重试」。</p>
                 <div id="scImageStatus" class="hint sc-image-status">加载中…</div>
                 <div class="row sc-image-actions">
                     <button type="button" id="btnScImageMissing">补齐缺失</button>
@@ -89,12 +106,8 @@
             </section>
 
             <section id="secScManualLoc">
-                <h2>手动汉化补译</h2>
-                <p class="hint">
-                    扫描配件名、制造商、地点、终端等仍为英文的字段，可在此手动补译。数据保存在
-                    <code>manual-loc-names.json</code>（配件名）与
-                    <code>manual-text-overrides.json</code>（其他字段），UEX 同步与汉化包更新<strong>不会覆盖</strong>。
-                </p>
+                <h2>手动补译</h2>
+                <p class="hint">为未命中汉化的字段填写中文，同步不会覆盖此处内容。</p>
                 <div class="row">
                     <button type="button" id="btnReloadScManualLoc" class="btn-secondary">刷新列表</button>
                     <span id="scManualLocMeta" class="hint"></span>
@@ -159,6 +172,18 @@
             </section>
         </div>
     </main>
+    <div id="scGlobalProgress" class="sc-global-progress sc-global-progress--dock" hidden aria-live="polite">
+        <div class="sc-global-progress__inner">
+            <div class="sc-global-progress__head">
+                <span id="scGlobalProgressLabel">同步中</span>
+                <span id="scGlobalProgressPct">0%</span>
+            </div>
+            <div class="sc-global-progress__track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div id="scGlobalProgressBar" class="sc-global-progress__bar"></div>
+            </div>
+            <p id="scGlobalProgressDetail" class="sc-global-progress__detail"></p>
+        </div>
+    </div>
     <script src="api-error.js"></script>
     <script src="auth-api.js"></script>
     <script src="admin-sc-database.js" defer></script>
