@@ -94,7 +94,7 @@
         if (chance == null || !Number.isFinite(Number(chance))) return '';
         var pct = Number(chance) * 100;
         if (pct >= 99.9) return '';
-        var f = global.ScDisplayFormat;
+        var f = window.ScDisplayFormat;
         var pctText = f && f.formatFixedDecimal2 ? f.formatFixedDecimal2(pct) : pct.toFixed(2);
         if (pctText == null) return '';
         return '蓝图掉落 ' + pctText + '%';
@@ -335,7 +335,7 @@
 
     function formatRepXp(value) {
         if (value == null || !Number.isFinite(Number(value))) return '—';
-        var f = global.ScDisplayFormat;
+        var f = window.ScDisplayFormat;
         var hit = f && f.formatFixedDecimal2 ? f.formatFixedDecimal2(value) : null;
         return hit != null ? hit : Number(value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
@@ -932,7 +932,7 @@
     function missionAuecLabel(m) {
         var label = m && (m.reward_auec_label || '');
         if (!label && m && m.reward_min != null && Number(m.reward_min) > 0) {
-            var f = global.ScDisplayFormat;
+            var f = window.ScDisplayFormat;
             label = f && f.formatDisplayPrice ? f.formatDisplayPrice(m.reward_min) : Number(m.reward_min).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' aUEC';
         }
         return label || '';
