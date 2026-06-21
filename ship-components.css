@@ -552,13 +552,21 @@ button.sc-lead-item.is-active {
 }
 
 .sc-detail-row td {
-    background: rgba(95, 184, 255, 0.03);
+    background: transparent;
     padding: 0 !important;
     overflow: visible !important;
     text-overflow: clip !important;
     white-space: normal !important;
     box-sizing: border-box;
     vertical-align: top;
+}
+
+.sc-table tbody tr.sc-detail-row.sc-detail-row--striped td {
+    background: rgba(95, 184, 255, 0.025);
+}
+
+.sc-table tbody tr:not(.sc-detail-row):hover + tr.sc-detail-row td {
+    background: rgba(95, 184, 255, 0.05);
 }
 
 .sc-table-shell.has-detail-open tr.sc-detail-row td {
@@ -639,7 +647,7 @@ button.sc-lead-item.is-active {
     overflow: hidden;
 }
 
-.sc-table tbody tr:not(.sc-detail-row):nth-child(even) {
+.sc-table tbody tr:not(.sc-detail-row).sc-row--striped {
     background: rgba(95, 184, 255, 0.025);
 }
 
@@ -1026,7 +1034,39 @@ button.sc-lead-item.is-active {
 }
 
 .sc-detail-inner {
-    padding: 0.75rem clamp(1rem, 1.8vw, 1.35rem) 0.95rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.95rem;
+    padding-left: var(--sc-acquire-pad-left, clamp(1rem, 1.8vw, 1.35rem));
+    padding-right: var(--sc-acquire-pad-right, clamp(1rem, 1.8vw, 1.35rem));
+    box-sizing: border-box;
+}
+
+.sc-acquire-panel .sc-acquire-col {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.sc-acquire-panel .sc-acquire-col--shops {
+    padding-right: clamp(0.75rem, 1.2vw, 0.95rem);
+}
+
+.sc-acquire-panel .sc-loc-th-location,
+.sc-acquire-panel .sc-loc-cell {
+    padding-left: 0;
+}
+
+.sc-acquire-panel .sc-loc-th-price,
+.sc-acquire-panel .sc-loc-price-cell {
+    padding-right: 0;
+}
+
+.sc-acquire-panel .sc-acquire-col--blueprint .sc-blueprint-mission-table-head,
+.sc-acquire-panel .sc-acquire-col--blueprint .sc-blueprint-mission-toggle,
+.sc-acquire-panel .sc-acquire-col--blueprint .sc-blueprint-mission-table-wrap > .sc-detail-craft-blueprint,
+.sc-acquire-panel .sc-blueprint-mission-table-wrap > .sc-detail-craft-blueprint,
+.sc-acquire-panel .sc-blueprint-mission-detail {
+    padding-left: 0;
+    padding-right: 0;
 }
 
 .sc-acquire-grid {
@@ -1038,10 +1078,15 @@ button.sc-lead-item.is-active {
 
 .sc-acquire-col {
     min-width: 0;
-    border-radius: 10px;
-    border: 1px solid rgba(95, 184, 255, 0.14);
+    border-radius: 0;
+    border: none;
     padding: 0.55rem 0.65rem 0.7rem;
-    background: rgba(6, 14, 26, 0.35);
+    background: transparent;
+}
+
+.sc-acquire-col--shops {
+    padding-right: clamp(0.75rem, 1.2vw, 0.95rem);
+    border-right: 1px solid rgba(95, 184, 255, 0.08);
 }
 
 .sc-acquire-heading {
@@ -1892,6 +1937,11 @@ button.sc-mission-chip--link {
 @media (max-width: 900px) {
     .sc-acquire-grid {
         grid-template-columns: 1fr;
+    }
+
+    .sc-acquire-col--shops {
+        border-right: none;
+        padding-right: 0.65rem;
     }
 }
 
@@ -3318,11 +3368,19 @@ body.sc-mode-search #scTable th.sc-col-volume {
         min-width: 100%;
         max-width: 100%;
         box-sizing: border-box;
-        background: rgba(8, 16, 28, 0.98);
-        box-shadow: 0 1px 0 rgba(95, 184, 255, 0.08);
+        background: transparent;
+        box-shadow: none;
         white-space: normal !important;
         overflow: visible !important;
         text-overflow: clip !important;
+    }
+
+    .sc-table tbody tr.sc-detail-row.sc-detail-row--striped td {
+        background: rgba(95, 184, 255, 0.025);
+    }
+
+    .sc-table tbody tr:not(.sc-detail-row):hover + tr.sc-detail-row td {
+        background: rgba(95, 184, 255, 0.05);
     }
 
     .sc-table-shell.is-h-scrollable {

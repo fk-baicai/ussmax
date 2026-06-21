@@ -1439,7 +1439,7 @@
 
     function normalizeBlueprintStatLabelZh(text) {
         var t = String(text || '').trim();
-        if (t === '完整性') return '结构完整性';
+        if (t === '完整性' || t === '结构完整性') return '组件耐久';
         if (t === '伤害减免') return '抗 G 值';
         return t;
     }
@@ -2499,7 +2499,7 @@
         range: '射程',
         effective_range: '有效射程',
         magazine_size: '弹匣容量',
-        max_health: '结构完整性',
+        max_health: '组件耐久',
         weapon_recoil_smoothness: '后坐力平滑度',
         weapon_recoil_handling: '后坐力控制',
         weapon_recoil_kick: '枪口上跳',
@@ -2585,6 +2585,7 @@
         后坐力平滑度: ['weapon_recoil_smoothness'],
         后坐力控制: ['weapon_recoil_handling'],
         枪口上跳: ['weapon_recoil_kick'],
+        组件耐久: ['max_health'],
         结构完整性: ['max_health'],
         最大护盾强度: ['max_health'],
         冷却效率: ['coolant_segment_generation', 'cooling_rate'],

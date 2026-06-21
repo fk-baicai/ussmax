@@ -697,6 +697,10 @@
         if (item.max_speed != null && !item.wiki_fields) {
             rows.push({ label: '最高速度', value: formatSpeed(item.max_speed) });
         }
+        if (item.wiki_fields && window.ShipComponentWiki && window.ShipComponentWiki.formatComponentDurabilityDisplay) {
+            var durability = window.ShipComponentWiki.formatComponentDurabilityDisplay(item);
+            if (durability) rows.push({ label: '组件耐久', value: durability });
+        }
 
         els.basics.innerHTML = renderFieldGridHtml(rows);
     }

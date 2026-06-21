@@ -8,7 +8,7 @@
     var listCache = Object.create(null);
     var detailCache = Object.create(null);
     var craftBlueprintCache = Object.create(null);
-    var DETAIL_SCHEMA_VERSION = 15;
+    var DETAIL_SCHEMA_VERSION = 16;
 
     var GROUP_TO_SECTOR = {
         component: 'ship',
@@ -37,9 +37,6 @@
         ) {
             return false;
         }
-        var descEn = String(detail.description_en || '').trim();
-        var descZh = String(detail.description_zh || '').trim();
-        if (descEn && !descZh) return false;
         return true;
     }
 
@@ -862,8 +859,16 @@
             .trim();
     }
 
+    function looksChineseMissionText(text) {
+        return /[\u4e00-\u9fff]/.test(String(text || ''));
+    }
+
     function missionDisplayTitle(m) {
-        var raw = (m && (m.title_zh || m.title_en || m.title)) || '';
+        var zh = m && m.title_zh;
+        if (zh && looksChineseMissionText(zh)) {
+            return stripMissionFlowTitleSuffix(stripMissionPlaceholders(zh)) || '—';
+        }
+        var raw = (m && (m.title_en || m.title)) || '';
         var cleaned = stripMissionPlaceholders(raw);
         return stripMissionFlowTitleSuffix(cleaned || raw) || '—';
     }
@@ -925,8 +930,33 @@
         );
     }
 
+    var MISSION_TYPE_ZH_FALLBACK = {
+        Refueling: '加油',
+        'Ship Mining': '飞船采矿',
+        'Hand Mining': '手持采矿',
+        Salvage: '打捞',
+    };
+
+    var MISSION_GIVER_ZH_FALLBACK = {
+        'United Wayfarers Club': '旅者联合俱乐部',
+        'Adagio Holdings': '阿德吉奥集团',
+        'Greycat Industrial': '灰猫工业',
+    };
+
     function missionTypeLabel(m) {
-        return (m && (m.mission_type_zh || m.mission_type)) || '';
+        var zh = m && m.mission_type_zh;
+        if (zh && looksChineseMissionText(zh)) return zh;
+        var raw = (m && m.mission_type) || '';
+        if (raw && MISSION_TYPE_ZH_FALLBACK[raw]) return MISSION_TYPE_ZH_FALLBACK[raw];
+        return raw;
+    }
+
+    function missionGiverLabel(m) {
+        var zh = m && m.mission_giver_zh;
+        if (zh && looksChineseMissionText(zh)) return zh;
+        var raw = (m && m.mission_giver) || '';
+        if (raw && MISSION_GIVER_ZH_FALLBACK[raw]) return MISSION_GIVER_ZH_FALLBACK[raw];
+        return raw;
     }
 
     function missionAuecLabel(m) {
@@ -936,10 +966,6 @@
             label = f && f.formatDisplayPrice ? f.formatDisplayPrice(m.reward_min) : Number(m.reward_min).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' aUEC';
         }
         return label || '';
-    }
-
-    function missionGiverLabel(m) {
-        return (m && (m.mission_giver_zh || m.mission_giver)) || '';
     }
 
     function missionLegalityLabel(m) {
@@ -1099,7 +1125,7 @@
                 out.push({
                     uuid: m.uuid || missionRef(stub) || null,
                     title_en: title || '未命名任务',
-                    title_zh: title || '未命名任务',
+                    title_zh: null,
                     debug_name: m.debug_name || null,
                     web_url: m.web_url || null,
                     chance: m.chance != null ? m.chance : null,

@@ -81,12 +81,14 @@
             return;
         }
         var when = formatFetchedAt(data.fetchedAt);
-        if (Number(data.cacheAgeMs) > 6 * 60 * 60 * 1000) {
+        var ageMs = Number(data.cacheAgeMs) || 0;
+        var showStale = !!data.stale && ageMs > 30 * 60 * 1000;
+        if (showStale || ageMs > 6 * 60 * 60 * 1000) {
             when += ' · 待后端更新';
         }
         el.textContent = when ? '更新时间：' + when : '';
         el.hidden = !when;
-        el.classList.toggle('is-stale', Number(data.cacheAgeMs) > 6 * 60 * 60 * 1000);
+        el.classList.toggle('is-stale', showStale || ageMs > 6 * 60 * 60 * 1000);
     }
 
     function renderLoading() {

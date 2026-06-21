@@ -480,6 +480,33 @@
         return [];
     }
 
+    function findWikiColumn(key) {
+        if (key === 'wiki_comp_dur' && window.ShipComponentWiki && window.ShipComponentWiki.getComponentDurabilityColumn) {
+            return window.ShipComponentWiki.getComponentDurabilityColumn();
+        }
+        return getWikiTableColumns().find(function (c) {
+            return c.key === key;
+        });
+    }
+
+    function ensureDurabilityColumnAfterSize(order) {
+        if (!order) return order;
+        var next = order.filter(function (key) {
+            return key !== 'wiki_fn_hp';
+        });
+        if (next.indexOf('wiki_comp_dur') >= 0) return next;
+        var sizeIdx = next.indexOf('size');
+        var insertAt;
+        if (sizeIdx >= 0) {
+            insertAt = sizeIdx + 1;
+        } else {
+            var typeIdx = next.indexOf('type');
+            insertAt = typeIdx >= 0 ? typeIdx + 1 : 1;
+        }
+        next.splice(insertAt, 0, 'wiki_comp_dur');
+        return next;
+    }
+
     function resolveComponentId(item) {
         if (!item) return '';
         var raw = item.id_item != null && item.id_item !== '' ? item.id_item : item.uuid;
@@ -669,6 +696,77 @@
         return null;
     }
 
+    function getDataRowStripeIndex(row) {
+        if (!els.body || !row) return -1;
+        var dataRows = Array.prototype.slice.call(
+            els.body.querySelectorAll('tr:not(.sc-detail-row):not(.sc-load-more-row)')
+        );
+        return dataRows.indexOf(row);
+    }
+
+    function syncDataRowStripes() {
+        if (!els.body) return;
+        var dataRows = els.body.querySelectorAll('tr:not(.sc-detail-row):not(.sc-load-more-row)');
+        for (var i = 0; i < dataRows.length; i++) {
+            dataRows[i].classList.toggle('sc-row--striped', i % 2 === 1);
+        }
+    }
+
+    function syncDetailRowStripe(parentRow, detailRow) {
+        if (!parentRow || !detailRow) return;
+        var idx = getDataRowStripeIndex(parentRow);
+        detailRow.classList.toggle('sc-detail-row--striped', idx >= 0 && idx % 2 === 1);
+    }
+
+    function syncAllDetailRowStripes() {
+        if (!els.body) return;
+        els.body.querySelectorAll('tr.sc-detail-row[data-detail-for]').forEach(function (detailRow) {
+            var parentRow = findDataRowByItemId(detailRow.dataset.detailFor);
+            syncDetailRowStripe(parentRow, detailRow);
+        });
+    }
+
+    function syncTableRowStripes() {
+        syncDataRowStripes();
+        syncAllDetailRowStripes();
+    }
+
+    function syncAcquirePanelAlignment() {
+        if (!els.body) return;
+        els.body.querySelectorAll('tr.sc-detail-row[data-detail-for]').forEach(function (detailRow) {
+            var inner = detailRow.querySelector('.sc-detail-inner.sc-acquire-panel');
+            if (!inner) return;
+            var dataRow = detailRow.previousElementSibling;
+            var nameTd = dataRow && dataRow.querySelector('td.sc-col-name');
+            var expandTd = dataRow && dataRow.querySelector('td.sc-col-expand');
+            var detailTd = detailRow.querySelector('td');
+            if (!nameTd || !expandTd || !detailTd) {
+                inner.style.removeProperty('--sc-acquire-pad-left');
+                inner.style.removeProperty('--sc-acquire-pad-right');
+                return;
+            }
+            var detailRect = detailTd.getBoundingClientRect();
+            var nameAnchor = nameTd.querySelector('.sc-name-zh') || nameTd.querySelector('.sc-name-link') || nameTd;
+            var nameRect = nameAnchor.getBoundingClientRect();
+            var expandBtn = expandTd.querySelector('.sc-expand-btn');
+            var expandActions = expandTd.querySelector('.sc-row-actions');
+            var anchorRight;
+            if (expandBtn) {
+                anchorRight = expandBtn.getBoundingClientRect().right;
+            } else if (expandActions) {
+                anchorRight = expandActions.getBoundingClientRect().right;
+            } else {
+                var expandRect = expandTd.getBoundingClientRect();
+                var expandStyle = window.getComputedStyle(expandTd);
+                anchorRight = expandRect.right - parseFloat(expandStyle.paddingRight || 0);
+            }
+            var padLeft = Math.round(Math.max(0, nameRect.left - detailRect.left));
+            var padRight = Math.round(Math.max(0, detailRect.right - anchorRight));
+            inner.style.setProperty('--sc-acquire-pad-left', padLeft + 'px');
+            inner.style.setProperty('--sc-acquire-pad-right', padRight + 'px');
+        });
+    }
+
     function fixExpandedDetailRowLayout() {
         if (!els.body || !els.tableShell) return;
         var shellW = els.tableShell.clientWidth;
@@ -679,6 +777,8 @@
             td.style.minWidth = shellW + 'px';
             td.style.maxWidth = shellW + 'px';
         });
+        syncTableRowStripes();
+        syncAcquirePanelAlignment();
     }
 
     function buildAcquirePanelHtml(item) {
@@ -710,6 +810,7 @@
             next.classList.contains('sc-detail-row') &&
             normalizeItemId(next.dataset.detailFor) === id
         ) {
+            syncDetailRowStripe(dataRow, next);
             syncExpandButtonState(dataRow, true);
             syncExpandedShellClass();
             return true;
@@ -721,7 +822,9 @@
         els.body.querySelectorAll('tr.sc-detail-row[data-detail-for]').forEach(function (row) {
             if (normalizeItemId(row.dataset.detailFor) === id) row.remove();
         });
-        dataRow.insertAdjacentElement('afterend', renderDetailRow(item));
+        var detailRow = renderDetailRow(item);
+        dataRow.insertAdjacentElement('afterend', detailRow);
+        syncDetailRowStripe(dataRow, detailRow);
         syncExpandButtonState(dataRow, true);
         syncExpandedShellClass();
         return true;
@@ -993,7 +1096,6 @@
             'class',
             'grade',
             'size',
-            'speed',
             'wiki_q_speed',
             'wiki_q_engage',
             'mfg',
@@ -1142,7 +1244,7 @@
             'size',
             'wiki_fn_h2',
             'wiki_fn_qf',
-            'wiki_fn_hp',
+            'wiki_comp_dur',
             'mfg',
             'mass',
             'volume',
@@ -1355,7 +1457,7 @@
             order = ensureWeaponRecoilAfterSound(order);
             order = ensureWeaponSlotColumn(order);
         }
-        return order;
+        return ensureDurabilityColumnAfterSize(order);
     }
 
     function getVisibleColumnOrder() {
@@ -1823,9 +1925,7 @@
             if (key === 'expand') {
                 th.innerHTML = '<span class="sc-sr-only">展开</span>';
             } else if (key.indexOf('wiki_') === 0) {
-                var wcol = getWikiTableColumns().find(function (c) {
-                    return c.key === key;
-                });
+                var wcol = findWikiColumn(key);
                 th.classList.add('sc-sortable');
                 th.setAttribute('data-sort', key);
                 th.innerHTML =
@@ -1857,9 +1957,7 @@
 
     function getWikiSortGetter(key) {
         if (key.indexOf('wiki_') !== 0) return null;
-        var wcol = getWikiTableColumns().find(function (c) {
-            return c.key === key;
-        });
+        var wcol = findWikiColumn(key);
         if (!wcol) return null;
         if (typeof wcol.sortGet === 'function') return wcol.sortGet;
         return function (item) {
@@ -1946,6 +2044,10 @@
         if (!isGradeColumnVisible() && (state.sortKey === 'grade' || state.sortKey === 'class')) {
             state.sortKey = 'size';
             state.sortDir = 'asc';
+        }
+        if (state.type === 'quantum' && state.sortKey === 'speed') {
+            state.sortKey = 'wiki_q_speed';
+            state.sortDir = state.sortDir || 'desc';
         }
     }
 
@@ -3385,9 +3487,7 @@
         } else if (key === 'speed') {
             if (isSpeedColumnVisible()) td.textContent = formatSpeed(item.max_speed);
         } else if (key.indexOf('wiki_') === 0) {
-            var wcol = getWikiTableColumns().find(function (c) {
-                return c.key === key;
-            });
+            var wcol = findWikiColumn(key);
             td.textContent = wcol ? wcol.get(item) || '—' : '—';
         } else if (key === 'price') {
             td.classList.add('sc-price');
@@ -3560,6 +3660,7 @@
         });
         if (els.tableShell) els.tableShell.scrollLeft = 0;
         syncExpandedShellClass();
+        syncTableRowStripes();
         scheduleSyncTableColumns();
     }
 
@@ -3575,6 +3676,7 @@
         });
         state.expanded = {};
         syncExpandedShellClass();
+        syncTableRowStripes();
     }
 
     function toggleExpand(idItem, rowEl) {
@@ -3598,7 +3700,9 @@
                 return normalizeItemId(x.id_item) === id;
             });
             if (item) {
-                rowEl.insertAdjacentElement('afterend', renderDetailRow(item));
+                var detailRow = renderDetailRow(item);
+                rowEl.insertAdjacentElement('afterend', detailRow);
+                syncDetailRowStripe(rowEl, detailRow);
             }
             var btnOpen = rowEl.querySelector('.sc-expand-btn');
             if (btnOpen) {
@@ -4133,7 +4237,16 @@
             fixExpandedDetailRowLayout();
         }
 
-        if (typeof ResizeObserver === 'function') {
+        shell.addEventListener(
+            'scroll',
+            function () {
+                if (!getExpandedItemId()) return;
+                syncAcquirePanelAlignment();
+            },
+            { passive: true }
+        );
+
+         if (typeof ResizeObserver === 'function') {
             var ro = new ResizeObserver(function () {
                 onShellWidthChange();
             });

@@ -35,6 +35,13 @@
                 return d.toLocaleString('zh-CN', { hour12: false });
             }
         }
+        var multiBarrel = s.match(/^(.+?)\s*\(x(\d+)\)\s*$/i);
+        if (multiBarrel) {
+            var baseLabel = lookupWikiScalarText(multiBarrel[1].trim()) || multiBarrel[1].trim();
+            var barrelCount = parseInt(multiBarrel[2], 10);
+            if (barrelCount === 2) return baseLabel + '（双管）';
+            if (barrelCount > 1) return baseLabel + '（×' + barrelCount + '）';
+        }
         var hit = lookupWikiScalarText(s);
         if (hit) return hit;
         return s;
@@ -762,6 +769,27 @@
         var d = item && item.wiki_fields && item.wiki_fields.durability;
         if (d && d.health != null) return d.health;
         return null;
+    }
+
+    function formatComponentDurabilityDisplay(item) {
+        var h = getItemDurabilityHealth(item);
+        return h != null ? formatWikiScalar(h) : null;
+    }
+
+    var COMPONENT_DURABILITY_COLUMN = {
+        key: 'wiki_comp_dur',
+        label: '组件耐久',
+        get: function (item) {
+            return formatComponentDurabilityDisplay(item);
+        },
+        sortGet: function (item) {
+            var h = getItemDurabilityHealth(item);
+            return h != null ? Number(h) : null;
+        },
+    };
+
+    function getComponentDurabilityColumn() {
+        return COMPONENT_DURABILITY_COLUMN;
     }
 
     var TYPE_DETAIL_SECTIONS = {
@@ -2157,6 +2185,12 @@
                     var jump = q && q.standard_jump;
                     return jump ? formatWikiScalar(jump.drive_speed_formatted || jump.drive_speed) : null;
                 },
+                sortGet: function (item) {
+                    var q = item.wiki_fields && item.wiki_fields.quantum_drive;
+                    var jump = q && q.standard_jump;
+                    var v = jump && jump.drive_speed;
+                    return v != null && Number.isFinite(Number(v)) ? Number(v) : null;
+                },
             },
             {
                 key: 'wiki_q_engage',
@@ -2165,6 +2199,12 @@
                     var q = item.wiki_fields && item.wiki_fields.quantum_drive;
                     var jump = q && q.standard_jump;
                     return jump ? formatWikiScalar(jump.engage_speed_formatted || jump.engage_speed) : null;
+                },
+                sortGet: function (item) {
+                    var q = item.wiki_fields && item.wiki_fields.quantum_drive;
+                    var jump = q && q.standard_jump;
+                    var v = jump && jump.engage_speed;
+                    return v != null && Number.isFinite(Number(v)) ? Number(v) : null;
                 },
             },
         ],
@@ -2505,14 +2545,6 @@
                 get: function (item) {
                     var r = getFuelNozzleRates(item);
                     return r.quantum != null ? formatWikiScalar(r.quantum) + ' SCU/s' : null;
-                },
-            },
-            {
-                key: 'wiki_fn_hp',
-                label: '结构完整性',
-                get: function (item) {
-                    var h = getItemDurabilityHealth(item);
-                    return h != null ? formatWikiScalar(h) : null;
                 },
             },
         ],
@@ -3093,6 +3125,9 @@
         formatArmorClassLabel: formatArmorClassLabel,
         formatArmorSlotLabel: formatArmorSlotLabel,
         formatArmorSubcategory: formatArmorSubcategory,
+        getComponentDurabilityColumn: getComponentDurabilityColumn,
+        formatComponentDurabilityDisplay: formatComponentDurabilityDisplay,
+        getItemDurabilityHealth: getItemDurabilityHealth,
         wikiFieldLabel: wikiFieldLabel,
         flattenWikiFields: flattenWikiFields,
         groupWikiFieldsForDetail: groupWikiFieldsForDetail,
