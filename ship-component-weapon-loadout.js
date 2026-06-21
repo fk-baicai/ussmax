@@ -282,11 +282,9 @@
 
         function roundStat(key, val) {
             if (val == null || !Number.isFinite(val)) return null;
-            if (key === 'damage') return Math.round(val * 10) / 10;
-            if (key === 'rpm') return Math.round(val);
-            if (key === 'sound') return Math.round(val * 100) / 100;
-            if (key === 'recoil') return Math.round(val * 100) / 100;
-            return val;
+            var f = global.ScDisplayFormat;
+            if (f && f.roundDisplay2) return f.roundDisplay2(val);
+            return Math.round(val * 100) / 100;
         }
 
         damage = roundStat('damage', damage);
@@ -354,30 +352,34 @@
 
     function formatLoadoutStatDelta(colKey, delta) {
         if (delta == null || !Number.isFinite(delta)) return null;
+        var f = global.ScDisplayFormat;
+        var fmt2 = f && f.formatFixedDecimal2 ? f.formatFixedDecimal2.bind(f) : function (n) {
+            return Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
         if (colKey === 'wiki_pw_dmg') {
-            if (Math.abs(delta) < 0.05) return null;
-            var dmgDelta = Math.round(delta * 10) / 10;
-            return (dmgDelta > 0 ? '+' : '') + String(dmgDelta);
+            if (Math.abs(delta) < 0.005) return null;
+            var dmgDelta = fmt2(delta);
+            return dmgDelta != null ? (Number(delta) > 0 ? '+' : '') + dmgDelta : null;
         }
         if (colKey === 'wiki_pw_rpm') {
-            if (Math.abs(delta) < 0.5) return null;
-            var rpmDelta = Math.round(delta);
-            return (rpmDelta > 0 ? '+' : '') + String(rpmDelta);
+            if (Math.abs(delta) < 0.005) return null;
+            var rpmDelta = fmt2(delta);
+            return rpmDelta != null ? (Number(delta) > 0 ? '+' : '') + rpmDelta : null;
         }
         if (colKey === 'wiki_pw_range') {
-            if (Math.abs(delta) < 0.5) return null;
-            var rangeDelta = Math.round(delta);
-            return (rangeDelta > 0 ? '+' : '') + String(rangeDelta);
+            if (Math.abs(delta) < 0.005) return null;
+            var rangeDelta = fmt2(delta);
+            return rangeDelta != null ? (Number(delta) > 0 ? '+' : '') + rangeDelta : null;
         }
         if (colKey === 'wiki_pw_sound') {
             if (Math.abs(delta) < 0.005) return null;
-            var soundDelta = Math.round(delta * 100) / 100;
-            return (soundDelta > 0 ? '+' : '') + String(soundDelta);
+            var soundDelta = fmt2(delta);
+            return soundDelta != null ? (Number(delta) > 0 ? '+' : '') + soundDelta : null;
         }
         if (colKey === 'wiki_pw_recoil') {
             if (Math.abs(delta) < 0.005) return null;
-            var recoilDelta = Math.round(delta * 100) / 100;
-            return (recoilDelta > 0 ? '+' : '') + String(recoilDelta);
+            var recoilDelta = fmt2(delta);
+            return recoilDelta != null ? (Number(delta) > 0 ? '+' : '') + recoilDelta : null;
         }
         return null;
     }

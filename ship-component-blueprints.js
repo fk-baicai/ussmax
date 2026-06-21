@@ -94,7 +94,9 @@
         if (chance == null || !Number.isFinite(Number(chance))) return '';
         var pct = Number(chance) * 100;
         if (pct >= 99.9) return '';
-        var pctText = pct % 1 === 0 ? pct.toFixed(0) : pct.toFixed(1);
+        var f = global.ScDisplayFormat;
+        var pctText = f && f.formatFixedDecimal2 ? f.formatFixedDecimal2(pct) : pct.toFixed(2);
+        if (pctText == null) return '';
         return '蓝图掉落 ' + pctText + '%';
     }
 
@@ -333,7 +335,9 @@
 
     function formatRepXp(value) {
         if (value == null || !Number.isFinite(Number(value))) return '—';
-        return Number(value).toLocaleString('zh-CN');
+        var f = global.ScDisplayFormat;
+        var hit = f && f.formatFixedDecimal2 ? f.formatFixedDecimal2(value) : null;
+        return hit != null ? hit : Number(value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     function renderReputationLadder(ladder) {
@@ -461,7 +465,18 @@
         }
     }
 
+    function isDetailReturnFromBlueprintCrafting() {
+        try {
+            if (sessionStorage.getItem('scDetailReturnSource') === 'blueprint-crafting') return true;
+            var params = new URLSearchParams(window.location.search || '');
+            return params.get('from') === 'blueprint-crafting';
+        } catch (e) {
+            return false;
+        }
+    }
+
     function stashListReturnForDetailNav() {
+        if (isDetailReturnFromBlueprintCrafting()) return;
         if (
             window.UssScComponentsListNav &&
             typeof window.UssScComponentsListNav.rememberListReturnState === 'function'
@@ -917,7 +932,8 @@
     function missionAuecLabel(m) {
         var label = m && (m.reward_auec_label || '');
         if (!label && m && m.reward_min != null && Number(m.reward_min) > 0) {
-            label = Number(m.reward_min).toLocaleString('zh-CN') + ' aUEC';
+            var f = global.ScDisplayFormat;
+            label = f && f.formatDisplayPrice ? f.formatDisplayPrice(m.reward_min) : Number(m.reward_min).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' aUEC';
         }
         return label || '';
     }

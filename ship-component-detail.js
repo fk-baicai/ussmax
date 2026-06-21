@@ -153,21 +153,29 @@
             .replace(/"/g, '&quot;');
     }
 
+    function displayFmt() {
+        return (typeof window !== 'undefined' && window.ScDisplayFormat) || null;
+    }
+
     function formatPrice(n) {
+        var f = displayFmt();
+        if (f) return f.formatDisplayPrice(n);
         if (n == null || !Number.isFinite(Number(n))) return '—';
-        return Number(n).toLocaleString('zh-CN') + ' aUEC';
+        return Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' aUEC';
     }
 
     function formatMass(n) {
+        var f = displayFmt();
+        if (f) return f.formatDisplayMass(n);
         if (n == null || !Number.isFinite(Number(n))) return '—';
-        return Number(n).toLocaleString('zh-CN') + ' kg';
+        return Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kg';
     }
 
     function formatVolume(n) {
+        var f = displayFmt();
+        if (f) return f.formatDisplayVolumeScuFromRaw(n);
         if (n == null || !Number.isFinite(Number(n))) return '—';
-        var scu = Number(n) / 1000000;
-        if (scu >= 0.001) return scu.toFixed(3) + ' SCU';
-        return Number(n).toLocaleString('zh-CN');
+        return (Number(n) / 1000000).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' SCU';
     }
 
     function formatBackpackCargoScu(item) {
@@ -179,12 +187,16 @@
         if (!c || c.width == null || c.height == null || c.length == null) return '—';
         var scu = Number(c.width) * Number(c.height) * Number(c.length);
         if (!Number.isFinite(scu) || scu <= 0) return '—';
-        return scu.toFixed(3) + ' SCU';
+        var f = displayFmt();
+        if (f) return f.formatDisplayScu(scu);
+        return scu.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' SCU';
     }
 
     function formatSpeed(n) {
+        var f = displayFmt();
+        if (f) return f.formatDisplaySpeed(n);
         if (n == null || !Number.isFinite(Number(n))) return '—';
-        return Number(n).toLocaleString('zh-CN') + ' m/s';
+        return Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m/s';
     }
 
     function getItemIdFromSearch(search) {
@@ -382,7 +394,15 @@
 
     function formatWikiChipValue(val, suffix) {
         if (val == null || val === '') return '—';
-        var text = Number.isFinite(Number(val)) ? Number(val).toLocaleString('zh-CN') : String(val);
+        var n = Number(val);
+        var text;
+        if (Number.isFinite(n)) {
+            var f = displayFmt();
+            text = f && f.formatFixedDecimal2 ? f.formatFixedDecimal2(n) : n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (text == null) return '—';
+        } else {
+            text = String(val);
+        }
         return suffix ? text + suffix : text;
     }
 
@@ -462,22 +482,18 @@
             }
             }
         } else if (group === 'fps_armor') {
-            var armor = suitArmorWiki(item);
-            var wikiScalar = window.ShipComponentWiki && window.ShipComponentWiki.formatWikiScalar;
-            function armorHighlightValue(val, fallback) {
-                if (val == null || val === '') return fallback || '—';
-                if (wikiScalar) {
-                    var localized = wikiScalar(val);
-                    if (localized != null && localized !== '') return localized;
-                }
-                return String(val);
-            }
+            var wiki = window.ShipComponentWiki;
             chips = [
                 { label: '最低买入价', value: formatPrice(item.price_buy_min), accent: true },
-                { label: '护甲类型', value: armorHighlightValue(armor && armor.armor_type) },
+                {
+                    label: '护甲等级',
+                    value:
+                        (wiki && wiki.formatArmorClassLabel && wiki.formatArmorClassLabel(item)) || '—',
+                },
                 {
                     label: '部位',
-                    value: armorHighlightValue(armor && armor.slot, TYPE_LABELS[item.type] || '—'),
+                    value:
+                        (wiki && wiki.formatArmorSlotLabel && wiki.formatArmorSlotLabel(item)) || '—',
                 },
             ];
         } else if (group === 'fps_magazine') {
@@ -507,7 +523,12 @@
                 var barrelBase = mod && mod.base ? mod.base : null;
                 var damageChip = '—';
                 if (barrelBase && barrelBase.damage_change != null && barrelBase.damage_change !== 0) {
-                    damageChip = Math.round(Number(barrelBase.damage_change) * 100) + '%';
+                    var w = window.ShipComponentWiki;
+                    var pct = Math.abs(Number(barrelBase.damage_change)) * 100;
+                    damageChip =
+                        w && w.formatFixedDecimal2
+                            ? w.formatFixedDecimal2(pct) + '%'
+                            : pct.toFixed(2) + '%';
                 } else if (barrelBase && barrelBase.damage_multiplier != null) {
                     damageChip = formatWikiChipValue(barrelBase.damage_multiplier);
                 }
@@ -631,16 +652,25 @@
 
     function renderBasics(item) {
         if (!els.basics) return;
-        var rows = [
-            { label: '类型', value: TYPE_LABELS[item.type] || item.type },
-            { label: '制造商', value: formatManufacturerLabel(item) },
-        ];
-        if (item.type !== 'armor_backpack') {
-            rows.push({ label: '质量', value: formatMass(item.mass) });
-            rows.push({
-                label: '体积',
-                value: formatVolume(item.volume),
-            });
+        var rows;
+        if (item.type && item.type.indexOf('armor_') === 0 && item.type !== 'armor_backpack') {
+            rows = [
+                { label: '制造商', value: formatManufacturerLabel(item) },
+                { label: '质量', value: formatMass(item.mass) },
+                { label: '体积', value: formatVolume(item.volume) },
+            ];
+        } else {
+            rows = [
+                { label: '类型', value: TYPE_LABELS[item.type] || item.type },
+                { label: '制造商', value: formatManufacturerLabel(item) },
+            ];
+            if (item.type !== 'armor_backpack') {
+                rows.push({ label: '质量', value: formatMass(item.mass) });
+                rows.push({
+                    label: '体积',
+                    value: formatVolume(item.volume),
+                });
+            }
         }
         if (item.type === 'weapon_throwable' && item.wiki_fields && window.ShipComponentWiki) {
             var wiki = window.ShipComponentWiki;
@@ -983,6 +1013,7 @@
     var LIST_RETURN_ARMOR_VARIANTS_KEY = 'scComponentListReturnArmorVariants';
     var BP_CRAFT_RETURN_URL_KEY = 'scBlueprintCraftReturnUrl';
     var BP_CRAFT_RESTORE_FLAG_KEY = 'scBlueprintCraftRestorePending';
+    var DETAIL_RETURN_SOURCE_KEY = 'scDetailReturnSource';
 
     function isBlueprintCraftingListPath(pathname) {
         return /\/blueprint-crafting(?:\.html)?$/i.test(String(pathname || ''));
@@ -1017,10 +1048,30 @@
         }
     }
 
-    function isReturningFromBlueprintCrafting(searchParams) {
+    function resolveDetailReturnSource(searchParams) {
         var params = searchParams || new URLSearchParams(window.location.search || '');
-        if (params.get('from') === 'blueprint-crafting') return true;
-        return !!readStoredBlueprintCraftReturnHref();
+        var from = (params.get('from') || '').trim();
+        try {
+            if (from === 'blueprint-crafting') {
+                sessionStorage.setItem(DETAIL_RETURN_SOURCE_KEY, 'blueprint-crafting');
+                var bpHref = buildBlueprintCraftingReturnHref(params);
+                if (bpHref) sessionStorage.setItem(BP_CRAFT_RETURN_URL_KEY, bpHref);
+                return 'blueprint-crafting';
+            }
+            if (from === 'list') {
+                sessionStorage.setItem(DETAIL_RETURN_SOURCE_KEY, 'list');
+                return 'list';
+            }
+            var stored = sessionStorage.getItem(DETAIL_RETURN_SOURCE_KEY);
+            if (stored === 'blueprint-crafting' || stored === 'list') return stored;
+        } catch (e) {
+            /* ignore */
+        }
+        return 'list';
+    }
+
+    function isReturningFromBlueprintCrafting(searchParams) {
+        return resolveDetailReturnSource(searchParams) === 'blueprint-crafting';
     }
     var LIST_RESTORE_FLAG_KEY = 'scComponentListRestorePending';
 
@@ -1150,10 +1201,13 @@
 
     function resolveListReturnHref(item) {
         var params = new URLSearchParams(window.location.search || '');
-        var bpCraftHref = buildBlueprintCraftingReturnHref(params);
-        if (bpCraftHref) return bpCraftHref;
-        var storedBpCraftHref = readStoredBlueprintCraftReturnHref();
-        if (storedBpCraftHref) return storedBpCraftHref;
+        if (isReturningFromBlueprintCrafting(params)) {
+            var bpCraftHref = buildBlueprintCraftingReturnHref(params);
+            if (bpCraftHref) return bpCraftHref;
+            var storedBpCraftHref = readStoredBlueprintCraftReturnHref();
+            if (storedBpCraftHref) return storedBpCraftHref;
+            return 'blueprint-crafting.html';
+        }
 
         var fromUrl = {
             group: (params.get('group') || params.get('from_group') || '').trim(),
@@ -1211,6 +1265,7 @@
             try {
                 if (isReturningFromBlueprintCrafting()) {
                     sessionStorage.setItem(BP_CRAFT_RESTORE_FLAG_KEY, '1');
+                    return;
                 }
                 sessionStorage.setItem(LIST_RESTORE_FLAG_KEY, '1');
                 if (!sessionStorage.getItem(LIST_RETURN_SCROLL_KEY)) {

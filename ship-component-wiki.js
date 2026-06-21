@@ -13,14 +13,18 @@
         return null;
     }
 
+    function formatFixedDecimal2(v) {
+        var f = global.ScDisplayFormat;
+        if (f && f.formatFixedDecimal2) return f.formatFixedDecimal2(v);
+        if (v == null || !Number.isFinite(Number(v))) return null;
+        return Number(v).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
     function formatWikiScalar(v) {
         if (v == null || v === '') return null;
         if (typeof v === 'boolean') return v ? '是' : '否';
         if (typeof v === 'number' && Number.isFinite(v)) {
-            if (Math.abs(v) >= 1000 || (Math.abs(v) < 0.01 && v !== 0)) {
-                return v.toLocaleString('zh-CN', { maximumFractionDigits: 4 });
-            }
-            return v.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+            return formatFixedDecimal2(v);
         }
         var s = String(v).trim();
         if (!s) return null;
@@ -106,7 +110,7 @@
         radius_min: ' m',
         radius_max: ' m',
         time_to_full_speed: ' s',
-        gforce_resistance: ' G',
+        gforce_resistance: '',
     };
     var WIKI_BOOLEAN_NUM_KEYS = {
         enable_lifetime: true,
@@ -164,10 +168,10 @@
         }
         if (/_change$/i.test(String(key)) && typeof val === 'number' && Number.isFinite(val)) {
             if (val === 0) return null;
-            return formatWikiScalar(Math.round(Math.abs(val) * 100)) + '%';
+            return formatFixedDecimal2(Math.abs(val) * 100) + '%';
         }
-        if (key === 'gforce_resistance' && typeof val === 'number' && Number.isFinite(val) && val === 0) {
-            return null;
+        if (key === 'gforce_resistance' && typeof val === 'number' && Number.isFinite(val)) {
+            return formatGforceSignedDisplay(val);
         }
         var display = formatWikiScalar(val);
         if (display == null) return null;
@@ -206,6 +210,36 @@
         '[SEMI]': '半自动',
         '[CHARGE]': '充能',
         'Plasma Canon': '电浆加农炮',
+        Light: '轻甲',
+        Medium: '中甲',
+        Heavy: '重甲',
+    };
+
+    var ARMOR_CLASS_ZH = {
+        Light: '轻甲',
+        Medium: '中甲',
+        Heavy: '重甲',
+        light: '轻甲',
+        medium: '中甲',
+        heavy: '重甲',
+    };
+
+    var ARMOR_SLOT_ZH = {
+        Helmet: '头盔',
+        Torso: '躯干',
+        Legs: '腿部',
+        Arms: '手臂',
+        Backpack: '背包',
+        Undersuit: '底衣',
+    };
+
+    var ARMOR_TYPE_SLOT_FALLBACK = {
+        armor_helmet: '头盔',
+        armor_torso: '躯干',
+        armor_legs: '腿部',
+        armor_arms: '手臂',
+        armor_backpack: '背包',
+        armor_undersuit: '底衣',
     };
 
     var WIKI_FIELD_LABELS = {
@@ -1046,10 +1080,6 @@
         ],
         armor_helmet: [
             {
-                title: '护甲参数',
-                fields: ['garment_type'],
-            },
-            {
                 title: '防护',
                 nested: 'damage_resistance_map',
                 fields: ['physical_change', 'energy_change', 'thermal_change', 'biochemical_change', 'distortion_change', 'stun_change'],
@@ -1278,7 +1308,7 @@
 
     function formatGforceSignedDisplay(val) {
         if (val == null || !Number.isFinite(val) || val === 0) return null;
-        return formatWikiScalar(val) + ' G';
+        return formatFixedDecimal2(val * 100) + '%';
     }
 
     var ARMOR_SLOT_SUBTYPES = {
@@ -1298,9 +1328,36 @@
         return raw;
     }
 
-    function formatArmorSubcategory(item) {
+    function formatArmorClassLabel(item) {
         var raw = getArmorSubcategoryRaw(item);
-        return raw ? formatWikiScalar(raw) : null;
+        if (!raw) {
+            var cls = String((item && (item.class_short_zh || item.class_zh)) || '').trim();
+            if (/[轻中重]甲/.test(cls)) return cls;
+            return null;
+        }
+        if (ARMOR_CLASS_ZH[raw]) return ARMOR_CLASS_ZH[raw];
+        var hit = lookupWikiScalarText(raw);
+        if (hit) return hit;
+        return formatWikiScalar(raw);
+    }
+
+    function formatArmorSlotLabel(item) {
+        var armor = item && item.wiki_fields && item.wiki_fields.suit_armor;
+        var slot = String((armor && (armor.slot || armor.garment_type || armor.armor_type)) || '').trim();
+        if (slot) {
+            if (ARMOR_SLOT_ZH[slot]) return ARMOR_SLOT_ZH[slot];
+            var localized = formatWikiScalar(slot);
+            if (localized) return localized;
+        }
+        var typeKey = item && item.type;
+        if (typeKey && ARMOR_TYPE_SLOT_FALLBACK[typeKey]) {
+            return ARMOR_TYPE_SLOT_FALLBACK[typeKey];
+        }
+        return null;
+    }
+
+    function formatArmorSubcategory(item) {
+        return formatArmorClassLabel(item);
     }
 
     function getWeaponModifierBase(item) {
@@ -1730,7 +1787,7 @@
             武器类型: true,
         },
         fps_armor: {
-            护甲类型: true,
+            护甲等级: true,
             部位: true,
         },
         fps_magazine: {
@@ -1828,10 +1885,10 @@
         var meta = MINING_MODIFIER_META[key] || { label: wikiFieldLabel(key) };
         var num = Number(val);
         var displayNum = meta.displayInvert ? Math.abs(num) : num;
+        var formatted = formatFixedDecimal2(displayNum);
+        if (formatted == null) return null;
         var text =
-            (displayNum > 0 ? '+' : displayNum < 0 ? '' : '') +
-            displayNum.toLocaleString('zh-CN', { maximumFractionDigits: 1 }) +
-            '%';
+            (displayNum > 0 ? '+' : displayNum < 0 ? '' : '') + formatted + '%';
         var beneficialWhen = meta.beneficialWhen || 'positive';
         var isGood =
             beneficialWhen === 'negative'
@@ -2409,7 +2466,7 @@
                 get: function (item) {
                     var s = getSalvageScraperBlock(item);
                     if (!s || s.extraction_efficiency == null) return null;
-                    return formatWikiScalar(Math.round(Number(s.extraction_efficiency) * 1000) / 10) + '%';
+                    return formatFixedDecimal2(Number(s.extraction_efficiency) * 100) + '%';
                 },
             },
             {
@@ -2584,7 +2641,7 @@
                     if (!c || c.width == null || c.height == null || c.length == null) return null;
                     var scu = Number(c.width) * Number(c.height) * Number(c.length);
                     if (!Number.isFinite(scu) || scu <= 0) return null;
-                    return formatWikiScalar(scu.toFixed(3)) + ' SCU';
+                    return formatFixedDecimal2(scu) + ' SCU';
                 },
             },
             {
@@ -2610,17 +2667,14 @@
                 key: 'wiki_pa_subtype',
                 label: '护甲等级',
                 get: function (item) {
-                    return formatArmorSubcategory(item);
+                    return formatArmorClassLabel(item);
                 },
             },
             {
                 key: 'wiki_pa_slot',
                 label: '部位',
                 get: function (item) {
-                    var wf = item.wiki_fields || {};
-                    var a = wf.suit_armor || {};
-                    var slot = a.slot || a.armor_type || a.type || wf.classification_label || wf.sub_type_label;
-                    return slot ? formatWikiScalar(slot) : null;
+                    return formatArmorSlotLabel(item);
                 },
             },
             {
@@ -2633,10 +2687,10 @@
                     if (map.physical_change != null) {
                         var pct = Math.abs(Number(map.physical_change));
                         if (pct === 0) return null;
-                        return formatWikiScalar(Math.round(pct * 100)) + '%';
+                        return formatFixedDecimal2(pct * 100) + '%';
                     }
                     if (map.physical != null && map.physical < 1) {
-                        return formatWikiScalar(Math.round((1 - Number(map.physical)) * 100)) + '%';
+                        return formatFixedDecimal2((1 - Number(map.physical)) * 100) + '%';
                     }
                     return null;
                 },
@@ -3020,7 +3074,9 @@
     }
 
     global.ShipComponentWiki = {
+        formatFixedDecimal2: formatFixedDecimal2,
         formatWikiScalar: formatWikiScalar,
+        formatGforceSignedDisplay: formatGforceSignedDisplay,
         formatWikiFieldDisplay: formatWikiFieldDisplay,
         formatMiningModifierPercent: formatMiningModifierPercent,
         buildMiningModifierTags: buildMiningModifierTags,
@@ -3034,6 +3090,9 @@
         getMeleeCategoryDamage: getMeleeCategoryDamage,
         formatMeleeCategoryDamage: formatMeleeCategoryDamage,
         renderMiningModifierTagsMarkup: renderMiningModifierTagsMarkup,
+        formatArmorClassLabel: formatArmorClassLabel,
+        formatArmorSlotLabel: formatArmorSlotLabel,
+        formatArmorSubcategory: formatArmorSubcategory,
         wikiFieldLabel: wikiFieldLabel,
         flattenWikiFields: flattenWikiFields,
         groupWikiFieldsForDetail: groupWikiFieldsForDetail,

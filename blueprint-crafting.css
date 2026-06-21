@@ -1780,6 +1780,15 @@ html:has(body.bp-craft-body) {
     text-shadow: 0 0 8px rgba(255, 180, 100, 0.35);
 }
 
+.bp-sim-stat-base {
+    display: inline-block;
+    margin-right: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: rgba(184, 220, 240, 0.52);
+    letter-spacing: 0.01em;
+}
+
 .bp-stat-note {
     margin: 0.45rem 0 0;
     font-size: 0.72rem;

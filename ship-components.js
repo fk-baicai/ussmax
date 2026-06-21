@@ -428,26 +428,36 @@
         throw lastErr || new Error('加载失败');
     }
 
+    function displayFmt() {
+        return (typeof window !== 'undefined' && window.ScDisplayFormat) || null;
+    }
+
     function formatVolume(n) {
+        var f = displayFmt();
+        if (f) return f.formatDisplayVolumeScuFromRaw(n);
         if (n == null || !Number.isFinite(Number(n))) return '—';
-        var scu = Number(n) / 1000000;
-        if (scu >= 0.001) return scu.toFixed(3) + ' SCU';
-        return Number(n).toLocaleString('zh-CN');
+        return (Number(n) / 1000000).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' SCU';
     }
 
     function formatPrice(n) {
+        var f = displayFmt();
+        if (f) return f.formatDisplayPrice(n);
         if (n == null || !Number.isFinite(Number(n))) return '—';
-        return Number(n).toLocaleString('zh-CN') + ' aUEC';
+        return Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' aUEC';
     }
 
     function formatMass(n) {
+        var f = displayFmt();
+        if (f) return f.formatDisplayMass(n);
         if (n == null || !Number.isFinite(Number(n))) return '—';
-        return Number(n).toLocaleString('zh-CN') + ' kg';
+        return Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kg';
     }
 
     function formatSpeed(n) {
+        var f = displayFmt();
+        if (f) return f.formatDisplaySpeed(n);
         if (n == null || !Number.isFinite(Number(n))) return '—';
-        return Number(n).toLocaleString('zh-CN') + ' m/s';
+        return Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m/s';
     }
 
     function isWikiMode() {
@@ -558,6 +568,9 @@
     var LIST_RETURN_FOCUS_ITEM_KEY = 'scComponentListReturnFocusItemId';
     var LIST_RETURN_ARMOR_VARIANTS_KEY = 'scComponentListReturnArmorVariants';
     var LIST_RESTORE_FLAG_KEY = 'scComponentListRestorePending';
+    var DETAIL_RETURN_SOURCE_KEY = 'scDetailReturnSource';
+    var BP_CRAFT_RETURN_URL_KEY = 'scBlueprintCraftReturnUrl';
+    var BP_CRAFT_RESTORE_FLAG_KEY = 'scBlueprintCraftRestorePending';
 
     function normalizeItemId(id) {
         return String(id || '').trim();
@@ -873,6 +886,9 @@
                 sessionStorage.removeItem(LIST_RETURN_ARMOR_VARIANTS_KEY);
             }
             sessionStorage.setItem(LIST_RESTORE_FLAG_KEY, '1');
+            sessionStorage.setItem(DETAIL_RETURN_SOURCE_KEY, 'list');
+            sessionStorage.removeItem(BP_CRAFT_RETURN_URL_KEY);
+            sessionStorage.removeItem(BP_CRAFT_RESTORE_FLAG_KEY);
         } catch (e) {
             /* ignore */
         }

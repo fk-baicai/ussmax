@@ -18,6 +18,8 @@
     var BP_PENDING_BLUEPRINT_KEY = 'scBlueprintCraftPendingBlueprint';
     var BP_PENDING_GROUP_KEY = 'scBlueprintCraftPendingGroup';
     var BP_PENDING_TYPE_KEY = 'scBlueprintCraftPendingType';
+    var DETAIL_RETURN_SOURCE_KEY = 'scDetailReturnSource';
+    var LIST_RESTORE_FLAG_KEY = 'scComponentListRestorePending';
     var SIM_DEBOUNCE_MS = 120;
     var PERSIST_DEBOUNCE_MS = 350;
     var MAT_MOD_DEBOUNCE_MS = 72;
@@ -29,6 +31,8 @@
     var LIST_OVERSCAN = 10;
     var BLUEPRINT_DETAIL_CACHE_MAX = 64;
     var BLUEPRINT_PREFETCH_MS = 100;
+    var ARMOR_CLASS_FETCH_CACHE = Object.create(null);
+    var armorClassEnrichToken = 0;
 
     var SECTOR_META = {
         ship: { label_zh: '舰船' },
@@ -285,6 +289,8 @@
                 sessionStorage.setItem(BP_RETURN_SCROLL_KEY, String(el.listWrap.scrollTop || 0));
             }
             sessionStorage.setItem(BP_RESTORE_FLAG_KEY, '1');
+            sessionStorage.setItem(DETAIL_RETURN_SOURCE_KEY, 'blueprint-crafting');
+            sessionStorage.removeItem(LIST_RESTORE_FLAG_KEY);
         } catch (_) {
             /* ignore */
         }
@@ -560,10 +566,25 @@
         } else if (item.type_label_zh) {
             parts.push(item.type_label_zh);
         }
+        appendBlueprintArmorClassPart(parts, item);
         var usageGrade = formatUsageGrade(item);
         if (usageGrade) parts.push(usageGrade);
-        if (item.size != null && item.size !== '') parts.push('S' + item.size);
+        if (!isPersonalArmorNavType(item.nav_type) && item.size != null && item.size !== '') {
+            parts.push('S' + item.size);
+        }
         return parts.join(' · ');
+    }
+
+    function blueprintOutputSubParts(item) {
+        var parts = [];
+        if (item.type_label_zh) parts.push(item.type_label_zh);
+        else if (item.nav_type) parts.push(typeLabel(item.nav_type));
+        if (!isPersonalArmorNavType(item.nav_type)) {
+            if (item.group_label_zh) parts.push(item.group_label_zh);
+            else if (item.nav_group) parts.push(groupLabel(item.nav_group));
+        }
+        appendBlueprintArmorClassPart(parts, item);
+        return parts;
     }
 
     function blueprintIndexById(id) {
@@ -1029,9 +1050,12 @@
         var type = item.type_label_zh || typeLabel(item.nav_type);
         if (group) parts.push(group);
         if (type && type !== group) parts.push(type);
+        appendBlueprintArmorClassPart(parts, item);
         var usageGrade = formatUsageGrade(item);
         if (usageGrade) parts.push(usageGrade);
-        if (item.size != null && item.size !== '') parts.push('S' + item.size);
+        if (!isPersonalArmorNavType(item.nav_type) && item.size != null && item.size !== '') {
+            parts.push('S' + item.size);
+        }
         return parts.join(' · ');
     }
 
@@ -1365,6 +1389,7 @@
             if (!preserveScroll && el.listWrap) el.listWrap.scrollTop = 0;
             state.listVirt.measured = false;
             renderBlueprintList();
+            enrichArmorClassForListItems();
             return pickInitialBlueprint();
         }
 
@@ -1389,6 +1414,7 @@
                     total: state.total,
                 };
                 renderBlueprintList();
+                enrichArmorClassForListItems();
                 return pickInitialBlueprint();
             });
         }
@@ -1413,7 +1439,182 @@
 
     function normalizeBlueprintStatLabelZh(text) {
         var t = String(text || '').trim();
-        return t === '完整性' ? '结构完整性' : t;
+        if (t === '完整性') return '结构完整性';
+        if (t === '伤害减免') return '抗 G 值';
+        return t;
+    }
+
+    function isPersonalArmorNavType(navType) {
+        return String(navType || '').indexOf('armor_') === 0;
+    }
+
+    var ARMOR_CLASS_ZH_MAP = {
+        Light: '轻甲',
+        Medium: '中甲',
+        Heavy: '重甲',
+        light: '轻甲',
+        medium: '中甲',
+        heavy: '重甲',
+    };
+
+    function resolveBlueprintArmorClass(item) {
+        if (!item) return null;
+        var direct = String(item.armor_class_zh || '').trim();
+        if (direct) return direct;
+        var wiki = window.ShipComponentWiki;
+        if (wiki && wiki.formatArmorClassLabel) {
+            var hit = wiki.formatArmorClassLabel(item);
+            if (hit) return hit;
+        }
+        var output = item.output;
+        if (output && typeof output === 'object') {
+            var raw = String(output.sub_type || output.subtype || '').trim();
+            if (ARMOR_CLASS_ZH_MAP[raw]) return ARMOR_CLASS_ZH_MAP[raw];
+        }
+        return null;
+    }
+
+    function blueprintArmorClassLabel(item) {
+        if (!isPersonalArmorNavType(item && item.nav_type)) return null;
+        return resolveBlueprintArmorClass(item);
+    }
+
+    function appendBlueprintArmorClassPart(parts, item) {
+        var label = blueprintArmorClassLabel(item);
+        if (label) parts.push(label);
+        return label;
+    }
+
+    function fetchArmorClassLabelByComponentId(cid) {
+        var id = String(cid || '').trim();
+        if (!id) return Promise.resolve(null);
+        if (ARMOR_CLASS_FETCH_CACHE[id]) return ARMOR_CLASS_FETCH_CACHE[id];
+        var wiki = window.ShipComponentWiki;
+        ARMOR_CLASS_FETCH_CACHE[id] = fetchJson('/api/sc/components/' + encodeURIComponent(id))
+            .then(function (data) {
+                var item = data && data.item;
+                if (!item || !wiki || !wiki.formatArmorClassLabel) return null;
+                return wiki.formatArmorClassLabel(item);
+            })
+            .catch(function () {
+                return null;
+            });
+        return ARMOR_CLASS_FETCH_CACHE[id];
+    }
+
+    function applyArmorClassLabelToItems(label, componentId) {
+        if (!label || !componentId) return false;
+        var changed = false;
+        state.items.forEach(function (item) {
+            if (String(item.component_id || '').trim() !== componentId) return;
+            if (!isPersonalArmorNavType(item.nav_type)) return;
+            if (item.armor_class_zh === label) return;
+            item.armor_class_zh = label;
+            changed = true;
+        });
+        return changed;
+    }
+
+    function enrichArmorClassForListItems() {
+        if (!state.items || !state.items.length) return Promise.resolve();
+        var pendingIds = [];
+        var seen = Object.create(null);
+        state.items.forEach(function (item) {
+            if (!isPersonalArmorNavType(item.nav_type)) return;
+            if (blueprintArmorClassLabel(item)) return;
+            var cid = String(item.component_id || '').trim();
+            if (!cid || seen[cid]) return;
+            seen[cid] = true;
+            pendingIds.push(cid);
+        });
+        if (!pendingIds.length) return Promise.resolve();
+        var token = ++armorClassEnrichToken;
+        var chain = Promise.resolve();
+        for (var i = 0; i < pendingIds.length; i += 8) {
+            (function (chunk) {
+                chain = chain.then(function () {
+                    if (token !== armorClassEnrichToken) return;
+                    return Promise.all(
+                        chunk.map(function (cid) {
+                            return fetchArmorClassLabelByComponentId(cid).then(function (label) {
+                                return { cid: cid, label: label };
+                            });
+                        })
+                    ).then(function (rows) {
+                        if (token !== armorClassEnrichToken) return;
+                        var changed = false;
+                        rows.forEach(function (row) {
+                            if (applyArmorClassLabelToItems(row.label, row.cid)) changed = true;
+                        });
+                        if (changed) {
+                            var cacheKey = listCacheKey();
+                            if (LIST_CACHE[cacheKey]) {
+                                LIST_CACHE[cacheKey] = {
+                                    items: state.items.slice(),
+                                    total: state.total,
+                                };
+                            }
+                            renderBlueprintList();
+                        }
+                    });
+                });
+            })(pendingIds.slice(i, i + 8));
+        }
+        return chain;
+    }
+
+    function refreshBlueprintArmorClassDisplay(bp) {
+        if (!bp) return;
+        if (el.outputSub) {
+            el.outputSub.textContent = blueprintOutputSubParts(bp).join(' · ') || '—';
+        }
+        renderOutputTags(bp);
+        renderArmorClassStatRow(bp);
+        updateBlueprintListItemUsage(bp);
+    }
+
+    function renderArmorClassStatRow(bp) {
+        if (!el.simStats || !isPersonalArmorNavType(bp && bp.nav_type)) return;
+        var label = blueprintArmorClassLabel(bp);
+        var existing = el.simStats.querySelector('.bp-sim-stat--armor-class');
+        if (!label) {
+            if (existing) existing.remove();
+            return;
+        }
+        if (existing) {
+            var valueEl = existing.querySelector('.bp-sim-stat-value');
+            if (valueEl) valueEl.textContent = label;
+            return;
+        }
+        var li = document.createElement('li');
+        li.className = 'bp-sim-stat bp-sim-stat--static bp-sim-stat--armor-class';
+        li.innerHTML =
+            '<span class="bp-sim-stat-label">护甲等级</span><span class="bp-sim-stat-value">' +
+            escapeHtml(label) +
+            '</span>';
+        el.simStats.insertBefore(li, el.simStats.firstChild);
+    }
+
+    function loadArmorMetaForBlueprint(bp) {
+        if (!isPersonalArmorNavType(bp && bp.nav_type) || !bp.component_id) return Promise.resolve();
+        if (blueprintArmorClassLabel(bp)) {
+            refreshBlueprintArmorClassDisplay(bp);
+            return Promise.resolve();
+        }
+        return fetchArmorClassLabelByComponentId(bp.component_id)
+            .then(function (label) {
+                if (!label) return;
+                bp.armor_class_zh = label;
+                if (state.blueprint && state.blueprint.uuid === bp.uuid) {
+                    state.blueprint.armor_class_zh = label;
+                }
+                applyArmorClassLabelToItems(label, bp.component_id);
+                syncBlueprintUsageToListItem(bp);
+                refreshBlueprintArmorClassDisplay(bp);
+            })
+            .catch(function () {
+                return null;
+            });
     }
 
     function absoluteAssetUrl(url) {
@@ -1611,10 +1812,11 @@
     }
 
     function formatScuQty(value) {
+        var f = window.ScDisplayFormat;
+        if (f && f.formatDisplayScu) return f.formatDisplayScu(value);
         var n = Number(value);
         if (!Number.isFinite(n)) return '';
-        if (Math.abs(n - Math.round(n)) < 1e-6) return Math.round(n) + ' SCU';
-        return (Math.round(n * 100) / 100) + ' SCU';
+        return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' SCU';
     }
 
     function defaultQuality() {
@@ -1659,6 +1861,7 @@
         state.items[idx] = Object.assign({}, state.items[idx], {
             class_zh: bp.class_zh || state.items[idx].class_zh,
             class_short_zh: bp.class_short_zh || state.items[idx].class_short_zh,
+            armor_class_zh: bp.armor_class_zh || state.items[idx].armor_class_zh,
             grade_letter: bp.grade_letter || state.items[idx].grade_letter,
         });
         updateBlueprintListItemUsage(bp);
@@ -1721,12 +1924,7 @@
         if (!item) return;
         if (el.outputName) el.outputName.textContent = blueprintDisplayName(item);
         if (el.outputSub) {
-            var parts = [];
-            if (item.type_label_zh) parts.push(item.type_label_zh);
-            else if (item.nav_type) parts.push(typeLabel(item.nav_type));
-            if (item.group_label_zh) parts.push(item.group_label_zh);
-            else if (item.nav_group) parts.push(groupLabel(item.nav_group));
-            el.outputSub.textContent = parts.join(' · ') || '—';
+            el.outputSub.textContent = blueprintOutputSubParts(item).join(' · ') || '—';
         }
         if (el.missionCount) {
             var count =
@@ -1763,6 +1961,12 @@
         renderCraftPanel({ deferMissions: options.deferMissions !== false });
         if (isFpsWeaponBlueprint(state.blueprint)) {
             loadWeaponForBlueprint(state.blueprint);
+        } else if (isPersonalArmorNavType(state.blueprint.nav_type)) {
+            loadArmorMetaForBlueprint(state.blueprint);
+            if (el.loadoutSlots) {
+                el.loadoutSlots.hidden = true;
+                el.loadoutSlots.innerHTML = '';
+            }
         } else if (el.loadoutSlots) {
             el.loadoutSlots.hidden = true;
             el.loadoutSlots.innerHTML = '';
@@ -1947,9 +2151,13 @@
         el.outputTags.innerHTML = '';
         if (!bp) return;
         var tags = [];
+        var armorClass = blueprintArmorClassLabel(bp);
+        if (armorClass) tags.push({ text: armorClass, title: '护甲等级', kind: 'armor-class' });
         var usageGrade = formatUsageGrade(bp);
         if (usageGrade) tags.push({ text: usageGrade, title: '用途与等级', kind: 'usage' });
-        if (bp.size != null && bp.size !== '') tags.push({ text: 'S' + bp.size, title: '尺寸（Size）' });
+        if (!isPersonalArmorNavType(bp.nav_type) && bp.size != null && bp.size !== '') {
+            tags.push({ text: 'S' + bp.size, title: '尺寸（Size）' });
+        }
         if (bp.craft_time_seconds) tags.push({ text: formatCraftTime(bp.craft_time_seconds), title: '制造耗时' });
         if (bp.is_available_by_default) tags.push({ text: '默认可造', kind: 'default', title: '无需任务即可制造' });
         else if (bp.unlocking_missions_count) {
@@ -1961,7 +2169,8 @@
                 'bp-tag' +
                 (tag.warn ? ' bp-tag--warn' : '') +
                 (tag.kind === 'default' ? ' bp-tag--default' : '') +
-                (tag.kind === 'usage' ? ' bp-tag--usage' : '');
+                (tag.kind === 'usage' ? ' bp-tag--usage' : '') +
+                (tag.kind === 'armor-class' ? ' bp-tag--armor-class' : '');
             span.textContent = tag.text;
             if (tag.title) span.title = tag.title;
             el.outputTags.appendChild(span);
@@ -2162,10 +2371,7 @@
         if (!bp) return;
         if (el.outputName) el.outputName.textContent = blueprintDisplayName(bp);
         if (el.outputSub) {
-            var parts = [];
-            if (bp.type_label_zh) parts.push(bp.type_label_zh);
-            if (bp.group_label_zh) parts.push(bp.group_label_zh);
-            el.outputSub.textContent = parts.join(' · ') || '—';
+            el.outputSub.textContent = blueprintOutputSubParts(bp).join(' · ') || '—';
         }
         renderOutputTags(bp);
         var fpsWeaponBp = isFpsWeaponBlueprint(bp);
@@ -2199,7 +2405,9 @@
         if (el.statHint) {
             el.statHint.textContent = fpsWeaponBp
                 ? '含材料品质与配件加成'
-                : '品质加成后的数值';
+                : isPersonalArmorNavType(bp.nav_type)
+                  ? '基准 × 材料品质；不含详情页物理/能量减伤%'
+                  : '基准 × 材料品质后的数值';
         }
         if (el.simSummary) {
             el.simSummary.classList.add('is-empty');
@@ -2208,6 +2416,7 @@
         if (el.simStats) el.simStats.innerHTML = '';
         if (el.simWarnings) el.simWarnings.hidden = true;
         if (el.simNote) el.simNote.textContent = '';
+        renderArmorClassStatRow(bp);
     }
 
     function qualityColor(score) {
@@ -2297,7 +2506,7 @@
         quantum_speed: '量子速度',
         drive_speed: '量子速度',
         quantum_fuel_requirement: '量子燃料消耗',
-        gforce_resistance: '伤害减免',
+        gforce_resistance: '抗 G 值',
         temp_resistance_max: '耐温上限',
         temp_resistance_min: '耐温下限',
         efficiency: '提取效率',
@@ -2310,6 +2519,64 @@
         regen_rate: '回复速率',
         max_shield_regen: '回复速率',
     };
+
+    var STAT_KEY_UNIT = {
+        temp_resistance_min: '°C',
+        temp_resistance_max: '°C',
+        range: 'm',
+        effective_range: 'm',
+        quantum_speed: 'm/s',
+        drive_speed: 'm/s',
+        speed: 'm/s',
+    };
+
+    function resolveCraftStatUnit(st) {
+        if (st && st.unit) return String(st.unit).trim();
+        if (st && st.key && STAT_KEY_UNIT[st.key]) return STAT_KEY_UNIT[st.key];
+        return '';
+    }
+
+    function isGforceResistanceStat(statKey) {
+        return canonicalSimStatKey(statKey) === 'gforce_resistance';
+    }
+
+    /** 抗 G 系数越高越好：负值时 +10% 材料应减小惩罚幅度；不在此处四舍五入，留待百分比展示 */
+    function applySimStatModifier(base, mult, add, statKey) {
+        var b = Number(base);
+        var m = mult != null ? mult : 1;
+        var a = add != null ? add : 0;
+        if (!Number.isFinite(b)) return null;
+        if (isGforceResistanceStat(statKey)) {
+            return b + Math.abs(b) * (m - 1) + a;
+        }
+        return roundCraftNumber(b * m + a);
+    }
+
+    function formatFixedDecimal2(n) {
+        var f = window.ScDisplayFormat;
+        if (f && f.formatFixedDecimal2) return f.formatFixedDecimal2(n);
+        var w = window.ShipComponentWiki;
+        if (w && w.formatFixedDecimal2) return w.formatFixedDecimal2(n);
+        if (n == null || !Number.isFinite(Number(n))) return '—';
+        return Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    /** 系数×100，固定两位小数 + % */
+    function formatGforcePctDisplay(val) {
+        var w = window.ShipComponentWiki;
+        if (w && w.formatGforceSignedDisplay) {
+            var hit = w.formatGforceSignedDisplay(val);
+            return hit || '—';
+        }
+        var n = Number(val);
+        if (!Number.isFinite(n)) return '—';
+        return formatFixedDecimal2(n * 100) + '%';
+    }
+
+    function formatCraftStatNumberForStat(value, statKey) {
+        if (isGforceResistanceStat(statKey)) return formatGforcePctDisplay(value);
+        return formatSimStatNumber(value);
+    }
 
     var MODIFIER_LABEL_ZH_STAT_KEYS = {
         武器伤害: ['damage_per_shot'],
@@ -2324,6 +2591,7 @@
         能量点: ['power_segment_generation'],
         量子速度: ['quantum_speed', 'drive_speed'],
         量子燃料消耗: ['quantum_fuel_requirement'],
+        '抗 G 值': ['gforce_resistance'],
         伤害减免: ['gforce_resistance'],
         耐温上限: ['temp_resistance_max'],
         耐温下限: ['temp_resistance_min'],
@@ -2444,12 +2712,14 @@
             var gainPct = roundCraftNumber((mult - 1) * 100);
             var final = null;
             var modifierOnly = false;
-            if (base != null) final = roundCraftNumber(base * mult + add);
+            if (base != null) final = applySimStatModifier(base, mult, add, key);
             else if (add !== 0) final = roundCraftNumber(add);
             else if (Math.abs(mult - 1) > 0.000001) modifierOnly = true;
             var deltaPct =
                 base != null && base !== 0 && final != null
-                    ? roundCraftNumber(((final - base) / base) * 100)
+                    ? isGforceResistanceStat(key)
+                        ? roundCraftNumber(((final - base) / Math.abs(base)) * 100)
+                        : roundCraftNumber(((final - base) / base) * 100)
                     : gainPct;
             var gainValue =
                 base != null && final != null
@@ -2472,7 +2742,7 @@
     function buildSimStatEntryClient(opts) {
         var key = opts.key;
         var label_zh = normalizeBlueprintStatLabelZh(opts.label_zh || key);
-        var unit = opts.unit || '';
+        var unit = opts.unit || STAT_KEY_UNIT[key] || '';
         var base =
             opts.base != null && Number.isFinite(Number(opts.base)) ? Number(opts.base) : null;
         var mult = opts.mult != null ? opts.mult : 1;
@@ -2481,12 +2751,14 @@
         var modifiable = Math.abs(mult - 1) > 0.000001 || add !== 0;
         var final = null;
         var modifierOnly = false;
-        if (base != null) final = roundCraftNumber(base * mult + add);
+        if (base != null) final = applySimStatModifier(base, mult, add, key);
         else if (add !== 0) final = roundCraftNumber(add);
         else if (Math.abs(mult - 1) > 0.000001) modifierOnly = true;
         var deltaPct =
             base != null && base !== 0 && final != null
-                ? roundCraftNumber(((final - base) / base) * 100)
+                ? isGforceResistanceStat(key)
+                    ? roundCraftNumber(((final - base) / Math.abs(base)) * 100)
+                    : roundCraftNumber(((final - base) / base) * 100)
                 : gainPct;
         var gainValue =
             base != null && final != null
@@ -2593,6 +2865,13 @@
         };
     }
 
+    function resolveCraftOutputLabelZh(statKey, fallback) {
+        if (STAT_KEY_LABEL_ZH[statKey]) {
+            return normalizeBlueprintStatLabelZh(STAT_KEY_LABEL_ZH[statKey]);
+        }
+        return normalizeBlueprintStatLabelZh(fallback || statKey);
+    }
+
     /** 浏览器端计算产出属性（材料加成相加，不依赖 API 旧算法） */
     function simulateCraftClient(blueprint, qualities) {
         if (!blueprint) return [];
@@ -2618,7 +2897,7 @@
             append(
                 buildSimStatEntryClient({
                     key: statKey,
-                    label_zh: def.label_zh || STAT_KEY_LABEL_ZH[statKey] || statKey,
+                    label_zh: resolveCraftOutputLabelZh(statKey, def.label_zh),
                     unit: def.unit || '',
                     base: base,
                     mult: mult,
@@ -2638,7 +2917,7 @@
                 append(
                     buildSimStatEntryClient({
                         key: canon,
-                        label_zh: STAT_KEY_LABEL_ZH[canon] || canon,
+                        label_zh: resolveCraftOutputLabelZh(canon, null),
                         unit: '',
                         base: null,
                         mult: mult,
@@ -2739,11 +3018,9 @@
     function formatSimStatNumber(value) {
         var n = Number(value);
         if (!Number.isFinite(n)) return '—';
-        var abs = Math.abs(n);
-        if (abs >= 1e9) return roundCraftNumber(n / 1e9).toFixed(2) + 'G';
-        if (abs >= 1e6) return roundCraftNumber(n / 1e6).toFixed(2) + 'M';
-        if (abs >= 1e4) return Math.round(n).toLocaleString('zh-CN');
-        return roundCraftNumber(n).toFixed(2);
+        if (Math.abs(n) >= 1e9) return formatFixedDecimal2(n / 1e9) + 'G';
+        if (Math.abs(n) >= 1e6) return formatFixedDecimal2(n / 1e6) + 'M';
+        return formatFixedDecimal2(n);
     }
 
     function resolveCraftStatGainValue(st) {
@@ -2758,6 +3035,12 @@
         return null;
     }
 
+    function formatGforceGainDisplay(gainCoeff) {
+        var pct = Number(gainCoeff) * 100;
+        if (!Number.isFinite(pct) || Math.abs(pct) < 0.00005) return '';
+        return (pct > 0 ? '+' : '') + formatFixedDecimal2(pct) + '%';
+    }
+
     function formatCraftStatGainHtml(st) {
         var parts = [];
         var gainPct =
@@ -2767,7 +3050,11 @@
                   ? roundCraftNumber((Number(st.multiplier) - 1) * 100)
                   : roundCraftNumber(st.delta_pct);
         var gainVal = resolveCraftStatGainValue(st);
-        if (gainVal != null) gainVal = roundCraftNumber(gainVal);
+        if (gainVal != null && isGforceResistanceStat(st.key)) {
+            gainVal = Number(gainVal);
+        } else if (gainVal != null) {
+            gainVal = roundCraftNumber(gainVal);
+        }
         var up =
             (gainPct != null && gainPct > 0) || (gainVal != null && gainVal > 0);
         var down =
@@ -2781,7 +3068,11 @@
             if (gainVal != null && Math.abs(gainVal) >= 0.001) {
                 pctText +=
                     ' <span class="bp-sim-stat-gain-val">(' +
-                    escapeHtml((gainVal > 0 ? '+' : '') + formatSimStatNumber(gainVal)) +
+                    escapeHtml(
+                        isGforceResistanceStat(st.key)
+                            ? formatGforceGainDisplay(gainVal)
+                            : (gainVal > 0 ? '+' : '') + formatSimStatNumber(gainVal)
+                    ) +
                     ')</span>';
             }
             parts.push('<span class="' + cls + '">' + pctText + '</span>');
@@ -2790,7 +3081,11 @@
                 '<span class="' +
                     cls +
                     '">增益 ' +
-                    escapeHtml((gainVal > 0 ? '+' : '') + formatSimStatNumber(gainVal)) +
+                    escapeHtml(
+                        isGforceResistanceStat(st.key)
+                            ? formatGforceGainDisplay(gainVal)
+                            : (gainVal > 0 ? '+' : '') + formatSimStatNumber(gainVal)
+                    ) +
                     '</span>'
             );
         }
@@ -2802,16 +3097,31 @@
             return formatCraftStatGainHtml(st) || '<strong class="bp-sim-stat-modonly">—</strong>';
         }
         var finalVal = st.final != null ? st.final : st.base;
-        var unitHtml = st.unit
-            ? ' <span class="bp-stat-unit">' + escapeHtml(st.unit) + '</span>'
+        var unit = resolveCraftStatUnit(st);
+        var unitHtml = unit
+            ? ' <span class="bp-stat-unit">' + escapeHtml(unit) + '</span>'
             : '';
         var attachTag = st.with_attachments
             ? ' <span class="bp-sim-stat-tag">含配件</span>'
             : '';
         var gainHtml = st.modifiable ? formatCraftStatGainHtml(st) : '';
+        var baseHtml = '';
+        if (
+            st.modifiable &&
+            st.base != null &&
+            Number.isFinite(Number(st.base)) &&
+            st.final != null &&
+            Number.isFinite(Number(st.final))
+        ) {
+            baseHtml =
+                '<span class="bp-sim-stat-base">基准 ' +
+                escapeHtml(formatCraftStatNumberForStat(st.base, st.key)) +
+                '</span> ';
+        }
         return (
+            baseHtml +
             '<strong>' +
-            escapeHtml(formatSimStatNumber(finalVal)) +
+            escapeHtml(formatCraftStatNumberForStat(finalVal, st.key)) +
             '</strong>' +
             unitHtml +
             gainHtml +
@@ -3235,9 +3545,11 @@
         }
         if (el.simStats) {
             el.simStats.innerHTML = '';
+            renderArmorClassStatRow(state.blueprint);
             var stats = mergeWeaponCraftWithAttachments(data.stats || []);
             stats.forEach(function (st) {
                 var li = document.createElement('li');
+                var unit = resolveCraftStatUnit(st);
                 li.className =
                     'bp-sim-stat' +
                     (st.modifiable ? ' bp-sim-stat--mod' : '') +
@@ -3245,7 +3557,7 @@
                 li.innerHTML =
                     '<span class="bp-sim-stat-label">' +
                     escapeHtml(normalizeBlueprintStatLabelZh(st.label_zh)) +
-                    (st.unit ? ' (' + escapeHtml(st.unit) + ')' : '') +
+                    (unit ? ' (' + escapeHtml(unit) + ')' : '') +
                     '</span><span class="bp-sim-stat-value">' +
                     formatCraftStatValueHtml(st) +
                     '</span>';
@@ -3293,7 +3605,9 @@
                 el.simWarnings.hidden = true;
             }
         }
-        if (el.simNote) el.simNote.textContent = data.note || '';
+        if (el.simNote) {
+            el.simNote.textContent = data.note || '';
+        }
     }
 
     function bindEvents() {
