@@ -48,8 +48,13 @@
         return text && text.length >= 2 && text.charCodeAt(0) === 0x1f && text.charCodeAt(1) === 0x8b;
     }
 
+    function looksLikeHtmlBody(text) {
+        const t = String(text || '').trim().slice(0, 32).toLowerCase();
+        return t.indexOf('<!doctype') === 0 || t.indexOf('<html') === 0;
+    }
+
     function isJsonParseFailureMessage(message) {
-        return /json|非 JSON|解析失败|Unexpected token/i.test(String(message || ''));
+        return /json|非 JSON|解析失败|Unexpected token|api\.ussxc\.org/i.test(String(message || ''));
     }
 
     async function parseJsonResponse(res, fallbackMessage) {
@@ -59,6 +64,11 @@
         } catch (parseErr) {
             if (looksLikeGzipBody(text)) {
                 throw new Error('蓝图任务响应异常（网络缓存损坏），请强制刷新页面后重试');
+            }
+            if (looksLikeHtmlBody(text)) {
+                throw new Error(
+                    '蓝图任务接口返回了网页而非 JSON，请确认 API 地址可用或稍后重试（可尝试直连 api.ussxc.org）'
+                );
             }
             var preview = String(text || '').replace(/\s+/g, ' ').trim();
             if (preview.length > 60) preview = preview.slice(0, 60) + '…';
