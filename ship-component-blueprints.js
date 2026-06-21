@@ -67,7 +67,7 @@
             }
             if (looksLikeHtmlBody(text)) {
                 throw new Error(
-                    '蓝图任务接口返回了网页而非 JSON，请确认 API 地址可用或稍后重试（可尝试直连 api.ussxc.org）'
+                    '蓝图任务接口返回了网页而非 JSON，请确认站点 API 可用或稍后重试（可强制刷新页面）'
                 );
             }
             var preview = String(text || '').replace(/\s+/g, ' ').trim();

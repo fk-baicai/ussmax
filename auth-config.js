@@ -60,24 +60,12 @@
     }
 
     if (isProductionSite) {
-        /** 登录/签到等走同源 /api（Netlify 反代 → 阿里云），须保证可用 */
+        /** 登录、配件、蓝图等均走同源 /api（Netlify 反代 → 阿里云 3789） */
         window.USS_AUTH_API_BASE = String(window.location.origin || '').replace(/\/$/, '');
         /**
-         * 舰船配件/蓝图任务走 api 子域，避免 Netlify 反代超时导致任务详情 JSON 解析失败。
-         */
-        if (!window.USS_SC_COMPONENTS_API_BASE) {
-            window.USS_SC_COMPONENTS_API_BASE = 'https://api.ussxc.org';
-        }
-        /**
-         * 注册可选直连 api 子域（Nginx 120s，避免 Netlify 反代约 26s 超时）。
-         * 须 DNS 已解析 api.ussxc.org；未配置时 register() 会自动回退同源 /api。
-         */
-        if (!window.USS_REGISTER_API_BASE) {
-            window.USS_REGISTER_API_BASE = 'https://api.ussxc.org';
-        }
-        /**
-         * 舰船配件默认走同源 /api（Netlify 反代 → 阿里云 3789）。
-         * api.ussxc.org 须 Nginx+HTTPS 就绪后再设：window.USS_SC_COMPONENTS_API_BASE = 'https://api.ussxc.org'
+         * api.ussxc.org 须 DNS + HTTPS 就绪后才可启用（否则浏览器 Failed to fetch）：
+         *   window.USS_API_DIRECT_BASE = 'https://api.ussxc.org'
+         * 或仅配件/蓝图：window.USS_SC_COMPONENTS_API_BASE = 'https://api.ussxc.org'
          */
         return;
     }
@@ -106,17 +94,20 @@
 (function () {
     if (typeof document === 'undefined' || !document.head) return;
     var origins = [];
-    var apiBase = window.USS_AUTH_API_BASE;
-    if (apiBase && /^https?:\/\//i.test(String(apiBase))) {
+    var apiBases = [window.USS_AUTH_API_BASE, window.USS_SC_COMPONENTS_API_BASE, window.USS_REGISTER_API_BASE];
+    apiBases.forEach(function (apiBase) {
+        if (!apiBase || !/^https?:\/\//i.test(String(apiBase))) return;
         try {
             var apiOrigin = new URL(String(apiBase)).origin;
             if (!window.location || apiOrigin !== window.location.origin) {
-                origins.push({ href: apiOrigin, rel: 'preconnect' });
+                if (!origins.some(function (o) { return o.href === apiOrigin; })) {
+                    origins.push({ href: apiOrigin, rel: 'preconnect' });
+                }
             }
         } catch (e) {
             /* ignore */
         }
-    }
+    });
     if (window.USS_RSI_ORIGIN) {
         origins.push({
             href: String(window.USS_RSI_ORIGIN).replace(/\/$/, ''),
