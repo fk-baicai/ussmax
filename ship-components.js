@@ -2435,6 +2435,7 @@
         'shotgun',
         'sniper',
         'launcher',
+        'railgun',
         'crossbow',
         'lmg',
         'scattergun',
@@ -2644,7 +2645,7 @@
         var zhFlightSuit = s.match(/^(.+?\s+飞行服)\s+(.+)$/);
         if (zhFlightSuit) return { base: zhFlightSuit[1].trim(), suffix: zhFlightSuit[2].trim() };
         var zhWeapon = s.match(
-            /^(.+?\s+(?:手枪|冲锋枪|突击步枪|狙击步枪|霰弹枪|轻机枪|机枪|发射器|十字弩|投掷物|近战武器|工具))\s+(.+)$/
+            /^(.+?\s+(?:手枪|冲锋枪|突击步枪|狙击步枪|霰弹枪|轻机枪|机枪|发射器|电磁炮|十字弩|投掷物|近战武器|工具))\s+(.+)$/
         );
         if (zhWeapon) return { base: zhWeapon[1].trim(), suffix: zhWeapon[2].trim() };
         var zhArmorVariant = s.match(/^(.+?\s+(?:头盔|胸甲|腿甲|臂甲|护甲|背包))(?:\s+(.+))?$/);
@@ -2656,7 +2657,7 @@
         var enFlightSuit = s.match(/^(.+\s+Flight\s+Suit)\s+(.+)$/i);
         if (enFlightSuit) return { base: enFlightSuit[1].trim(), suffix: enFlightSuit[2].trim() };
         var enWeapon = s.match(
-            /^(.+\s+(?:Pistol|SMG|Rifle|Shotgun|Sniper|Launcher|Crossbow|Knife|Sword|Grenade|LMG|Scattergun))\s+(.+)$/i
+            /^(.+\s+(?:Pistol|SMG|Rifle|Shotgun|Sniper|Launcher|Railgun|Crossbow|Knife|Sword|Grenade|LMG|Scattergun))\s+(.+)$/i
         );
         if (enWeapon) return { base: enWeapon[1].trim(), suffix: enWeapon[2].trim() };
         var parts = s.split(/\s+/);

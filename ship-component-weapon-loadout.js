@@ -912,40 +912,58 @@
         schedulePositionLoadoutPanel();
     }
 
+    function buildSlotChipsHtml(weaponItem, options) {
+        options = options || {};
+        var slotLabelsOnly = options.slotLabelsOnly === true;
+        var interactive = options.interactive !== false;
+        var filledOnly = options.filledOnly === true;
+        var defs = getSlotDefsForWeapon(weaponItem);
+        var loadout = getLoadout(weaponItem);
+        var html = '';
+        for (var i = 0; i < defs.length; i++) {
+            var slot = defs[i];
+            var attId = loadout[slot.id];
+            if (filledOnly && !attId) continue;
+            var name = '空';
+            if (attId) {
+                var att = itemCache[attId];
+                name = att ? resolveDisplayName(att) : '已装备';
+            }
+            var valueHtml = slotLabelsOnly
+                ? ''
+                : '<span class="sc-loadout-detail-chip__value">' + escapeHtml(name) + '</span>';
+            var tag = interactive ? 'button' : 'span';
+            var typeAttr = interactive ? ' type="button"' : '';
+            html +=
+                '<' +
+                tag +
+                typeAttr +
+                ' class="sc-loadout-detail-chip' +
+                (attId ? ' is-filled' : '') +
+                (slotLabelsOnly ? ' sc-loadout-detail-chip--label-only' : '') +
+                (!interactive ? ' sc-loadout-detail-chip--readonly' : '') +
+                '" data-slot-id="' +
+                escapeHtml(slot.id) +
+                '"><span class="sc-loadout-detail-chip__label">' +
+                formatSlotLabelHtml(slot, weaponItem) +
+                '</span>' +
+                valueHtml +
+                '</' +
+                tag +
+                '>';
+        }
+        return html;
+    }
+
     function renderListTagsHtml(weaponItem) {
         var id = weaponId(weaponItem);
         if (!id || !isWeaponLoadoutEligible(weaponItem)) return '';
         var loadout = getLoadout(weaponItem);
         if (!Object.keys(loadout).length) return '';
 
-        var lines = [];
-        var defs = getSlotDefsForWeapon(weaponItem);
-        defs.forEach(function (slot) {
-            var attId = loadout[slot.id];
-            if (!attId) return;
-            var att = itemCache[attId];
-            var name = att ? resolveDisplayName(att) : '已装备';
-            lines.push({ slot: slot.short, name: name });
-        });
-
-        if (!lines.length) return '';
-        return (
-            '<span class="sc-loc-path sc-loc-path--loadout sc-weapon-loadout-names">' +
-            lines
-                .map(function (line) {
-                    return (
-                        '<span class="sc-loc-path-row">' +
-                        '<span class="sc-loc-level sc-loc-level--0">' +
-                        escapeHtml(line.slot) +
-                        '</span>' +
-                        '<span class="sc-loc-level sc-loc-level--1">' +
-                        escapeHtml(line.name) +
-                        '</span></span>'
-                    );
-                })
-                .join('') +
-            '</span>'
-        );
+        var chips = buildSlotChipsHtml(weaponItem, { interactive: false, filledOnly: true });
+        if (!chips) return '';
+        return '<span class="sc-weapon-loadout-chips">' + chips + '</span>';
     }
 
     async function hydrateListTags(weaponItem, container, tr) {
@@ -1056,36 +1074,28 @@
         var effectsEl = mountEl.querySelector('#scDetailLoadoutEffects');
         if (!slotsEl) return;
 
-        var defs = getSlotDefsForWeapon(weaponItem);
         var loadout = getLoadout(weaponItem);
         var slotLabelsOnly = options.slotLabelsOnly === true;
-        var slotsHtml = '';
-        for (var i = 0; i < defs.length; i++) {
-            var slot = defs[i];
-            var attId = loadout[slot.id];
-            var valueHtml = '';
-            if (!slotLabelsOnly) {
-                var name = '空';
-                if (attId) {
-                    var att = itemCache[attId] || (await fetchComponentById(attId));
-                    name = att ? resolveDisplayName(att) : '已装备';
+
+        if (slotLabelsOnly) {
+            slotsEl.innerHTML = buildSlotChipsHtml(weaponItem, {
+                slotLabelsOnly: true,
+                interactive: true,
+            });
+        } else {
+            var defs = getSlotDefsForWeapon(weaponItem);
+            for (var i = 0; i < defs.length; i++) {
+                var slot = defs[i];
+                var attId = loadout[slot.id];
+                if (attId && !itemCache[attId]) {
+                    await fetchComponentById(attId);
                 }
-                valueHtml =
-                    '<span class="sc-loadout-detail-chip__value">' + escapeHtml(name) + '</span>';
             }
-            slotsHtml +=
-                '<button type="button" class="sc-loadout-detail-chip' +
-                (attId ? ' is-filled' : '') +
-                (slotLabelsOnly ? ' sc-loadout-detail-chip--label-only' : '') +
-                '" data-slot-id="' +
-                escapeHtml(slot.id) +
-                '"><span class="sc-loadout-detail-chip__label">' +
-                formatSlotLabelHtml(slot, weaponItem) +
-                '</span>' +
-                valueHtml +
-                '</button>';
+            slotsEl.innerHTML = buildSlotChipsHtml(weaponItem, {
+                slotLabelsOnly: false,
+                interactive: true,
+            });
         }
-        slotsEl.innerHTML = slotsHtml;
 
         if (!effectsEl || compact) return;
 

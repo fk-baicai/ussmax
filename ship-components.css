@@ -3616,6 +3616,32 @@ body.sc-mode-search #scTable th.sc-col-volume {
     margin-top: 0.28rem;
 }
 
+.sc-weapon-loadout-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.28rem;
+}
+
+.sc-weapon-loadout-chips .sc-loadout-detail-chip--readonly {
+    cursor: default;
+    pointer-events: none;
+    min-width: 0;
+    max-width: 100%;
+    padding: 0.28rem 0.45rem;
+}
+
+.sc-weapon-loadout-chips .sc-loadout-detail-chip__label {
+    font-size: 0.62rem;
+}
+
+.sc-weapon-loadout-chips .sc-loadout-detail-chip__value {
+    font-size: 0.72rem;
+    max-width: 12rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .sc-weapon-loadout-tags-mount .sc-loc-path--loadout {
     display: flex;
     flex-direction: column;

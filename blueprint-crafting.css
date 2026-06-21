@@ -9,7 +9,7 @@ html:has(body.bp-craft-body) {
 
 .bp-craft-body {
     --bp-font-ui: 'Rajdhani', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-    --bp-font-digit: 'Orbitron', 'Rajdhani', ui-monospace, Consolas, monospace;
+    --bp-font-digit: 'Orbitron', 'Rajdhani', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
     --bp-neon: #00f0ff;
     --bp-accent: #8ee0ff;
     --bp-accent-hi: #b8f4ff;
@@ -332,6 +332,7 @@ html:has(body.bp-craft-body) {
 }
 
 .bp-search-suggest__name {
+    font-family: var(--bp-font-digit);
     font-weight: 600;
     line-height: 1.35;
 }
@@ -412,6 +413,17 @@ html:has(body.bp-craft-body) {
     scrollbar-color: rgba(0, 240, 255, 0.42) rgba(4, 12, 22, 0.55);
 }
 
+.bp-list-wrap.is-loading {
+    opacity: 0.72;
+    pointer-events: none;
+}
+
+.bp-list-phantom {
+    width: 100%;
+    height: 0;
+    pointer-events: none;
+}
+
 .bp-list {
     list-style: none;
     margin: 0;
@@ -419,6 +431,31 @@ html:has(body.bp-craft-body) {
     display: flex;
     flex-direction: column;
     gap: 0.28rem;
+}
+
+.bp-list.is-virtual {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    gap: 0;
+    transform: translate3d(0, var(--bp-list-offset, 0), 0);
+    will-change: transform;
+    contain: layout style;
+}
+
+.bp-list-wrap:has(.bp-list.is-virtual) {
+    position: relative;
+}
+
+.bp-list__row {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.bp-list.is-virtual .bp-list__row + .bp-list__row {
+    margin-top: 0.28rem;
 }
 
 .bp-list-item {
@@ -452,6 +489,7 @@ html:has(body.bp-craft-body) {
 
 .bp-list-item__name {
     display: block;
+    font-family: var(--bp-font-digit);
     font-size: 0.92rem;
     font-weight: 600;
     color: #f0f8ff;
@@ -880,7 +918,7 @@ html:has(body.bp-craft-body) {
 
 .bp-loadout-slots {
     flex: 0 0 auto;
-    margin: 0;
+    margin: 0 0 0 1rem;
     padding: 0;
     border: none;
     min-width: 0;
@@ -902,6 +940,10 @@ html:has(body.bp-craft-body) {
     min-width: 0;
     max-width: none;
     padding: 0.3rem 0.52rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.06rem;
+    font-family: var(--bp-font-digit);
 }
 
 .bp-loadout-slots .sc-loadout-detail-chip--label-only {
@@ -911,13 +953,33 @@ html:has(body.bp-craft-body) {
 }
 
 .bp-loadout-slots .sc-loadout-detail-chip__label {
-    font-size: 0.76rem;
-    line-height: 1.3;
+    font-family: inherit;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1.25;
     white-space: nowrap;
+    color: rgba(168, 120, 255, 0.88);
+}
+
+.bp-loadout-slots .sc-loadout-detail-chip__value {
+    font-family: inherit;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.25;
+    max-width: 9.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #f8fdff;
 }
 
 .bp-loadout-slots .sc-loadout-slot-size {
+    font-family: inherit;
     font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
     padding: 0.06rem 0.3rem;
 }
 
@@ -932,7 +994,7 @@ html:has(body.bp-craft-body) {
 }
 
 .bp-hero__sub {
-    margin: 0.32rem 0 0;
+    margin: 0.1rem 0 0;
     font-size: clamp(0.88rem, 1.6vw, 0.98rem);
     color: rgba(184, 220, 240, 0.78);
     line-height: 1.4;
@@ -1350,6 +1412,7 @@ html:has(body.bp-craft-body) {
 }
 
 .bp-mat__name {
+    font-family: var(--bp-font-digit);
     font-size: 0.92rem;
     font-weight: 700;
     overflow: hidden;
@@ -1384,6 +1447,7 @@ html:has(body.bp-craft-body) {
 }
 
 .bp-mat__role-name {
+    font-family: var(--bp-font-digit);
     font-size: 0.82rem;
     font-weight: 700;
     color: var(--bp-accent-hi, #9ee8ff);
@@ -1569,6 +1633,15 @@ html:has(body.bp-craft-body) {
     pointer-events: none;
     transition: width 0.08s;
     box-shadow: 0 0 10px rgba(0, 240, 255, 0.35);
+    will-change: width;
+}
+
+.bp-mat.is-sliding .bp-mat__fill {
+    transition: none;
+}
+
+.bp-mat.is-sliding {
+    transition: none;
 }
 
 .bp-mat__range {
@@ -1617,6 +1690,7 @@ html:has(body.bp-craft-body) {
 }
 
 .bp-sim-stat-label {
+    font-family: var(--bp-font-digit);
     color: rgba(200, 230, 255, 0.85);
     font-weight: 600;
 }

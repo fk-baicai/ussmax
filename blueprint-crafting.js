@@ -7,18 +7,28 @@
         ''
     ).replace(/\/$/, '');
 
-    var PAGE_SIZE = 50;
+    var PAGE_SIZE = 200;
     var LS_KEY = 'uss_bp_craft_qualities_v1';
+    var LIST_CACHE = {};
+    var BLUEPRINT_DETAIL_CACHE = {};
+    var prefetchInFlight = {};
     var BP_RETURN_URL_KEY = 'scBlueprintCraftReturnUrl';
     var BP_RETURN_SCROLL_KEY = 'scBlueprintCraftReturnScrollY';
     var BP_RESTORE_FLAG_KEY = 'scBlueprintCraftRestorePending';
     var BP_PENDING_BLUEPRINT_KEY = 'scBlueprintCraftPendingBlueprint';
     var BP_PENDING_GROUP_KEY = 'scBlueprintCraftPendingGroup';
     var BP_PENDING_TYPE_KEY = 'scBlueprintCraftPendingType';
-    var SIM_DEBOUNCE_MS = 280;
+    var SIM_DEBOUNCE_MS = 120;
+    var PERSIST_DEBOUNCE_MS = 350;
+    var MAT_MOD_DEBOUNCE_MS = 72;
     var SEARCH_SUGGEST_LIMIT = 30;
     var SEARCH_DEBOUNCE_MS = 220;
     var SEARCH_MIN_LEN = 1;
+    var LIST_VIRTUAL_MIN = 48;
+    var LIST_ROW_HEIGHT = 84;
+    var LIST_OVERSCAN = 10;
+    var BLUEPRINT_DETAIL_CACHE_MAX = 64;
+    var BLUEPRINT_PREFETCH_MS = 100;
 
     var SECTOR_META = {
         ship: { label_zh: '舰船' },
@@ -129,12 +139,27 @@
         blueprint: null,
         qualities: {},
         simTimer: null,
+        simRaf: null,
+        persistTimer: null,
+        matModTimer: null,
+        matModPending: null,
         loadingList: false,
         selectionNavRetry: false,
         pendingComponentId: null,
         weaponItem: null,
         attachmentStats: null,
         lastSimData: null,
+        listVirt: {
+            enabled: false,
+            raf: null,
+            startIndex: -1,
+            endIndex: -1,
+            rowHeight: LIST_ROW_HEIGHT,
+            measured: false,
+        },
+        selectBlueprintSeq: 0,
+        prefetchTimer: null,
+        missionTimer: null,
     };
 
     var el = {};
@@ -318,6 +343,7 @@
             var scrollY = Number(sessionStorage.getItem(BP_RETURN_SCROLL_KEY) || 0);
             if (el.listWrap && scrollY > 0) {
                 el.listWrap.scrollTop = scrollY;
+                if (state.listVirt.enabled) renderVisibleBlueprintList(true);
             }
             scrollActiveListItem();
             sessionStorage.removeItem(BP_RESTORE_FLAG_KEY);
@@ -540,73 +566,292 @@
         return parts.join(' · ');
     }
 
+    function blueprintIndexById(id) {
+        if (!id) return -1;
+        for (var i = 0; i < state.items.length; i++) {
+            if (state.items[i].uuid === id) return i;
+        }
+        return -1;
+    }
+
+    function listRowStride() {
+        return state.listVirt.rowHeight || LIST_ROW_HEIGHT;
+    }
+
+    function ensureListPhantom() {
+        if (!el.listWrap || el.listPhantom) return;
+        el.listPhantom = document.createElement('div');
+        el.listPhantom.className = 'bp-list-phantom';
+        el.listPhantom.setAttribute('aria-hidden', 'true');
+        el.listWrap.insertBefore(el.listPhantom, el.blueprintList);
+    }
+
+    function updateListPhantomHeight() {
+        if (!el.listPhantom || !state.listVirt.enabled) return;
+        var stride = listRowStride();
+        var total = state.items.length;
+        var height = Math.max(0, total * stride - 4);
+        el.listPhantom.style.height = height + 'px';
+    }
+
+    function measureListRowHeight() {
+        if (!el.blueprintList || !state.items.length) return LIST_ROW_HEIGHT;
+        var sampleIdx = 0;
+        for (var i = 0; i < state.items.length; i++) {
+            if (state.items[i].unlocking_missions_count > 0) {
+                sampleIdx = i;
+                break;
+            }
+        }
+        var li = createBlueprintListItemElement(state.items[sampleIdx], sampleIdx);
+        li.style.visibility = 'hidden';
+        li.style.pointerEvents = 'none';
+        el.blueprintList.appendChild(li);
+        var h = Math.ceil(li.getBoundingClientRect().height);
+        li.remove();
+        return Math.max(56, h + 4);
+    }
+
+    function getVirtualRange() {
+        var stride = listRowStride();
+        var total = state.items.length;
+        if (!total) return { start: 0, end: 0, offset: 0 };
+        var scrollTop = el.listWrap ? el.listWrap.scrollTop : 0;
+        var viewH = el.listWrap ? el.listWrap.clientHeight : 0;
+        var start = Math.floor(scrollTop / stride) - LIST_OVERSCAN;
+        var visible = Math.ceil(viewH / stride) + 1;
+        start = Math.max(0, start);
+        var end = Math.min(total, start + visible + LIST_OVERSCAN * 2);
+        if (end - start < visible + LIST_OVERSCAN) {
+            start = Math.max(0, end - visible - LIST_OVERSCAN * 2);
+        }
+        return { start: start, end: end, offset: start * stride };
+    }
+
+    function populateBlueprintListItem(btn, item) {
+        btn.setAttribute('data-uuid', item.uuid);
+        btn.setAttribute('role', 'option');
+        var isActive = state.selectedId === item.uuid;
+        btn.className = 'bp-list-item' + (isActive ? ' is-active' : '');
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+
+        var name = btn.querySelector('.bp-list-item__name');
+        if (!name) {
+            name = document.createElement('span');
+            name.className = 'bp-list-item__name';
+            btn.insertBefore(name, btn.firstChild);
+        }
+        name.textContent = blueprintDisplayName(item);
+
+        var metaText = blueprintListMeta(item);
+        var metaEl = btn.querySelector('.bp-list-item__meta');
+        if (metaText) {
+            if (!metaEl) {
+                metaEl = document.createElement('span');
+                metaEl.className = 'bp-list-item__meta';
+                btn.insertBefore(metaEl, name.nextSibling);
+            }
+            metaEl.textContent = metaText;
+        } else if (metaEl) {
+            metaEl.remove();
+        }
+
+        var badges = btn.querySelector('.bp-list-item__badges');
+        if (!badges) {
+            badges = document.createElement('span');
+            badges.className = 'bp-list-item__badges';
+            btn.appendChild(badges);
+        }
+        badges.innerHTML = '';
+        if (item.is_available_by_default) {
+            var defBadge = document.createElement('span');
+            defBadge.className = 'bp-list-item__badge bp-list-item__badge--default';
+            defBadge.textContent = '默认可造';
+            badges.appendChild(defBadge);
+        } else if (item.unlocking_missions_count > 0) {
+            var missBadge = document.createElement('span');
+            missBadge.className = 'bp-list-item__badge bp-list-item__badge--mission';
+            missBadge.textContent = '任务解锁 ×' + item.unlocking_missions_count;
+            missBadge.title = '需完成蓝图任务解锁';
+            badges.appendChild(missBadge);
+        }
+        if (!badges.childNodes.length) badges.remove();
+    }
+
+    function createBlueprintListItemElement(item, index) {
+        var li = document.createElement('li');
+        li.className = 'bp-list__row';
+        li.setAttribute('data-index', String(index));
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        populateBlueprintListItem(btn, item);
+        li.appendChild(btn);
+        return li;
+    }
+
+    function renderVisibleBlueprintList(force) {
+        if (!el.blueprintList || !state.listVirt.enabled) return;
+        var range = getVirtualRange();
+        var sameRange =
+            !force &&
+            range.start === state.listVirt.startIndex &&
+            range.end === state.listVirt.endIndex;
+        if (sameRange) {
+            setBlueprintListActive(state.selectedId);
+            return;
+        }
+        state.listVirt.startIndex = range.start;
+        state.listVirt.endIndex = range.end;
+        el.blueprintList.style.setProperty('--bp-list-offset', range.offset + 'px');
+        var frag = document.createDocumentFragment();
+        for (var i = range.start; i < range.end; i++) {
+            frag.appendChild(createBlueprintListItemElement(state.items[i], i));
+        }
+        el.blueprintList.innerHTML = '';
+        el.blueprintList.appendChild(frag);
+    }
+
+    function scheduleVisibleListRender() {
+        if (!state.listVirt.enabled) return;
+        if (state.listVirt.raf) return;
+        state.listVirt.raf = requestAnimationFrame(function () {
+            state.listVirt.raf = null;
+            renderVisibleBlueprintList(false);
+        });
+    }
+
+    function resetVirtualListWindow() {
+        state.listVirt.startIndex = -1;
+        state.listVirt.endIndex = -1;
+        if (el.listWrap) el.listWrap.scrollTop = 0;
+    }
+
     function renderBlueprintList() {
         if (!el.blueprintList) return;
-        el.blueprintList.innerHTML = '';
+        state.listVirt.enabled = state.items.length >= LIST_VIRTUAL_MIN;
+        state.listVirt.startIndex = -1;
+        state.listVirt.endIndex = -1;
+
         if (!state.items.length) {
+            state.listVirt.enabled = false;
+            el.blueprintList.classList.remove('is-virtual');
+            el.blueprintList.innerHTML = '';
+            el.blueprintList.style.setProperty('--bp-list-offset', '0');
+            if (el.listPhantom) el.listPhantom.style.height = '0';
             if (el.listEmpty) el.listEmpty.hidden = false;
             updateListCount();
             return;
         }
         if (el.listEmpty) el.listEmpty.hidden = true;
-        state.items.forEach(function (item) {
-            var li = document.createElement('li');
-            var btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className =
-                'bp-list-item' + (state.selectedId === item.uuid ? ' is-active' : '');
-            btn.setAttribute('data-uuid', item.uuid);
-            btn.setAttribute('role', 'option');
-            btn.setAttribute('aria-selected', state.selectedId === item.uuid ? 'true' : 'false');
-            var name = document.createElement('span');
-            name.className = 'bp-list-item__name';
-            name.textContent = blueprintDisplayName(item);
-            btn.appendChild(name);
-            var meta = blueprintListMeta(item);
-            if (meta) {
-                var sub = document.createElement('span');
-                sub.className = 'bp-list-item__meta';
-                sub.textContent = meta;
-                btn.appendChild(sub);
+
+        if (state.listVirt.enabled) {
+            if (!state.listVirt.measured) {
+                state.listVirt.rowHeight = measureListRowHeight();
+                state.listVirt.measured = true;
             }
-            var badges = document.createElement('span');
-            badges.className = 'bp-list-item__badges';
-            if (item.is_available_by_default) {
-                var defBadge = document.createElement('span');
-                defBadge.className = 'bp-list-item__badge bp-list-item__badge--default';
-                defBadge.textContent = '默认可造';
-                badges.appendChild(defBadge);
-            } else if (item.unlocking_missions_count > 0) {
-                var missBadge = document.createElement('span');
-                missBadge.className = 'bp-list-item__badge bp-list-item__badge--mission';
-                missBadge.textContent = '任务解锁 ×' + item.unlocking_missions_count;
-                missBadge.title = '需完成蓝图任务解锁';
-                badges.appendChild(missBadge);
-            }
-            if (badges.childNodes.length) btn.appendChild(badges);
-            btn.addEventListener('click', function () {
-                if (
-                    state.listSearchQuery &&
-                    (item.nav_group !== state.group || item.nav_type !== state.type)
-                ) {
-                    jumpToBlueprint(item);
-                    return;
-                }
-                selectBlueprint(item.uuid);
+            ensureListPhantom();
+            el.blueprintList.classList.add('is-virtual');
+            updateListPhantomHeight();
+            renderVisibleBlueprintList(true);
+        } else {
+            state.listVirt.measured = false;
+            el.blueprintList.classList.remove('is-virtual');
+            el.blueprintList.style.setProperty('--bp-list-offset', '0');
+            if (el.listPhantom) el.listPhantom.style.height = '0';
+            var frag = document.createDocumentFragment();
+            state.items.forEach(function (item, index) {
+                frag.appendChild(createBlueprintListItemElement(item, index));
             });
-            li.appendChild(btn);
-            el.blueprintList.appendChild(li);
-        });
+            el.blueprintList.innerHTML = '';
+            el.blueprintList.appendChild(frag);
+        }
         updateListCount();
         scrollActiveListItem();
+        state.items.slice(0, 5).forEach(function (item) {
+            if (item && item.uuid) prefetchBlueprintDetail(item.uuid);
+        });
+    }
+
+    function scrollToBlueprintIndex(index) {
+        if (!el.listWrap || index < 0) return;
+        var stride = listRowStride();
+        var itemTop = index * stride;
+        var itemBottom = itemTop + stride;
+        var scrollTop = el.listWrap.scrollTop;
+        var viewH = el.listWrap.clientHeight;
+        if (itemTop < scrollTop) {
+            el.listWrap.scrollTop = itemTop;
+        } else if (itemBottom > scrollTop + viewH) {
+            el.listWrap.scrollTop = itemBottom - viewH;
+        }
+        if (state.listVirt.enabled) renderVisibleBlueprintList(true);
     }
 
     function scrollActiveListItem() {
-        if (!el.blueprintList || !state.selectedId) return;
+        if (!state.selectedId) return;
+        var idx = blueprintIndexById(state.selectedId);
+        if (idx < 0) return;
+        if (state.listVirt.enabled) {
+            scrollToBlueprintIndex(idx);
+            setBlueprintListActive(state.selectedId);
+            return;
+        }
+        if (!el.blueprintList) return;
         var active = el.blueprintList.querySelector('.bp-list-item.is-active');
         if (active && active.scrollIntoView) {
             active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }
+    }
+
+    function wireBlueprintListEvents() {
+        if (!el.blueprintList || el.blueprintList.dataset.wired === '1') return;
+        el.blueprintList.dataset.wired = '1';
+        el.blueprintList.addEventListener('click', function (ev) {
+            var btn = ev.target.closest('.bp-list-item');
+            if (!btn) return;
+            var uuid = btn.getAttribute('data-uuid');
+            if (!uuid) return;
+            var idx = blueprintIndexById(uuid);
+            var item = idx >= 0 ? state.items[idx] : null;
+            if (!item) return;
+            if (
+                state.listSearchQuery &&
+                (item.nav_group !== state.group || item.nav_type !== state.type)
+            ) {
+                jumpToBlueprint(item);
+                return;
+            }
+            selectBlueprint(item.uuid);
+        });
+        el.blueprintList.addEventListener('mouseover', function (ev) {
+            var btn = ev.target.closest('.bp-list-item');
+            if (!btn) return;
+            var uuid = btn.getAttribute('data-uuid');
+            if (uuid) scheduleBlueprintPrefetch(uuid);
+        });
+    }
+
+    function wireVirtualListScroll() {
+        if (!el.listWrap || el.listWrap.dataset.virtWired === '1') return;
+        el.listWrap.dataset.virtWired = '1';
+        el.listWrap.addEventListener(
+            'scroll',
+            function () {
+                scheduleVisibleListRender();
+            },
+            { passive: true }
+        );
+        window.addEventListener(
+            'resize',
+            function () {
+                if (!state.listVirt.enabled) return;
+                state.listVirt.startIndex = -1;
+                state.listVirt.endIndex = -1;
+                updateListPhantomHeight();
+                scheduleVisibleListRender();
+            },
+            { passive: true }
+        );
     }
 
     function clearListSearch() {
@@ -1047,12 +1292,88 @@
         );
     }
 
+    function listCacheKey() {
+        var q = String(state.listSearchQuery || '').trim();
+        if (q) return 'q:' + q.toLowerCase();
+        return state.group + '|' + state.type;
+    }
+
+    function setBlueprintListActive(id) {
+        if (!el.blueprintList) return;
+        var prev = el.blueprintList.querySelector('.bp-list-item.is-active');
+        if (prev) {
+            prev.classList.remove('is-active');
+            prev.setAttribute('aria-selected', 'false');
+        }
+        if (!id) return;
+        var next = el.blueprintList.querySelector('.bp-list-item[data-uuid="' + id + '"]');
+        if (next) {
+            next.classList.add('is-active');
+            next.setAttribute('aria-selected', 'true');
+            return;
+        }
+        if (state.listVirt.enabled) {
+            scrollToBlueprintIndex(blueprintIndexById(id));
+            next = el.blueprintList.querySelector('.bp-list-item[data-uuid="' + id + '"]');
+            if (next) {
+                next.classList.add('is-active');
+                next.setAttribute('aria-selected', 'true');
+            }
+        }
+    }
+
+    function updateBlueprintListItemUsage(bp) {
+        if (!el.blueprintList || !bp || !bp.uuid) return;
+        var btn = el.blueprintList.querySelector('.bp-list-item[data-uuid="' + bp.uuid + '"]');
+        if (!btn) return;
+        var metaEl = btn.querySelector('.bp-list-item__meta');
+        var idx = -1;
+        for (var i = 0; i < state.items.length; i++) {
+            if (state.items[i].uuid === bp.uuid) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx < 0) return;
+        var meta = blueprintListMeta(state.items[idx]);
+        if (meta) {
+            if (!metaEl) {
+                metaEl = document.createElement('span');
+                metaEl.className = 'bp-list-item__meta';
+                var nameEl = btn.querySelector('.bp-list-item__name');
+                if (nameEl && nameEl.nextSibling) btn.insertBefore(metaEl, nameEl.nextSibling);
+                else btn.appendChild(metaEl);
+            }
+            metaEl.textContent = meta;
+        } else if (metaEl) {
+            metaEl.remove();
+        }
+    }
+
     function loadAllBlueprints(options) {
         options = options || {};
         if (state.loadingList && !options.force) return Promise.resolve();
+
+        var preserveScroll =
+            options.preserveScroll || sessionStorage.getItem(BP_RESTORE_FLAG_KEY) === '1';
+        var cacheKey = listCacheKey();
+        if (!options.force && LIST_CACHE[cacheKey]) {
+            var cached = LIST_CACHE[cacheKey];
+            state.page = 1;
+            state.items = cached.items.slice();
+            state.total = cached.total;
+            if (!preserveScroll && el.listWrap) el.listWrap.scrollTop = 0;
+            state.listVirt.measured = false;
+            renderBlueprintList();
+            return pickInitialBlueprint();
+        }
+
         state.loadingList = true;
         state.page = 1;
         state.items = [];
+        if (!preserveScroll && el.listWrap) el.listWrap.scrollTop = 0;
+        state.listVirt.measured = false;
+        if (el.listWrap) el.listWrap.classList.add('is-loading');
 
         function fetchNext() {
             return fetchJson(buildListQuery(state.page)).then(function (data) {
@@ -1063,6 +1384,10 @@
                     state.page += 1;
                     return fetchNext();
                 }
+                LIST_CACHE[cacheKey] = {
+                    items: state.items.slice(),
+                    total: state.total,
+                };
                 renderBlueprintList();
                 return pickInitialBlueprint();
             });
@@ -1074,6 +1399,7 @@
             })
             .finally(function () {
                 state.loadingList = false;
+                if (el.listWrap) el.listWrap.classList.remove('is-loading');
             });
     }
 
@@ -1266,7 +1592,113 @@
             class_short_zh: bp.class_short_zh || state.items[idx].class_short_zh,
             grade_letter: bp.grade_letter || state.items[idx].grade_letter,
         });
-        renderBlueprintList();
+        updateBlueprintListItemUsage(bp);
+    }
+
+    function getCachedBlueprintDetail(id) {
+        return (id && BLUEPRINT_DETAIL_CACHE[id]) || null;
+    }
+
+    function cacheBlueprintDetail(bp) {
+        if (!bp || !bp.uuid) return;
+        BLUEPRINT_DETAIL_CACHE[bp.uuid] = bp;
+        var keys = Object.keys(BLUEPRINT_DETAIL_CACHE);
+        while (keys.length > BLUEPRINT_DETAIL_CACHE_MAX) {
+            delete BLUEPRINT_DETAIL_CACHE[keys.shift()];
+        }
+    }
+
+    function fetchBlueprintDetail(id) {
+        return fetchJson('/api/sc/blueprints/' + encodeURIComponent(id)).then(function (data) {
+            if (!data || !data.blueprint) return null;
+            normalizeBlueprintIngredients(data.blueprint);
+            cacheBlueprintDetail(data.blueprint);
+            return data.blueprint;
+        });
+    }
+
+    function prefetchBlueprintDetail(id) {
+        if (!id || getCachedBlueprintDetail(id) || prefetchInFlight[id]) return;
+        prefetchInFlight[id] = true;
+        fetchBlueprintDetail(id)
+            .catch(function () {
+                /* ignore prefetch errors */
+            })
+            .finally(function () {
+                delete prefetchInFlight[id];
+            });
+    }
+
+    function scheduleBlueprintPrefetch(id) {
+        if (!id || id === state.selectedId || getCachedBlueprintDetail(id)) return;
+        if (state.prefetchTimer) clearTimeout(state.prefetchTimer);
+        state.prefetchTimer = setTimeout(function () {
+            state.prefetchTimer = null;
+            prefetchBlueprintDetail(id);
+        }, BLUEPRINT_PREFETCH_MS);
+    }
+
+    function prefetchAdjacentBlueprints(index) {
+        if (index < 0) return;
+        [-2, -1, 1, 2].forEach(function (offset) {
+            var item = state.items[index + offset];
+            if (item && item.uuid) prefetchBlueprintDetail(item.uuid);
+        });
+    }
+
+    function applyBlueprintPreviewFromList(id) {
+        var idx = blueprintIndexById(id);
+        var item = idx >= 0 ? state.items[idx] : null;
+        if (!item) return;
+        if (el.outputName) el.outputName.textContent = blueprintDisplayName(item);
+        if (el.outputSub) {
+            var parts = [];
+            if (item.type_label_zh) parts.push(item.type_label_zh);
+            else if (item.nav_type) parts.push(typeLabel(item.nav_type));
+            if (item.group_label_zh) parts.push(item.group_label_zh);
+            else if (item.nav_group) parts.push(groupLabel(item.nav_group));
+            el.outputSub.textContent = parts.join(' · ') || '—';
+        }
+        if (el.missionCount) {
+            var count =
+                item.unlocking_missions_count != null ? Number(item.unlocking_missions_count) : 0;
+            if (count > 0) {
+                el.missionCount.textContent = String(count);
+                el.missionCount.hidden = false;
+            } else {
+                el.missionCount.hidden = true;
+            }
+        }
+    }
+
+    function scheduleRenderMissions() {
+        if (state.missionTimer) clearTimeout(state.missionTimer);
+        state.missionTimer = setTimeout(function () {
+            state.missionTimer = null;
+            renderMissions();
+        }, 16);
+    }
+
+    function applyBlueprintDetail(bp, options) {
+        options = options || {};
+        if (!bp || !bp.uuid) return;
+        state.blueprint = bp;
+        normalizeBlueprintIngredients(state.blueprint);
+        syncBlueprintUsageToListItem(state.blueprint);
+        cacheBlueprintDetail(state.blueprint);
+        state.weaponItem = null;
+        state.attachmentStats = null;
+        state.lastSimData = null;
+        loadQualitiesForBlueprint(state.blueprint);
+        renderCraftPanel({ deferMissions: options.deferMissions !== false });
+        if (isFpsWeaponBlueprint(state.blueprint)) {
+            loadWeaponForBlueprint(state.blueprint);
+        } else if (el.loadoutSlots) {
+            el.loadoutSlots.hidden = true;
+            el.loadoutSlots.innerHTML = '';
+        }
+        scheduleSimulateFast();
+        prefetchAdjacentBlueprints(blueprintIndexById(bp.uuid));
     }
 
     function selectBlueprint(id) {
@@ -1278,7 +1710,7 @@
             state.lastSimData = null;
             if (el.craftEmpty) el.craftEmpty.classList.remove('is-hidden');
             if (el.craftDetail) el.craftDetail.classList.add('is-hidden');
-            renderBlueprintList();
+            setBlueprintListActive(null);
             renderOutputImage(null);
             if (el.missions) {
                 el.missions.innerHTML = '<p class="bp-mission-empty">选择蓝图后显示解锁任务</p>';
@@ -1288,32 +1720,43 @@
             pushUrlState();
             return;
         }
+
+        if (id === state.selectedId && state.blueprint && state.blueprint.uuid === id) {
+            setBlueprintListActive(id);
+            return;
+        }
+
         state.selectedId = id;
         pushUrlState();
-        renderBlueprintList();
+        setBlueprintListActive(id);
         if (el.craftEmpty) el.craftEmpty.classList.add('is-hidden');
         if (el.missionsBar) el.missionsBar.classList.remove('is-hidden');
         if (el.craftDetail) {
             el.craftDetail.classList.remove('is-hidden');
-            el.craftDetail.classList.add('is-loading');
         }
-        fetchJson('/api/sc/blueprints/' + encodeURIComponent(id))
-            .then(function (data) {
-                state.blueprint = data.blueprint;
-                normalizeBlueprintIngredients(state.blueprint);
-                syncBlueprintUsageToListItem(state.blueprint);
-                state.weaponItem = null;
-                state.attachmentStats = null;
-                state.lastSimData = null;
-                loadQualitiesForBlueprint(state.blueprint);
-                renderCraftPanel();
-                loadWeaponForBlueprint(state.blueprint);
-                scheduleSimulate();
+
+        var cached = getCachedBlueprintDetail(id);
+        if (cached) {
+            if (el.craftDetail) el.craftDetail.classList.remove('is-loading');
+            applyBlueprintDetail(cached, { deferMissions: true });
+            return;
+        }
+
+        applyBlueprintPreviewFromList(id);
+        if (el.craftDetail) el.craftDetail.classList.add('is-loading');
+
+        var seq = ++state.selectBlueprintSeq;
+        fetchBlueprintDetail(id)
+            .then(function (bp) {
+                if (seq !== state.selectBlueprintSeq || !bp) return;
+                applyBlueprintDetail(bp, { deferMissions: true });
             })
             .catch(function (err) {
+                if (seq !== state.selectBlueprintSeq) return;
                 showGate(err.message || '蓝图详情加载失败');
             })
             .finally(function () {
+                if (seq !== state.selectBlueprintSeq) return;
                 if (el.craftDetail) el.craftDetail.classList.remove('is-loading');
                 if (state.consumeListRestore) {
                     state.consumeListRestore = false;
@@ -1498,7 +1941,6 @@
             wl.renderDetailPanel(weaponItem, el.loadoutSlots, {
                 compact: true,
                 hideCompactHeader: true,
-                slotLabelsOnly: true,
                 openAnchor: el.loadoutSlots,
             });
         } else if (el.loadoutSlots) {
@@ -1530,26 +1972,122 @@
         return Math.max(0, Math.min(1000, n));
     }
 
-    function applyMaterialQuality(ing, row, val) {
+    function schedulePersistQualities() {
+        if (state.persistTimer) clearTimeout(state.persistTimer);
+        state.persistTimer = setTimeout(function () {
+            state.persistTimer = null;
+            persistQualities();
+        }, PERSIST_DEBOUNCE_MS);
+    }
+
+    function scheduleMaterialModifierRefresh(ing, row) {
+        state.matModPending = { ing: ing, row: row };
+        if (state.matModTimer) clearTimeout(state.matModTimer);
+        state.matModTimer = setTimeout(function () {
+            state.matModTimer = null;
+            var pending = state.matModPending;
+            state.matModPending = null;
+            if (!pending || !pending.row || !pending.ing) return;
+            var v =
+                state.qualities[pending.ing.key] != null
+                    ? state.qualities[pending.ing.key]
+                    : defaultQuality();
+            var modsEl = pending.row.querySelector('[data-mat-mods]');
+            renderMaterialModifiers(modsEl, pending.ing, v);
+            schedulePersistQualities();
+        }, MAT_MOD_DEBOUNCE_MS);
+    }
+
+    function findBlueprintIngredient(key) {
+        if (!state.blueprint || !key) return null;
+        var ingredients = state.blueprint.ingredients || [];
+        for (var i = 0; i < ingredients.length; i++) {
+            if (ingredients[i].key === key) return ingredients[i];
+        }
+        return null;
+    }
+
+    function resolveMaterialRowContext(target) {
+        if (!target || !target.closest) return null;
+        var row = target.closest('.bp-mat');
+        if (!row) return null;
+        var ing = findBlueprintIngredient(row.dataset.ingKey);
+        if (!ing) return null;
+        return { row: row, ing: ing };
+    }
+
+    function wireMaterialsPanel() {
+        if (!el.materials || el.materials.dataset.wired === '1') return;
+        el.materials.dataset.wired = '1';
+        el.materials.addEventListener('pointerdown', function (ev) {
+            if (!ev.target.classList.contains('bp-mat__range')) return;
+            var ctx = resolveMaterialRowContext(ev.target);
+            if (ctx) ctx.row.classList.add('is-sliding');
+        });
+        el.materials.addEventListener('pointerup', function (ev) {
+            if (!ev.target.classList.contains('bp-mat__range')) return;
+            var ctx = resolveMaterialRowContext(ev.target);
+            if (!ctx) return;
+            ctx.row.classList.remove('is-sliding');
+            applyMaterialQuality(ctx.ing, ctx.row, ev.target.value);
+        });
+        el.materials.addEventListener('pointercancel', function (ev) {
+            if (!ev.target.classList.contains('bp-mat__range')) return;
+            var row = ev.target.closest('.bp-mat');
+            if (row) row.classList.remove('is-sliding');
+        });
+        el.materials.addEventListener('input', function (ev) {
+            var ctx = resolveMaterialRowContext(ev.target);
+            if (!ctx) return;
+            if (
+                ev.target.classList.contains('bp-mat__range') ||
+                ev.target.classList.contains('bp-mat__input')
+            ) {
+                applyMaterialQuality(ctx.ing, ctx.row, ev.target.value, { light: true });
+            }
+        });
+        el.materials.addEventListener('change', function (ev) {
+            if (!ev.target.classList.contains('bp-mat__input')) return;
+            var ctx = resolveMaterialRowContext(ev.target);
+            if (!ctx) return;
+            applyMaterialQuality(ctx.ing, ctx.row, ev.target.value);
+        });
+        el.materials.addEventListener('keydown', function (ev) {
+            if (ev.key !== 'Enter' || !ev.target.classList.contains('bp-mat__input')) return;
+            ev.preventDefault();
+            ev.target.blur();
+        });
+    }
+
+    function applyMaterialQuality(ing, row, val, opts) {
+        opts = opts || {};
         var v = clampQuality(val);
         state.qualities[ing.key] = v;
         var slider = row.querySelector('.bp-mat__range');
         var input = row.querySelector('.bp-mat__input');
         var fill = row.querySelector('.bp-mat__fill');
-        var modsEl = row.querySelector('[data-mat-mods]');
-        if (slider) slider.value = String(v);
-        if (input && document.activeElement !== input) input.value = String(v);
+        if (slider && slider.value !== String(v)) slider.value = String(v);
+        if (input && document.activeElement !== input && input.value !== String(v)) {
+            input.value = String(v);
+        }
         if (fill) {
             fill.style.width = Math.max(0, Math.min(100, v / 10)) + '%';
             fill.style.background =
                 'linear-gradient(90deg, rgba(0,240,255,0.3), ' + qualityColor(v) + ')';
         }
+        if (opts.light) {
+            scheduleMaterialModifierRefresh(ing, row);
+            scheduleSimulateFast();
+            return;
+        }
+        var modsEl = row.querySelector('[data-mat-mods]');
         renderMaterialModifiers(modsEl, ing, v);
-        persistQualities();
+        schedulePersistQualities();
         scheduleSimulate();
     }
 
-    function renderCraftPanel() {
+    function renderCraftPanel(options) {
+        options = options || {};
         var bp = state.blueprint;
         if (!bp) return;
         if (el.outputName) el.outputName.textContent = blueprintDisplayName(bp);
@@ -1576,9 +2114,13 @@
             }
         }
         renderOutputImage(bp);
-        renderMissions();
+        if (options.deferMissions) {
+            scheduleRenderMissions();
+        } else {
+            renderMissions();
+        }
         renderMaterials();
-        if (el.loadoutSlots) {
+        if (!fpsWeaponBp && el.loadoutSlots) {
             el.loadoutSlots.hidden = true;
             el.loadoutSlots.innerHTML = '';
         }
@@ -1693,6 +2235,7 @@
         speed: '提取速度',
         coolant_segment_generation: '冷却效率',
         cooling_rate: '冷却效率',
+        throttle: '采矿功率',
         power_segment_generation: '能量点',
         regen_rate: '回复速率',
         max_shield_regen: '回复速率',
@@ -1717,24 +2260,57 @@
         提取效率: ['efficiency'],
         作用半径: ['radius'],
         提取速度: ['speed'],
+        采矿功率: ['throttle'],
     };
 
     function canonicalSimStatKey(statKey) {
         var k = String(statKey || '').trim();
         if (k === 'rof') return 'rpm';
         if (k === 'drive_speed') return 'quantum_speed';
+        if (k === 'cooling_rate') return 'coolant_segment_generation';
+        if (k === 'max_shield_regen') return 'regen_rate';
         return k;
     }
 
-    function resolveModifierStatKeys(mod) {
+    function craftingMetaMaps() {
+        var crafting = (state.meta && state.meta.crafting) || {};
+        return {
+            byNavType: crafting.modifier_stat_keys_by_nav_type || {},
+            propMap: crafting.modifier_stat_keys || MODIFIER_STAT_KEYS,
+            labelMap: crafting.modifier_label_stat_keys || MODIFIER_LABEL_STAT_KEYS,
+        };
+    }
+
+    function resolveModifierStatKeys(mod, navType) {
+        var type = String(navType || '').trim();
+        var maps = craftingMetaMaps();
+        var typeMap = type && maps.byNavType[type] ? maps.byNavType[type] : null;
+        var propMap = maps.propMap;
+        var labelMap = maps.labelMap;
         var keys = [];
         var pk = String((mod && mod.property_key) || '').trim();
         var label = String((mod && mod.label) || '').trim();
         var labelZh = normalizeBlueprintStatLabelZh((mod && mod.label_zh) || '');
-        if (pk && MODIFIER_STAT_KEYS[pk]) keys = keys.concat(MODIFIER_STAT_KEYS[pk]);
-        if (label && MODIFIER_LABEL_STAT_KEYS[label]) keys = keys.concat(MODIFIER_LABEL_STAT_KEYS[label]);
-        if (labelZh && MODIFIER_LABEL_ZH_STAT_KEYS[labelZh]) {
-            keys = keys.concat(MODIFIER_LABEL_ZH_STAT_KEYS[labelZh]);
+        var typeOverride = false;
+
+        if (pk && typeMap && Array.isArray(typeMap[pk])) {
+            keys = keys.concat(typeMap[pk]);
+            typeOverride = true;
+        }
+        if (label && typeMap && Array.isArray(typeMap[label])) {
+            keys = keys.concat(typeMap[label]);
+            typeOverride = true;
+        }
+        if (!typeOverride && type === 'mining_laser' && pk === 'weapon_damage') {
+            keys = keys.concat(['throttle']);
+            typeOverride = true;
+        }
+        if (!typeOverride) {
+            if (pk && propMap[pk]) keys = keys.concat(propMap[pk]);
+            if (label && labelMap[label]) keys = keys.concat(labelMap[label]);
+            if (labelZh && MODIFIER_LABEL_ZH_STAT_KEYS[labelZh]) {
+                keys = keys.concat(MODIFIER_LABEL_ZH_STAT_KEYS[labelZh]);
+            }
         }
         if (!keys.length && pk) keys.push(pk);
         var seen = {};
@@ -1747,7 +2323,7 @@
             });
     }
 
-    function collectMaterialStatAdjustments(ingredients, qualities) {
+    function collectMaterialStatAdjustments(ingredients, qualities, navType) {
         var multDeltas = {};
         var adds = {};
         var defaultQ = defaultQuality();
@@ -1761,18 +2337,19 @@
                     ? Math.max(0, Math.min(1000, Number(ing.initial_quality) || 0))
                     : defaultQ;
             (ing.stat_modifiers || []).forEach(function (mod) {
-                var statKeys = resolveModifierStatKeys(mod);
+                var statKeys = resolveModifierStatKeys(mod, navType);
                 if (!statKeys.length) return;
                 var effect = modifierAtQuality(mod, q, baseline);
                 var applied = {};
                 statKeys.forEach(function (sk) {
-                    if (applied[sk]) return;
-                    applied[sk] = true;
+                    var canon = canonicalSimStatKey(sk);
+                    if (applied[canon]) return;
+                    applied[canon] = true;
                     if (effect.kind === 'additive') {
-                        adds[sk] = (adds[sk] || 0) + (Number(effect.value) || 0);
+                        adds[canon] = (adds[canon] || 0) + (Number(effect.value) || 0);
                     } else {
                         var mult = Number(effect.value) || 1;
-                        multDeltas[sk] = (multDeltas[sk] || 0) + (mult - 1);
+                        multDeltas[canon] = (multDeltas[canon] || 0) + (mult - 1);
                     }
                 });
             });
@@ -1862,10 +2439,95 @@
         };
     }
 
+    function computeMaterialScoreClient(ingredients, qualities) {
+        var qmap = qualities && typeof qualities === 'object' ? qualities : {};
+        var totalWeight = 0;
+        var weightedSum = 0;
+        var defaultQ = defaultQuality();
+        (ingredients || []).forEach(function (ing) {
+            var weight =
+                ing.kind === 'resource'
+                    ? Number(ing.quantity_scu) || 0
+                    : Number(ing.quantity) || 0;
+            if (weight <= 0) return;
+            var key = ing.key;
+            var qRaw = qmap[key];
+            var q = qRaw != null ? clampQuality(qRaw) : defaultQ;
+            totalWeight += weight;
+            weightedSum += q * weight;
+        });
+        if (totalWeight <= 0) return defaultQ;
+        return clampQuality(weightedSum / totalWeight);
+    }
+
+    function qualityTierClient(score) {
+        var tiers = (state.meta && state.meta.quality && state.meta.quality.tiers) || [];
+        var s = clampQuality(score);
+        for (var i = 0; i < tiers.length; i++) {
+            var t = tiers[i];
+            if (s >= t.min && s <= t.max) return t;
+        }
+        return { id: 'unknown', label_zh: '未知' };
+    }
+
+    function buildSimWarningsClient(bp, qualities, materialScore) {
+        var warnings = [];
+        var qcfg = (state.meta && state.meta.quality) || {};
+        var minWarn = qcfg.min_craft_warning != null ? qcfg.min_craft_warning : 500;
+        if (materialScore < minWarn) {
+            warnings.push('综合材料品质低于 ' + minWarn + '，游戏中可能无法制造或属性偏低');
+        }
+        (bp.ingredients || []).forEach(function (ing) {
+            var q = qualities[ing.key];
+            if (q != null && Number(q) < minWarn) {
+                warnings.push(
+                    (ing.name_zh || ing.name) + ' 品质 ' + Number(q) + ' 低于建议值 ' + minWarn
+                );
+            }
+        });
+        if (bp.nav_type === 'magazine') {
+            var adj = collectMaterialStatAdjustments(bp.ingredients, qualities, bp.nav_type);
+            if (!Object.keys(adj.mults).length && !Object.keys(adj.adds).length) {
+                warnings.push('弹匣蓝图不受材料品质影响，以下为成品基准属性');
+            }
+        }
+        return warnings;
+    }
+
+    function computeSimMultiplierFromStats(stats) {
+        var multSum = 0;
+        var multCount = 0;
+        (stats || []).forEach(function (st) {
+            if (st.multiplier != null && Number.isFinite(Number(st.multiplier))) {
+                multSum += Number(st.multiplier);
+                multCount += 1;
+            }
+        });
+        return multCount > 0 ? Math.round((multSum / multCount) * 1000) / 1000 : 1;
+    }
+
+    function buildSimResultClient(bp, qualities) {
+        if (!bp) return { ok: false };
+        var stats = simulateCraftClient(bp, qualities);
+        var materialScore = computeMaterialScoreClient(bp.ingredients, qualities);
+        return {
+            ok: true,
+            blueprint_uuid: bp.uuid,
+            material_score: Math.round(materialScore * 10) / 10,
+            quality_factor: Math.round((materialScore / 1000) * 1000) / 1000,
+            quality_tier: qualityTierClient(materialScore),
+            multiplier: computeSimMultiplierFromStats(stats),
+            stats: stats,
+            warnings: buildSimWarningsClient(bp, qualities, materialScore),
+            simulated: true,
+        };
+    }
+
     /** 浏览器端计算产出属性（材料加成相加，不依赖 API 旧算法） */
     function simulateCraftClient(blueprint, qualities) {
         if (!blueprint) return [];
-        var adj = collectMaterialStatAdjustments(blueprint.ingredients, qualities);
+        var navType = blueprint.nav_type;
+        var adj = collectMaterialStatAdjustments(blueprint.ingredients, qualities, navType);
         var baseStats = blueprint.base_stats || {};
         var stats = [];
         var seen = {};
@@ -2089,9 +2751,36 @@
 
     function renderMaterialModifiers(container, ing, quality) {
         if (!container) return;
-        container.innerHTML = '';
         var mods = ing.stat_modifiers || [];
-        if (!mods.length) return;
+        if (!mods.length) {
+            container.innerHTML = '';
+            return;
+        }
+        var existing = container.querySelectorAll('.bp-mat__mod');
+        if (existing.length === mods.length) {
+            mods.forEach(function (mod, index) {
+                var baseline = ing.initial_quality != null ? ing.initial_quality : defaultQuality();
+                var effect = modifierAtQuality(mod, quality, baseline);
+                var deltaText = formatModifierDelta(effect);
+                var isUp =
+                    effect.kind === 'additive'
+                        ? effect.value > 0
+                        : Number(effect.value) > 1;
+                var isDown =
+                    effect.kind === 'additive'
+                        ? effect.value < 0
+                        : Number(effect.value) < 1;
+                var span = existing[index];
+                span.className =
+                    'bp-mat__mod' +
+                    (!deltaText ? '' : isUp ? ' bp-mat__mod--up' : isDown ? ' bp-mat__mod--down' : '');
+                span.textContent =
+                    normalizeBlueprintStatLabelZh(mod.label_zh || mod.label || '属性') +
+                    (deltaText ? ' ' + deltaText : '');
+            });
+            return;
+        }
+        container.innerHTML = '';
         mods.forEach(function (mod) {
             var baseline = ing.initial_quality != null ? ing.initial_quality : defaultQuality();
             var effect = modifierAtQuality(mod, quality, baseline);
@@ -2121,6 +2810,7 @@
         var hasRole = !!resolveRoleLabelZh(ing);
         var row = document.createElement('div');
         row.className = 'bp-mat' + (hasRole ? ' bp-mat--has-role' : ' bp-mat--base');
+        row.dataset.ingKey = ing.key || '';
         var qty =
             ing.kind === 'resource'
                 ? ing.quantity_scu != null
@@ -2207,33 +2897,82 @@
                 ' 品质">' +
                 '</div>';
         }
-        var slider = row.querySelector('.bp-mat__range');
-        var input = row.querySelector('.bp-mat__input');
-        var fill = row.querySelector('.bp-mat__fill');
         var modsEl = row.querySelector('[data-mat-mods]');
         renderMaterialModifiers(modsEl, ing, val);
-        slider.addEventListener('input', function () {
-            applyMaterialQuality(ing, row, slider.value);
-        });
-        input.addEventListener('change', function () {
-            applyMaterialQuality(ing, row, input.value);
-        });
-        input.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                input.blur();
-            }
-        });
         return row;
     }
 
     function renderMaterials() {
         if (!el.materials || !state.blueprint) return;
-        el.materials.innerHTML = '';
         var ingredients = state.blueprint.ingredients || [];
+        var existing = el.materials.querySelectorAll('.bp-mat');
+        if (existing.length === ingredients.length && existing.length > 0) {
+            var canReuse = true;
+            for (var i = 0; i < ingredients.length; i++) {
+                var wantRole = !!resolveRoleLabelZh(ingredients[i]);
+                var hasRole = existing[i].classList.contains('bp-mat--has-role');
+                if (wantRole !== hasRole) {
+                    canReuse = false;
+                    break;
+                }
+            }
+            if (canReuse) {
+                for (var j = 0; j < ingredients.length; j++) {
+                    if ((existing[j].dataset.ingKey || '') !== (ingredients[j].key || '')) {
+                        canReuse = false;
+                        break;
+                    }
+                }
+            }
+            if (canReuse) {
+                ingredients.forEach(function (ing, index) {
+                    updateMaterialRowInPlace(existing[index], ing);
+                });
+                return;
+            }
+        }
+        var frag = document.createDocumentFragment();
         ingredients.forEach(function (ing) {
-            el.materials.appendChild(buildMaterialRow(ing));
+            frag.appendChild(buildMaterialRow(ing));
         });
+        el.materials.innerHTML = '';
+        el.materials.appendChild(frag);
+    }
+
+    function updateMaterialRowInPlace(row, ing) {
+        if (!row || !ing) return;
+        row.dataset.ingKey = ing.key || '';
+        var val = state.qualities[ing.key] != null ? state.qualities[ing.key] : defaultQuality();
+        var pct = Math.max(0, Math.min(100, val / 10));
+        var hasRole = !!resolveRoleLabelZh(ing);
+        row.className = 'bp-mat' + (hasRole ? ' bp-mat--has-role' : ' bp-mat--base');
+        var qty =
+            ing.kind === 'resource'
+                ? ing.quantity_scu != null
+                    ? formatScuQty(ing.quantity_scu)
+                    : ''
+                : ing.quantity != null
+                  ? '×' + ing.quantity
+                  : '';
+        var roleName = resolveRoleLabelZh(ing);
+        var nameEl = row.querySelector('.bp-mat__name');
+        if (nameEl) nameEl.textContent = ing.name_zh || ing.name;
+        var qtyEl = row.querySelector('.bp-mat__qty');
+        if (qtyEl) qtyEl.textContent = qty;
+        var roleNameEl = row.querySelector('.bp-mat__role-name');
+        if (roleNameEl) roleNameEl.textContent = roleName;
+        var slider = row.querySelector('.bp-mat__range');
+        var input = row.querySelector('.bp-mat__input');
+        var fill = row.querySelector('.bp-mat__fill');
+        if (slider) slider.value = String(val);
+        if (input && document.activeElement !== input) input.value = String(val);
+        if (fill) {
+            fill.style.width = pct + '%';
+            fill.style.background =
+                'linear-gradient(90deg, rgba(0,240,255,0.3), ' + qualityColor(val) + ')';
+        }
+        var modsEl = row.querySelector('[data-mat-mods]');
+        renderMaterialModifiers(modsEl, ing, val);
     }
 
     function applyPreset(kind) {
@@ -2247,33 +2986,25 @@
         scheduleSimulate();
     }
 
+    function scheduleSimulateFast() {
+        if (state.simRaf) return;
+        state.simRaf = requestAnimationFrame(function () {
+            state.simRaf = null;
+            runSimulate();
+        });
+    }
+
     function scheduleSimulate() {
         if (state.simTimer) clearTimeout(state.simTimer);
-        state.simTimer = setTimeout(runSimulate, SIM_DEBOUNCE_MS);
+        state.simTimer = setTimeout(function () {
+            state.simTimer = null;
+            runSimulate();
+        }, SIM_DEBOUNCE_MS);
     }
 
     function runSimulate() {
         if (!state.blueprint) return;
-        fetchJson('/api/sc/blueprints/' + encodeURIComponent(state.blueprint.uuid) + '/simulate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: { materials: state.qualities },
-        })
-            .then(function (data) {
-                if (data && data.ok && state.blueprint) {
-                    data = Object.assign({}, data, {
-                        stats: simulateCraftClient(state.blueprint, state.qualities),
-                    });
-                }
-                return data;
-            })
-            .then(renderSimResult)
-            .catch(function () {
-                if (el.simSummary) {
-                    el.simSummary.classList.add('is-empty');
-                    el.simSummary.textContent = '模拟失败，请稍后重试';
-                }
-            });
+        renderSimResult(buildSimResultClient(state.blueprint, state.qualities));
     }
 
     function mergeWeaponCraftWithAttachments(craftStats) {
@@ -2362,14 +3093,53 @@
         });
     }
 
+    function tryUpdateSimPanelInPlace(data) {
+        if (!data || !data.ok) return false;
+        var stats = mergeWeaponCraftWithAttachments(data.stats || []);
+        if (el.simSummary && !el.simSummary.classList.contains('is-empty')) {
+            var scoreEl = el.simSummary.querySelector('.bp-meter__score');
+            var tierEl = el.simSummary.querySelector('.bp-meter__tier');
+            var multEl = el.simSummary.querySelector('.bp-meter__mult');
+            var ringEl = el.simSummary.querySelector('.bp-meter__ring');
+            var score = Number(data.material_score) || 0;
+            var pct = Math.max(0, Math.min(100, score / 10));
+            var tier = (data.quality_tier && data.quality_tier.label_zh) || '—';
+            if (scoreEl && tierEl && multEl && ringEl) {
+                scoreEl.innerHTML =
+                    escapeHtml(String(score)) + '<span class="bp-meter__unit">Q</span>';
+                tierEl.textContent = tier;
+                multEl.textContent = '×' + String(data.multiplier);
+                ringEl.style.setProperty('--bp-score', String(pct));
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+        if (!el.simStats) return true;
+        var nodes = el.simStats.querySelectorAll('.bp-sim-stat');
+        if (nodes.length !== stats.length || !stats.length) return false;
+        for (var i = 0; i < stats.length; i++) {
+            var st = stats[i];
+            var li = nodes[i];
+            var valueEl = li.querySelector('.bp-sim-stat-value');
+            if (!valueEl) return false;
+            li.className =
+                'bp-sim-stat' +
+                (st.modifiable ? ' bp-sim-stat--mod' : '') +
+                (st.modifiable ? ' bp-sim-stat--bonus' : '');
+            valueEl.innerHTML = formatCraftStatValueHtml(st);
+        }
+        return true;
+    }
+
     function renderSimResult(data) {
         if (!data || !data.ok) return;
-        if (state.blueprint && state.blueprint.ingredients) {
-            data = Object.assign({}, data, {
-                stats: simulateCraftClient(state.blueprint, state.qualities),
-            });
-        }
         state.lastSimData = data;
+        if (tryUpdateSimPanelInPlace(data)) {
+            renderAttachmentStatsPanel();
+            return;
+        }
         if (el.simSummary) {
             var score = Number(data.material_score) || 0;
             var pct = Math.max(0, Math.min(100, score / 10));
@@ -2537,6 +3307,9 @@
             if (deepLinkId) state.selectedId = deepLinkId;
         }
         bindEvents();
+        wireBlueprintListEvents();
+        wireVirtualListScroll();
+        wireMaterialsPanel();
 
         fetchJson('/api/sc/blueprints/meta')
             .then(function (meta) {
