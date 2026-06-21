@@ -813,6 +813,22 @@ html:has(body.bp-craft-body) {
     text-shadow: 0 0 10px rgba(0, 240, 255, 0.25);
 }
 
+.bp-hero__ph.is-loading {
+    border-color: rgba(0, 240, 255, 0.42);
+    color: rgba(0, 240, 255, 0.62);
+    animation: bp-hero-ph-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes bp-hero-ph-pulse {
+    0%,
+    100% {
+        opacity: 0.72;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
 .bp-hero__info {
     grid-row: 1;
     grid-column: 2;

@@ -1436,6 +1436,33 @@
     }
 
     var currentBpImageLightboxSrc = '';
+    var bpImageLoadSeq = 0;
+    var bpImageActiveUrl = '';
+
+    function setBpOutputImagePlaceholder(mode) {
+        if (!el.outputImagePh) return;
+        el.outputImagePh.hidden = false;
+        el.outputImagePh.classList.toggle('is-loading', mode === 'loading');
+        var label = el.outputImagePh.querySelector('span:last-child');
+        if (label) label.textContent = mode === 'loading' ? '加载配图…' : '暂无配图';
+    }
+
+    function clearBpOutputImageDisplay() {
+        bpImageLoadSeq += 1;
+        bpImageActiveUrl = '';
+        currentBpImageLightboxSrc = '';
+        if (el.outputImage) {
+            el.outputImage.onload = null;
+            el.outputImage.onerror = null;
+            el.outputImage.removeAttribute('src');
+            el.outputImage.alt = '';
+        }
+        if (el.outputImageFrame) {
+            el.outputImageFrame.hidden = true;
+            el.outputImageFrame.style.width = '';
+        }
+        if (el.outputImageBtn) el.outputImageBtn.style.width = '';
+    }
 
     function openBpImageLightbox() {
         if (!currentBpImageLightboxSrc) return;
@@ -1505,13 +1532,8 @@
     }
 
     function hideBpOutputImage() {
-        currentBpImageLightboxSrc = '';
-        if (el.outputImageFrame) {
-            el.outputImageFrame.hidden = true;
-            el.outputImageFrame.style.width = '';
-        }
-        if (el.outputImageBtn) el.outputImageBtn.style.width = '';
-        if (el.outputImagePh) el.outputImagePh.hidden = false;
+        clearBpOutputImageDisplay();
+        setBpOutputImagePlaceholder('empty');
     }
 
     function renderOutputImage(bp) {
@@ -1519,25 +1541,72 @@
         wireBpHeroImageFrameSync();
         wireBpImageLightbox();
         var url = bp && bp.component_id ? componentImageUrl(bp.component_id) : '';
-        currentBpImageLightboxSrc = url || '';
+        var displayName = (bp && blueprintDisplayName(bp)) || '蓝图成品';
+
+        if (
+            url &&
+            url === bpImageActiveUrl &&
+            el.outputImage.src === url &&
+            el.outputImage.complete &&
+            el.outputImage.naturalWidth > 0 &&
+            el.outputImageFrame &&
+            !el.outputImageFrame.hidden
+        ) {
+            currentBpImageLightboxSrc = url;
+            el.outputImage.alt = displayName;
+            el.outputImagePh.hidden = true;
+            el.outputImagePh.classList.remove('is-loading');
+            return;
+        }
+
+        if (url && url === bpImageActiveUrl && el.outputImage.src === url) {
+            currentBpImageLightboxSrc = url;
+            el.outputImage.alt = displayName;
+            if (el.outputImage.complete && el.outputImage.naturalWidth > 0) {
+                el.outputImagePh.hidden = true;
+                el.outputImagePh.classList.remove('is-loading');
+                showBpOutputImage();
+                syncBpHeroImageFrameSize();
+            } else {
+                setBpOutputImagePlaceholder('loading');
+            }
+            return;
+        }
+
+        var loadSeq = bpImageLoadSeq + 1;
+        clearBpOutputImageDisplay();
+        bpImageLoadSeq = loadSeq;
+
+        if (!url) {
+            setBpOutputImagePlaceholder('empty');
+            return;
+        }
+
+        bpImageActiveUrl = url;
+        currentBpImageLightboxSrc = url;
+        setBpOutputImagePlaceholder('loading');
+        el.outputImage.alt = displayName;
         el.outputImage.onload = function () {
+            if (loadSeq !== bpImageLoadSeq) return;
+            el.outputImagePh.hidden = true;
+            el.outputImagePh.classList.remove('is-loading');
             showBpOutputImage();
             syncBpHeroImageFrameSize();
         };
         el.outputImage.onerror = function () {
-            hideBpOutputImage();
+            if (loadSeq !== bpImageLoadSeq) return;
+            bpImageActiveUrl = '';
             el.outputImage.removeAttribute('src');
+            setBpOutputImagePlaceholder('empty');
         };
-        if (url) {
-            el.outputImage.alt = (bp && blueprintDisplayName(bp)) || '蓝图成品';
-            el.outputImage.src = url;
-            if (el.outputImage.complete && el.outputImage.naturalWidth > 0) {
+        el.outputImage.src = url;
+        if (el.outputImage.complete && el.outputImage.naturalWidth > 0) {
+            if (loadSeq === bpImageLoadSeq) {
+                el.outputImagePh.hidden = true;
+                el.outputImagePh.classList.remove('is-loading');
                 showBpOutputImage();
+                syncBpHeroImageFrameSize();
             }
-        } else {
-            hideBpOutputImage();
-            el.outputImage.removeAttribute('src');
-            el.outputImage.alt = '';
         }
     }
 
@@ -1669,6 +1738,7 @@
                 el.missionCount.hidden = true;
             }
         }
+        renderOutputImage(item);
     }
 
     function scheduleRenderMissions() {
